@@ -1,4 +1,6 @@
 #include <xnnpack/aarch32-assembler.h>
+#include <xnnpack/common.h>
+#include <xnnpack/jit-memory.h>
 
 #include <ios>
 
@@ -189,5 +191,33 @@ TEST(AArch32Assembler, DRegisterLane) {
   EXPECT_EQ((DRegisterLane{2, 0}), d2[0]);
   EXPECT_EQ((DRegisterLane{2, 1}), d2[1]);
 }
+
+TEST(AArch32Assembler, CodeBufferOverflow) {
+  xnn_code_buffer b = jit_alloc(4);
+  Assembler a(&b);
+  a.add(r0, r0, 2);
+  EXPECT_EQ(Error::kNoError, a.error());
+
+  a.bx(lr);
+  EXPECT_EQ(Error::kOutOfMemory, a.error());
+  jit_free(b);
+}
+
+#if XNN_ARCH_ARM
+TEST(AArch32Assembler, JitAllocCodeBuffer) {
+  typedef uint32_t (*Func)(uint32_t);
+
+  xnn_code_buffer b = jit_alloc();
+
+  Assembler a(&b);
+  a.add(r0, r0, 2).bx(lr);
+
+  Func fn = (Func)(a.finalize());
+
+  ASSERT_EQ(3, fn(1));
+
+  jit_free(b);
+}
+#endif
 }  // namespace aarch32
 }  // namespace xnnpack

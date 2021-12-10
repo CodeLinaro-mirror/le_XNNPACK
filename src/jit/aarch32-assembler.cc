@@ -62,11 +62,19 @@ Assembler::Assembler() {
   buffer_ = new uint32_t[DEFAULT_BUFFER_SIZE];
   cursor_ = buffer_;
   top_ = buffer_ + DEFAULT_BUFFER_SIZE;
-  error_ = Error::kNoError;
+}
+
+Assembler::Assembler(xnn_code_buffer* buf) {
+  buffer_ = (uint32_t*)buf->code;
+  cursor_ = buffer_;
+  top_ = buffer_ + (buf->capacity / 4);
+  xnn_buffer = buf;
 }
 
 Assembler::~Assembler() {
-  delete[] buffer_;
+  if (xnn_buffer == nullptr) {
+    delete[] buffer_;
+  }
 }
 
 Assembler& Assembler::emit32(uint32_t value) {
@@ -333,6 +341,14 @@ Assembler& Assembler::vst1_32(DRegisterLane dd, MemOperand op) {
 
   const uint32_t rm = op.mode() == AddressingMode::kPostIndexed ? 0xD : 0xF;
   return emit32(0xF480'0800 | encode(dd, 22, 12) | op.base().code << 16 | dd.lane << 5 | rm);
+}
+
+void* Assembler::finalize() {
+  if (xnn_buffer != nullptr) {
+    xnn_buffer->size = code_size_in_bytes();
+    jit_finalize(xnn_buffer);
+  }
+  return (void*)start();
 }
 
 void Assembler::reset() {

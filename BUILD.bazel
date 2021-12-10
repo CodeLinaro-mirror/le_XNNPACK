@@ -8072,7 +8072,18 @@ xnnpack_cc_library(
     srcs = [
         "src/jit/aarch32-assembler.cc",
     ],
-    hdrs = INTERNAL_HDRS + ["src/xnnpack/aarch32-assembler.h"],
+    hdrs = INTERNAL_HDRS + [
+        "src/xnnpack/jit-memory.h",
+        "src/xnnpack/aarch32-assembler.h",
+    ],
+)
+
+xnnpack_cc_library(
+    name = "jit_memory",
+    srcs = [
+        "src/jit/memory.cc",
+    ],
+    hdrs = INTERNAL_HDRS + ["src/xnnpack/jit-memory.h"],
 )
 
 xnnpack_cc_library(
@@ -11297,10 +11308,12 @@ xnnpack_unit_test(
 xnnpack_unit_test(
     name = "aarch32_assembler_test",
     srcs = [
+        "src/xnnpack/common.h",
         "test/aarch32-assembler.cc",
     ],
     deps = [
         ":aarch32_assembler",
+        ":jit_memory",
     ],
 )
 
