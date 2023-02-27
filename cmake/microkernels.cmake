@@ -5623,6 +5623,8 @@ SET(ALL_SSE_MICROKERNEL_SRCS
   src/math/f32-sqrt-sse-hh1mac.c
   src/math/f32-sqrt-sse-nr1mac.c
   src/math/f32-sqrt-sse-nr2mac.c
+  src/x32-packw/gen/x32-packw-x8-sse.c
+  src/x32-packw/gen/x32-packw-x16-sse.c
   src/x32-packx/x32-packx-x4-sse.c
   src/x32-transposec/x32-transposec-4x4-sse.c)
 

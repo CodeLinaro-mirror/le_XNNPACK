@@ -140,6 +140,22 @@ static void x32_packw(benchmark::State& state,
   BENCHMARK_BGEMM(x32_packw_x12__neon_ld4lane)
 #endif  // XNN_ARCH_ARM || XNN_ARCH_ARM64
 
+#if XNN_ARCH_X86 || XNN_ARCH_X86_64
+  static void x32_packw_x8__sse(benchmark::State& state, const char* net) {
+    x32_packw(state,
+      xnn_x32_packw_gemm_goi_ukernel_x8__sse,
+      /*nr=*/8, /*kr=*/1, /*sr=*/1);
+  }
+  static void x32_packw_x16__sse(benchmark::State& state, const char* net) {
+    x32_packw(state,
+      xnn_x32_packw_gemm_goi_ukernel_x16__sse,
+      /*nr=*/16, /*kr=*/1, /*sr=*/1);
+  }
+
+  BENCHMARK_BGEMM(x32_packw_x8__sse)
+  BENCHMARK_BGEMM(x32_packw_x16__sse)
+#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
+
 static void x32_packw_x2__scalar_float(benchmark::State& state, const char* net) {
   x32_packw(state,
     xnn_x32_packw_gemm_goi_ukernel_x2__scalar_float,
