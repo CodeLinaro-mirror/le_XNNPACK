@@ -622,6 +622,10 @@ class DWConvMicrokernelTester {
       std::fill(zero.begin(), zero.end(), int8_t(input_zero_point() - 0x80));
       std::fill(output.begin(), output.end(), INT8_C(0xA5));
 
+      std::fill(bias.begin(), bias.end(), 1);
+      std::iota(kernel.begin(), kernel.end(), 1);
+      std::iota(input.begin(), input.end(), 1);
+
       std::fill(packed_weights.begin(), packed_weights.end(), 0);
       const xnn_qs8_packing_params packing_params = { int8_t(input_zero_point() - 0x80) };
       xnn_pack_qs8_dwconv_ghw_w(
@@ -672,7 +676,7 @@ class DWConvMicrokernelTester {
 
       size_t num_middle_pass =
         divide_round_up(doz(tile_size, first_pass_tile() + last_pass_tile()), middle_pass_tile());
-      const size_t rounded_c = round_up_po2(channels(), channel_round());
+      const size_t rounded_c = round_up_po2(channels(), channel_subtile());
       const size_t packed_weights_offset_to_last_tile =
           first_pass_tile() * rounded_c * sizeof(int8_t)+ rounded_c * sizeof(int32_t) +
           num_middle_pass * middle_pass_tile() * rounded_c * sizeof(int8_t) +
