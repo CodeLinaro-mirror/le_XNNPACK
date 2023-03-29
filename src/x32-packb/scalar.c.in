@@ -1,0 +1,98 @@
+// Copyright 2023 Google LLC
+//
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree.
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include <xnnpack/math.h>
+#include <xnnpack/packb.h>
+
+$assert NR > 1
+$assert TYPE in ["int8_t", "uint16_t", "uint32_t", "float"]
+$assert BIAS in [0, 1]
+$TYPE_SUFFIX = {"int8_t": "int", "uint16_t": "int", "uint32_t": "int", "float": "float"}[TYPE]
+$BITS = {"int8_t": 8, "uint16_t": 16, "uint32_t": 32, "float": 32}[TYPE]
+$BTYPE = {"int8_t": "int32_t", "uint16_t": "uint16_t", "uint32_t": "uint32_t", "float": "float"}[TYPE]
+$WTYPE = {"int8_t": "int8_t", "uint16_t": "uint16_t", "uint32_t": "uint32_t", "float": "uint32_t"}[TYPE]
+$NAME = {0: "zerob", 1: "packb"}[BIAS]
+void xnn_x${BITS}_${NAME}_gemm_ukernel_x${NR}__scalar_${TYPE_SUFFIX}(
+  size_t g,
+  size_t nc,
+  size_t kc,
+  size_t nr,
+  $if BIAS == 1:
+    $if BITS == 8:
+      const int32_t* bias,
+    $else:
+      const ${WTYPE}* bias,
+  ${WTYPE}* packed_weights,
+  size_t extra_bytes,
+  const union xnn_x32_packb_params* params)
+{
+  assert(g != 0);
+  assert(nc != 0);
+  assert(nr == ${NR});   // This kernel is for NR=${NR}
+  assert(packed_weights != NULL);
+
+  ${TYPE}* out = (${TYPE}*) packed_weights;
+  $if BIAS == 1:
+    const ${BTYPE}* b = (const ${BTYPE}*) bias;
+  do {
+    // NC main loop multiple of ${NR}
+    size_t n = nc;
+    for (;n >= ${NR}; n -= ${NR}) {
+      $if BITS == 8:
+        int32_t* packed_b = (int32_t*) out;
+      $if BIAS == 1:
+        $for N in range(NR):
+          $if BTYPE == TYPE:
+            out[${N}] = b[${N}];
+          $else:
+            ((${BTYPE}*) out)[${N}] = b[${N}];
+        b += ${NR};
+      $else:
+        $for N in range(NR):
+          $if BTYPE == TYPE:
+            out[${N}] = 0;
+          $else:
+            ((${BTYPE}*) out)[${N}] = 0;
+      $if BTYPE == TYPE:
+        out += ${NR} + ${NR} * kc;
+      $else:
+        out += ${NR} * sizeof(${BTYPE}) + $(NR} * kc * sizeof(${BTYPE});
+      out = (${TYPE}*) ((uintptr_t) out + extra_bytes);
+    }
+
+    // NC remainder (1..${NR-1})
+    if XNN_UNLIKELY(n != 0) {
+      $if BITS == 8:
+        int32_t* packed_b = (int32_t*) out;
+      $if BIAS == 1:
+        size_t nb = n;
+        do {
+          $if BTYPE == TYPE:
+            *out++ = *b++;
+          $else:
+            *((${BTYPE}*) out) = *b++;
+            out += sizeof(${BTYPE});
+        } while (--nb != 0);
+      $else:
+        size_t nb = n;
+        do {
+          $if BTYPE == TYPE:
+            *out++ = 0;
+          $else:
+            *((${BTYPE}*) out) = 0;
+            out += sizeof(${BTYPE});
+        } while (--nb != 0);
+      $if BTYPE == TYPE:
+        out += (${NR} - n) + ${NR} * kc;
+      $else:
+        out += (${NR} - n) * sizeof(${BTYPE}) + ${NR} * kc * sizeof(${BTYPE});
+      out = (${TYPE}*) ((uintptr_t) out + extra_bytes);
+    }
+  } while (--g != 0);
+}

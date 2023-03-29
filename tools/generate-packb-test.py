@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+# Copyright 2023 Google LLC
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+import argparse
+import codecs
+import math
+import os
+import re
+import sys
+import yaml
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from primes import next_prime
+import xngen
+import xnncommon
+
+
+parser = argparse.ArgumentParser(description='PackB/ZeroB microkernel test generator')
+parser.add_argument("-s", "--spec", metavar="FILE", required=True,
+                    help="Specification (YAML) file")
+parser.add_argument("-o", "--output", metavar="FILE", required=True,
+                    help='Output (C++ source) file')
+parser.set_defaults(defines=list())
+
+def split_ukernel_name(name):
+  match = re.fullmatch(r"xnn_(x8|x16|x32)_(packb|zerob)_gemm_ukernel_x(\d+)__(.+)", name)
+  assert match is not None
+  nr = int(match.group(3))
+  arch, isa, assembly = xnncommon.parse_target_name(target_name=match.group(4))
+  return nr, arch, isa
+
+
+PACKB_TEST_TEMPLATE = """\
+TEST(${TEST_NAME}, n_eq_${NR}) {
+  $if ISA_CHECK:
+    ${ISA_CHECK};
+  for (size_t k = 1; k < 4; k++) {
+    PackBMicrokernelTester()
+      .n(${NR})
+      .k(k)
+      .nr(${NR})
+      .Test(${", ".join(TEST_ARGS)});
+  }
+}
+
+$if NR > 1:
+  TEST(${TEST_NAME}, n_div_${NR}) {
+    $if ISA_CHECK:
+      ${ISA_CHECK};
+    for (size_t k = 1; k < 4; k++) {
+      PackBMicrokernelTester()
+        .n(${NR*2})
+        .k(k)
+        .nr(${NR})
+        .Test(${", ".join(TEST_ARGS)});
+    }
+  }
+
+  TEST(${TEST_NAME}, n_lt_${NR}) {
+    $if ISA_CHECK:
+      ${ISA_CHECK};
+    for (size_t k = 1; k < 4; k++) {
+      for (size_t n = 1; n < ${NR}; n++) {
+        PackBMicrokernelTester()
+          .n(n)
+          .k(k)
+          .nr(${NR})
+          .Test(${", ".join(TEST_ARGS)});
+      }
+    }
+  }
+
+TEST(${TEST_NAME}, n_gt_${NR}) {
+  $if ISA_CHECK:
+    ${ISA_CHECK};
+  for (size_t k = 1; k < 4; k++) {
+    for (size_t n = ${NR+1}; n < ${10 if NR == 1 else NR*2}; n++) {
+      PackBMicrokernelTester()
+        .n(n)
+        .k(k)
+        .nr(${NR})
+        .Test(${", ".join(TEST_ARGS)});
+    }
+  }
+}
+
+TEST(${TEST_NAME}, g_gt_1) {
+  $if ISA_CHECK:
+    ${ISA_CHECK};
+  for (size_t g = 2; g <= 3; g++) {
+    for (size_t k = 1; k < 4; k++) {
+      PackBMicrokernelTester()
+        .g(g)
+        .n(${NR})
+        .k(k)
+        .nr(${NR})
+        .Test(${", ".join(TEST_ARGS)});
+    }
+  }
+}
+"""
+
+
+def generate_test_cases(ukernel, nr, isa):
+  """Generates all tests cases for a PACKB/ZEROB micro-kernel.
+
+  Args:
+    ukernel: C name of the micro-kernel function.
+    nr: NR parameter of the PACKB/ZEROB micro-kernel.
+    isa: instruction set required to run the micro-kernel. Generated unit test
+         will skip execution if the host processor doesn't support this ISA.
+
+  Returns:
+    Code for the test case.
+  """
+  _, test_name = ukernel.split("_", 1)
+  _, datatype, ukernel_type, _ = ukernel.split("_", 3)
+  return xngen.preprocess(PACKB_TEST_TEMPLATE, {
+      "TEST_NAME": test_name.upper().replace("UKERNEL_", ""),
+      "TEST_ARGS": [ukernel],
+      "NR": nr,
+      "ISA_CHECK": xnncommon.generate_isa_check_macro(isa),
+      "next_prime": next_prime,
+    })
+
+
+def main(args):
+  options = parser.parse_args(args)
+
+  with codecs.open(options.spec, "r", encoding="utf-8") as spec_file:
+    spec_yaml = yaml.safe_load(spec_file)
+    if not isinstance(spec_yaml, list):
+      raise ValueError("expected a list of micro-kernels in the spec")
+    is_packb = 'packb' in options.spec
+
+    tests = """\
+// Copyright 2023 Google LLC
+//
+// This source code is licensed under the BSD-style license found in the
+// LICENSE file in the root directory of this source tree.
+//
+// Auto-generated file. Do not edit!
+//   Specification: {specification}
+//   Generator: {generator}
+
+
+#include <gtest/gtest.h>
+
+#include <xnnpack/common.h>
+#include <xnnpack/isa-checks.h>
+
+#include <xnnpack/{packb}.h>
+#include "packb-microkernel-tester.h"
+""".format(specification=options.spec, generator=sys.argv[0], packb=("packb" if is_packb else "zerob"))
+
+    for ukernel_spec in spec_yaml:
+      name = ukernel_spec["name"]
+      nr, arch, isa = split_ukernel_name(name)
+
+      test_case = generate_test_cases(name, nr, isa)
+      tests += "\n\n" + xnncommon.postprocess_test_case(test_case, arch, isa)
+
+    txt_changed = True
+    if os.path.exists(options.output):
+      with codecs.open(options.output, "r", encoding="utf-8") as output_file:
+        txt_changed = output_file.read() != tests
+
+    if txt_changed:
+      with codecs.open(options.output, "w", encoding="utf-8") as output_file:
+        output_file.write(tests)
+
+
+if __name__ == "__main__":
+  main(sys.argv[1:])

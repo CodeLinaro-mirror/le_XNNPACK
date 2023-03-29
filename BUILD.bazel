@@ -2275,6 +2275,7 @@ MICROKERNEL_HDRS = [
     "src/xnnpack/igemm.h",
     "src/xnnpack/lut.h",
     "src/xnnpack/maxpool.h",
+    "src/xnnpack/packb.h",
     "src/xnnpack/packw.h",
     "src/xnnpack/packx.h",
     "src/xnnpack/pad.h",
@@ -2302,6 +2303,7 @@ MICROKERNEL_HDRS = [
     "src/xnnpack/vsquareabs.h",
     "src/xnnpack/vunary.h",
     "src/xnnpack/window.h",
+    "src/xnnpack/zerob.h",
     "src/xnnpack/zip.h",
 ]
 
@@ -9124,8 +9126,8 @@ xnnpack_unit_test(
     ],
     shard_count = 10,
     deps = MICROKERNEL_TEST_DEPS + [
-        ":packing",
         ":microkernel_utils",
+        ":packing",
     ],
 )
 
@@ -9491,6 +9493,17 @@ xnnpack_unit_test(
 )
 
 xnnpack_unit_test(
+    name = "x32_packb_test",
+    srcs = [
+        "test/packb-microkernel-tester.h",
+        "test/x32-packb.cc",
+    ],
+    deps = MICROKERNEL_TEST_DEPS + [
+        ":packing",
+    ],
+)
+
+xnnpack_unit_test(
     name = "x8_packw_test",
     srcs = [
         "test/packw-microkernel-tester.h",
@@ -9593,6 +9606,17 @@ xnnpack_unit_test(
         "test/x32-unpool.cc",
     ],
     deps = MICROKERNEL_TEST_DEPS,
+)
+
+xnnpack_unit_test(
+    name = "x32_zerob_test",
+    srcs = [
+        "test/packb-microkernel-tester.h",
+        "test/x32-zerob.cc",
+    ],
+    deps = MICROKERNEL_TEST_DEPS + [
+        ":packing",
+    ],
 )
 
 xnnpack_unit_test(

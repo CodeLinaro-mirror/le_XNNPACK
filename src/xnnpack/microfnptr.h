@@ -1140,6 +1140,48 @@ typedef void (*xnn_transposev_ukernel_fn)(
     size_t block_width,
     size_t block_height);
 
+// PACKB: PACK B (bias) for GEMM matrix multiplication
+
+typedef void (*xnn_packb_gemm_ukernel_fn)(
+    size_t g,
+    size_t nc,
+    size_t kc,
+    size_t nr,
+    const void* b,
+    void* packed_weights,
+    size_t extra_bytes,
+    const void* params);
+
+typedef void (*xnn_x32_packb_gemm_ukernel_fn)(
+    size_t g,
+    size_t nc,
+    size_t kc,
+    size_t nr,
+    const uint32_t* b,
+    uint32_t* packed_weights,
+    size_t extra_bytes,
+    const union xnn_x32_packb_params* params);
+
+// ZEROB: ZERO B (bias) for GEMM matrix multiplication
+
+typedef void (*xnn_zerob_gemm_ukernel_fn)(
+    size_t g,
+    size_t nc,
+    size_t kc,
+    size_t nr,
+    void* packed_weights,
+    size_t extra_bytes,
+    const void* params);
+
+typedef void (*xnn_x32_zerob_gemm_ukernel_fn)(
+    size_t g,
+    size_t nc,
+    size_t kc,
+    size_t nr,
+    uint32_t* packed_weights,
+    size_t extra_bytes,
+    const union xnn_x32_packb_params* params);
+
 // PACKW: PACK W (weights) for GEMM matrix multiplication
 
 typedef void (*xnn_packw_gemm_goi_ukernel_fn)(
