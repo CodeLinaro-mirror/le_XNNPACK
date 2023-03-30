@@ -4981,7 +4981,7 @@ cc_library(
     name = "enable_dwconv_multipass",
     defines = select({
         ":dwconv_multipass_enabled": ["XNN_ENABLE_DWCONV_MULTIPASS=1"],
-        "//conditions:default": ["XNN_ENABLE_DWCONV_MULTIPASS=0"],
+        "//conditions:default": ["XNN_ENABLE_DWCONV_MULTIPASS=1"],
     }),
 )
 
