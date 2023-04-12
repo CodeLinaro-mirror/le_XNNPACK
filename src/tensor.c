@@ -16,6 +16,21 @@
 #include <xnnpack/subgraph.h>
 
 
+static void set_allocation_type(struct xnn_value* value) {
+  if (value->data != NULL) {
+    value->allocation_type = xnn_allocation_type_static;
+  } else if (xnn_value_is_external(value)) {
+    // Value is non-static and external to the runtime: must be specified via a call to xnn_setup_runtime.
+    value->allocation_type = xnn_allocation_type_external;
+  } else if (xnn_value_is_persistent(value)) {
+    // Persistent values are allocated in the front of the workspace without overlaps.
+    value->allocation_type = xnn_allocation_type_persistent;
+  } else {
+    // Value is purely internal to the runtime, and must be allocated in its workspace.
+    value->allocation_type = xnn_allocation_type_workspace;
+  }
+}
+
 enum xnn_status xnn_define_tensor_value(
     xnn_subgraph_t subgraph,
     enum xnn_datatype datatype,
@@ -66,8 +81,10 @@ enum xnn_status xnn_define_tensor_value(
   value->datatype = datatype;
   value->shape.num_dims = num_dims;
   memcpy(value->shape.dim, dims, num_dims * sizeof(size_t));
+  value->size = xnn_tensor_get_size(subgraph, value->id);
   value->flags = flags;
-  value->data = data;
+  value->data = (void*) (uintptr_t) data;
+  set_allocation_type(value);
 
   *id_out = value->id;
   return xnn_status_success;
@@ -157,7 +174,8 @@ enum xnn_status xnn_define_quantized_tensor_value(
   value->shape.num_dims = num_dims;
   memcpy(value->shape.dim, dims, num_dims * sizeof(size_t));
   value->flags = flags;
-  value->data = data;
+  value->data = (void*) (uintptr_t) data;
+  set_allocation_type(value);
 
   *id_out = value->id;
   return xnn_status_success;
@@ -245,7 +263,8 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value(
   value->shape.num_dims = num_dims;
   memcpy(value->shape.dim, dims, num_dims * sizeof(size_t));
   value->flags = flags;
-  value->data = data;
+  value->data = (void*) (uintptr_t) data;
+  set_allocation_type(value);
 
   *id_out = value->id;
   return xnn_status_success;
