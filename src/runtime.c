@@ -217,8 +217,10 @@ static enum xnn_status initialize_workspace_values(
         struct xnn_value* value = &rt->values[i];
         if (value->allocation_type == xnn_allocation_type_workspace ||
             value->allocation_type == xnn_allocation_type_persistent) {
-          assert(value->data != NULL);
-          value->data = (void*) ((uintptr_t) value->data + workspace_data_delta);
+          if (value->data != NULL) {
+            // Data can be null as the runtime using this workspace might not have been set up.
+            value->data = (void*) ((uintptr_t) value->data + workspace_data_delta);
+          }
         }
       }
     }
@@ -249,11 +251,10 @@ static bool input_memory_can_be_reused(const xnn_runtime_t runtime, size_t input
 // - remember the id of the tensor which we will reuse the alloc_offset to set onto the output tensor
 static void optimize_tensor_allocation_for_in_place_operations(
   struct xnn_value_allocation_tracker* tracker,
-  const xnn_subgraph_t subgraph,
   const xnn_runtime_t runtime)
 {
-  for (uint32_t n = 0; n < subgraph->num_nodes; n++) {
-    struct xnn_node* node = &subgraph->nodes[n];
+  for (uint32_t n = 0; n < runtime->num_ops; n++) {
+    const struct xnn_operator_data* node = &runtime->opdata[n];
     switch (node->type) {
       case xnn_node_type_abs:
       case xnn_node_type_add2:
@@ -406,11 +407,18 @@ enum xnn_status xnn_create_runtime_v4(
     runtime->values[i].id = subgraph->values[i].id;
   }
   runtime->num_values = subgraph->num_values;
+
   // No more optimizations should be performed on subgraph at this point, since modifications on the subgraph will not
   // be copied to the runtime's values.
 
   for (size_t i = 0; i < subgraph->num_nodes; i++) {
     const struct xnn_node* node = subgraph->nodes + i;
+
+    // Initialize common fiels we need for analysis.
+    runtime->opdata[i].type = node->type;
+    runtime->opdata[i].id = node->id;
+    runtime->opdata[i].num_inputs = node->num_inputs;
+    runtime->opdata[i].num_outputs = node->num_outputs;
 
     // Ignore fused nodes
     if (node->type != xnn_node_type_invalid) {
@@ -429,10 +437,6 @@ enum xnn_status xnn_create_runtime_v4(
     }
   #endif
 
-  struct xnn_value_allocation_tracker mem_alloc_tracker;
-  xnn_init_value_allocation_tracker(&mem_alloc_tracker, subgraph);
-
-  size_t persistent_size = 0;
   for (uint32_t i = 0; i < runtime->num_values; i++) {
     struct xnn_value* value = &runtime->values[i];
     if (!xnn_value_is_valid(value)) {
@@ -446,10 +450,8 @@ enum xnn_status xnn_create_runtime_v4(
       } else if (xnn_value_is_persistent(value)) {
         // Persistent values are allocated in the front of the workspace without overlaps.
         value->allocation_type = xnn_allocation_type_persistent;
-        persistent_size += round_up_po2(value->size, XNN_EXTRA_BYTES);
       } else {
         // Value is purely internal to the runtime, and must be allocated in its workspace.
-        xnn_add_value_allocation_tracker(&mem_alloc_tracker, i, round_up_po2(value->size, XNN_EXTRA_BYTES));
         value->allocation_type = xnn_allocation_type_workspace;
       }
     } else if (value->fp16_compatible) {
@@ -462,28 +464,16 @@ enum xnn_status xnn_create_runtime_v4(
       value->allocation_type = xnn_allocation_type_static;
     }
   }
-  optimize_tensor_allocation_for_in_place_operations(&mem_alloc_tracker, subgraph, runtime);
 
-
-  xnn_plan_value_allocation_tracker(&mem_alloc_tracker);
 
   xnn_retain_workspace(workspace);
   runtime->workspace = workspace;
   runtime->next_workspace_user = runtime->workspace->first_user;
   runtime->workspace->first_user = runtime;
-  runtime->workspace->persistent_size = persistent_size;
-
-  status = initialize_workspace_values(runtime, &mem_alloc_tracker);
-  if (status != xnn_status_success) {
-    xnn_release_value_allocation_tracker(&mem_alloc_tracker);
-    goto error;
-  }
 
   if (flags & XNN_FLAG_BASIC_PROFILING) {
     runtime->profiling = true;
   }
-
-  xnn_release_value_allocation_tracker(&mem_alloc_tracker);
 
   runtime->threadpool = threadpool;
 
@@ -500,6 +490,39 @@ enum xnn_status xnn_setup_runtime(
   size_t num_external_values,
   const struct xnn_external_value* external_values)
 {
+  size_t persistent_size = 0;
+  struct xnn_value_allocation_tracker mem_alloc_tracker;
+  xnn_init_value_allocation_tracker(&mem_alloc_tracker, runtime);
+
+  for (uint32_t i = 0; i < runtime->num_values; i++) {
+    const struct xnn_value* value = &runtime->values[i];
+    if (!xnn_value_is_valid(value)) {
+      continue;
+    }
+
+    if (value->allocation_type == xnn_allocation_type_workspace) {
+      // Value is purely internal to the runtime, and must be allocated in its workspace.
+      xnn_add_value_allocation_tracker(&mem_alloc_tracker, i, round_up_po2(value->size, XNN_EXTRA_BYTES));
+    } else if (value->allocation_type == xnn_allocation_type_persistent) {
+      persistent_size += round_up_po2(value->size, XNN_EXTRA_BYTES);
+    }
+  }
+  runtime->workspace->persistent_size = persistent_size;
+  optimize_tensor_allocation_for_in_place_operations(&mem_alloc_tracker, runtime);
+
+
+  xnn_plan_value_allocation_tracker(&mem_alloc_tracker);
+
+
+  const enum xnn_status status = initialize_workspace_values(runtime, &mem_alloc_tracker);
+  if (status != xnn_status_success) {
+    xnn_release_value_allocation_tracker(&mem_alloc_tracker);
+    return status;
+  }
+
+
+  xnn_release_value_allocation_tracker(&mem_alloc_tracker);
+
   // Validate inputs without changing internal state.
   // This ensures that runtime stays in consistent state in case validation fails midway.
   for (size_t i = 0; i < num_external_values; i++) {
