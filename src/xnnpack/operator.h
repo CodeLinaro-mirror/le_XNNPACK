@@ -283,6 +283,7 @@ struct xnn_operator {
       union xnn_qu8_avgpool_minmax_params qu8_avgpool;
       union xnn_qu8_avgpool_minmax_params qu8_gavgpool;
     };
+    union xnn_qs8_hswish_params qs8_hswish;
     union xnn_qs8_lrelu_params qs8_lrelu;
     union xnn_qu8_lrelu_params qu8_lrelu;
     union xnn_s8_minmax_params s8_minmax;
