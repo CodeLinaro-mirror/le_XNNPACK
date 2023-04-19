@@ -208,6 +208,7 @@ static enum xnn_status initialize_workspace_values(
 
   // Adjust the value pointers of all runtimes that share this workspace.
   if (workspace_data_delta != 0) {
+    runtime->workspace->update_users = true;
     for (struct xnn_runtime* rt = runtime->workspace->first_user; rt != NULL; rt = rt->next_workspace_user) {
       // The current runtime already has the correct offset.
       if (rt == runtime) {
@@ -541,6 +542,44 @@ enum xnn_status xnn_setup_runtime(
         return status;
       }
     }
+  }
+
+  runtime->has_been_setup = true;
+
+  if (runtime->workspace->update_users) {
+    // Workspace has changed, data pointers are invalid, so Setup all runtime that share this workspace.
+    for (struct xnn_runtime* rt = runtime->workspace->first_user; rt != NULL; rt = rt->next_workspace_user) {
+      // The current runtime already has already been set up.
+      if (rt == runtime) {
+        continue;
+      }
+
+      if (!rt->has_been_setup) {
+        // This runtime has not ever been setup yet, so it doesn't have any pointers into workspace, so does not need to
+        // be update.
+        continue;
+      }
+
+      for (size_t i = 0; i < rt->num_ops; i++) {
+        const struct xnn_operator_data* opdata = &rt->opdata[i];
+        for (size_t j = 0; j < XNN_MAX_OPERATOR_OBJECTS; j++) {
+          if (opdata->operator_objects[j] == NULL) {
+            // Operator was removed during optimization
+            continue;
+          }
+
+          assert(opdata->setup != NULL);
+          // TODO(zhin): come up with another API to only setup input/output pointers.
+          const enum xnn_status status = opdata->setup(opdata, rt->values, rt->num_values, rt->threadpool);
+          if (status != xnn_status_success) {
+            xnn_log_error("failed to setup runtime: error in operator #%zu", i);
+            return status;
+          }
+        }
+      }
+    }
+
+    runtime->workspace->update_users = false;
   }
 
   return xnn_status_success;
