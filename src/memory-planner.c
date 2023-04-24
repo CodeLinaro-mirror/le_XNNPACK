@@ -142,9 +142,14 @@ static size_t find_value_alloc_offset(struct memory_block* live_mem_blocks,
   return live_mem_blocks[smallest_gap_index].end;
 }
 
-void xnn_init_value_allocation_tracker(struct xnn_value_allocation_tracker* tracker, const struct xnn_runtime* runtime) {
+void xnn_init_value_allocation_tracker(
+  struct xnn_value_allocation_tracker* tracker,
+  const struct xnn_runtime* runtime,
+  size_t num_extra_values)
+{
   tracker->mem_arena_size = 0;
-  tracker->usage = xnn_allocate_zero_memory(sizeof(struct xnn_value_usage) * runtime->num_values);
+  tracker->num_extra_values = num_extra_values;
+  tracker->usage = xnn_allocate_zero_memory(sizeof(struct xnn_value_usage) * (runtime->num_values + num_extra_values));
 #if XNN_ENABLE_MEMOPT
   populate_value_lifecycle(runtime, tracker->usage);
 #endif
@@ -176,6 +181,29 @@ void xnn_add_value_allocation_tracker(struct xnn_value_allocation_tracker* track
   }
 
   tracker->max_value_id = value_id;
+}
+
+void xnn_add_extra_value_allocation_tracker(
+  struct xnn_value_allocation_tracker* tracker,
+  uint32_t extra_value_id,
+  size_t tensor_size,
+  uint32_t value_id,
+  uint32_t opdata_id)
+{
+  tracker->usage[extra_value_id].tensor_size = tensor_size;
+  if (tracker->min_value_id == XNN_INVALID_VALUE_ID) {
+    tracker->min_value_id = value_id;
+  } else {
+    // Note that values are expected to be added in increasing order.
+    assert(extra_value_id > tracker->min_value_id);
+    assert(extra_value_id > tracker->max_value_id);
+  }
+  assert(extra_value_id > value_id);
+  tracker->max_value_id = extra_value_id;
+  tracker->usage[extra_value_id].first_node = tracker->usage[value_id].first_node;
+  tracker->usage[extra_value_id].last_node = tracker->usage[value_id].last_node;
+  tracker->usage[extra_value_id].reuse_value_id = XNN_INVALID_VALUE_ID;
+  tracker->usage[extra_value_id].opdata_id = opdata_id;
 }
 
 void xnn_plan_value_allocation_tracker(struct xnn_value_allocation_tracker* tracker) {

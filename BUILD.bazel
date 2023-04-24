@@ -10914,6 +10914,7 @@ xnnpack_unit_test(
     deps = [
         ":XNNPACK",
         ":math",
+        ":node_type",
         ":subgraph_test_mode",
     ],
 )

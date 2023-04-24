@@ -262,32 +262,11 @@ static enum xnn_status setup_dynamic_fully_connected_nc(
   const uint32_t kr = dynamic_fully_connected_op->ukernel.gemm.kr;
   const uint32_t sr = dynamic_fully_connected_op->ukernel.gemm.sr;
 
-  const size_t n_stride = round_up(output_channels, nr);
   const size_t k_stride = round_up_po2(input_channels, kr * sr);
 
   if (input_channels != dynamic_fully_connected_op->group_input_channels ||
       output_channels != dynamic_fully_connected_op->group_output_channels)
   {
-    const size_t workspace_size = n_stride * bias_element_size + ((n_stride * k_stride) << log2_filter_element_size);
-
-    if (workspace_size > dynamic_fully_connected_op->workspace_size) {
-      // Note: packed weights must be SIMD-aligned, so we can't use xnn_reallocate_memory
-      xnn_release_simd_memory(dynamic_fully_connected_op->workspace);
-      xnn_log_debug(
-        "released %zu bytes for %s operator workspace", dynamic_fully_connected_op->workspace_size,
-        xnn_operator_type_to_string(dynamic_fully_connected_op->type));
-      dynamic_fully_connected_op->workspace = xnn_allocate_simd_memory(workspace_size);
-      if (dynamic_fully_connected_op->workspace == NULL) {
-        xnn_log_error(
-          "failed to allocate %zu bytes for %s operator workspace",
-          workspace_size, xnn_operator_type_to_string(dynamic_fully_connected_op->type));
-        return xnn_status_out_of_memory;
-      }
-      dynamic_fully_connected_op->workspace_size = workspace_size;
-      xnn_log_debug(
-        "allocated %zu bytes for %s operator workspace", dynamic_fully_connected_op->workspace_size,
-        xnn_operator_type_to_string(dynamic_fully_connected_op->type));
-    }
     dynamic_fully_connected_op->group_input_channels = input_channels;
     dynamic_fully_connected_op->group_output_channels = output_channels;
   }
@@ -422,4 +401,51 @@ enum xnn_status xnn_setup_dynamic_fully_connected_nc_f32(
     &dynamic_fully_connected_op->params.f32_minmax,
     sizeof(dynamic_fully_connected_op->params.f32_minmax),
     pthreadpool_get_threads_count(threadpool));
+}
+
+static void setup_dynamic_fully_connected_nc_workspace(
+    xnn_operator_t dynamic_fully_connected_op,
+    size_t input_channels,
+    size_t output_channels,
+    uint32_t log2_filter_element_size,
+    uint32_t bias_element_size,
+    size_t* workspace_size_out,
+    void* workspace)
+{
+  if (workspace == NULL) {
+    const uint32_t nr = dynamic_fully_connected_op->ukernel.gemm.nr;
+    const uint32_t kr = dynamic_fully_connected_op->ukernel.gemm.kr;
+    const uint32_t sr = dynamic_fully_connected_op->ukernel.gemm.sr;
+    const size_t n_stride = round_up(output_channels, nr);
+    const size_t k_stride = round_up_po2(input_channels, kr * sr);
+    const size_t workspace_size = n_stride * bias_element_size + ((n_stride * k_stride) << log2_filter_element_size);
+    *workspace_size_out = workspace_size;
+  } else {
+    dynamic_fully_connected_op->workspace = workspace;
+    dynamic_fully_connected_op->workspace_size = *workspace_size_out;
+  }
+}
+
+void xnn_setup_dynamic_fully_connected_nc_f16_workspace(
+    xnn_operator_t dynamic_fully_connected_op,
+    size_t input_channels,
+    size_t output_channels,
+    size_t* workspace_size_out,
+    void* workspace)
+{
+  return setup_dynamic_fully_connected_nc_workspace(
+    dynamic_fully_connected_op, input_channels, output_channels, XNN_LOG2_SIZEOF_HALF, sizeof(uint16_t),
+    workspace_size_out, workspace);
+}
+
+void xnn_setup_dynamic_fully_connected_nc_f32_workspace(
+    xnn_operator_t dynamic_fully_connected_op,
+    size_t input_channels,
+    size_t output_channels,
+    size_t* workspace_size_out,
+    void* workspace)
+{
+  return setup_dynamic_fully_connected_nc_workspace(
+    dynamic_fully_connected_op, input_channels, output_channels, XNN_LOG2_SIZEOF_FLOAT, sizeof(float),
+    workspace_size_out, workspace);
 }

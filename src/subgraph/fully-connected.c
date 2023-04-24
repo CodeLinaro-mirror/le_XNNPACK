@@ -343,6 +343,32 @@ static inline enum xnn_compute_type validate_datatypes_without_bias(
   return xnn_compute_type_invalid;
 }
 
+static void setup_fully_connected_operator_workspace(
+  struct xnn_operator_data* opdata,
+  size_t* workspace_size,
+  void* workspace)
+{
+  switch (opdata->operator_objects[0]->type) {
+    case xnn_operator_type_dynamic_fully_connected_nc_f16:
+      xnn_setup_dynamic_fully_connected_nc_f16_workspace(
+        opdata->operator_objects[0],
+        opdata->input_channels,
+        opdata->output_channels,
+        workspace_size,
+        workspace);
+      break;
+    case xnn_operator_type_dynamic_fully_connected_nc_f32:
+      xnn_setup_dynamic_fully_connected_nc_f32_workspace(
+        opdata->operator_objects[0],
+        opdata->input_channels, opdata->output_channels,
+        workspace_size,
+        workspace);
+      break;
+    default:
+      XNN_UNREACHABLE;
+  }
+}
+
 enum xnn_status xnn_define_fully_connected(
   xnn_subgraph_t subgraph,
   float output_min,
@@ -554,6 +580,7 @@ enum xnn_status xnn_define_fully_connected(
 
   node->create = create_fully_connected_operator;
   node->setup = setup_fully_connected_operator;
+  node->setup_workspace = setup_fully_connected_operator_workspace;
 
   return xnn_status_success;
 }

@@ -661,6 +661,13 @@ TEST_F(DynamicFullyConnectedTestF32, matches_operator_api_dynamic_kernel)
 
   ASSERT_EQ(xnn_status_success, status);
   ASSERT_NE(nullptr, op);
+
+  size_t workspace_size = 0;
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, nullptr);
+  ASSERT_GT(workspace_size, 0);
+  std::vector<uint8_t> workspace(workspace_size);
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, workspace.data());
+
   ASSERT_EQ(
     xnn_status_success, xnn_setup_dynamic_fully_connected_nc_f32(
                           op, batch_size,
@@ -741,6 +748,12 @@ TEST_F(DynamicFullyConnectedTestF32, matches_operator_api_dynamic_bias)
   if (status == xnn_status_unsupported_hardware) {
     GTEST_SKIP();
   }
+
+  size_t workspace_size = 0;
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, nullptr);
+  ASSERT_GT(workspace_size, 0);
+  std::vector<uint8_t> workspace(workspace_size);
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, workspace.data());
 
   ASSERT_EQ(xnn_status_success, status);
   ASSERT_NE(nullptr, op);
@@ -824,6 +837,12 @@ TEST_F(DynamicFullyConnectedTestF32, matches_operator_api_dynamic_kernel_and_bia
   if (status == xnn_status_unsupported_hardware) {
     GTEST_SKIP();
   }
+
+  size_t workspace_size = 0;
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, nullptr);
+  ASSERT_GT(workspace_size, 0);
+  std::vector<uint8_t> workspace(workspace_size);
+  xnn_setup_dynamic_fully_connected_nc_f32_workspace(op, input_channels, output_channels, &workspace_size, workspace.data());
 
   ASSERT_EQ(xnn_status_success, status);
   ASSERT_NE(nullptr, op);

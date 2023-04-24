@@ -190,6 +190,12 @@ class DynamicFullyConnectedOperatorTester {
       std::unique_ptr<xnn_operator, decltype(&xnn_delete_operator)> auto_dynamic_fully_connected_op(
         dynamic_fully_connected_op, xnn_delete_operator);
 
+      size_t workspace_size = 0;
+      xnn_setup_dynamic_fully_connected_nc_f16_workspace(dynamic_fully_connected_op, input_channels(), output_channels(), &workspace_size, nullptr);
+      ASSERT_GT(workspace_size, 0);
+      std::vector<uint8_t> workspace(workspace_size);
+      xnn_setup_dynamic_fully_connected_nc_f16_workspace(dynamic_fully_connected_op, input_channels(), output_channels(), &workspace_size, workspace.data());
+
       ASSERT_EQ(xnn_status_success,
         xnn_setup_dynamic_fully_connected_nc_f16(
           dynamic_fully_connected_op,
@@ -289,6 +295,13 @@ class DynamicFullyConnectedOperatorTester {
       // Smart pointer to automatically delete dynamic_fully_connected_op.
       std::unique_ptr<xnn_operator, decltype(&xnn_delete_operator)> auto_dynamic_fully_connected_op(
         dynamic_fully_connected_op, xnn_delete_operator);
+
+      size_t workspace_size = 0;
+      xnn_setup_dynamic_fully_connected_nc_f32_workspace(dynamic_fully_connected_op, input_channels(), output_channels(), &workspace_size, nullptr);
+      ASSERT_GT(workspace_size, 0);
+      std::vector<uint8_t> workspace(workspace_size);
+      xnn_setup_dynamic_fully_connected_nc_f32_workspace(dynamic_fully_connected_op, input_channels(), output_channels(), &workspace_size, workspace.data());
+
 
       ASSERT_EQ(xnn_status_success,
         xnn_setup_dynamic_fully_connected_nc_f32(

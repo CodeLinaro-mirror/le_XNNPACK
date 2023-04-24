@@ -6,6 +6,7 @@
 #include <xnnpack.h>
 #include <xnnpack/math.h>
 #include <xnnpack/memory-planner.h>
+#include <xnnpack/node-type.h>
 #include <xnnpack/subgraph.h>
 
 #include "runtime-tester.h"
@@ -36,7 +37,7 @@ TEST(MemoryPlanner, ValueLiveInfo) {
   runtime.opdata = nodes;
 
   struct xnn_value_allocation_tracker tracker;
-  xnn_init_value_allocation_tracker(&tracker, &runtime);
+  xnn_init_value_allocation_tracker(&tracker, &runtime, 0);
 
   EXPECT_EQ(0, tracker.usage[0].first_node);
   EXPECT_EQ(0, tracker.usage[0].last_node);
@@ -59,7 +60,7 @@ TEST(MemoryPlanner, MemoryBlocksCoalescing) {
   runtime.num_ops = 0;
   runtime.num_values = 5;
   struct xnn_value_allocation_tracker tracker;
-  xnn_init_value_allocation_tracker(&tracker, &runtime);
+  xnn_init_value_allocation_tracker(&tracker, &runtime, 0);
   // As this is an empty runtime, we create the following xnn_value_usage stub.
   tracker.usage[0].first_node = 1,
   tracker.usage[0].last_node = 1,
@@ -111,7 +112,7 @@ TEST(MemoryPlanner, GeneralPlanning) {
   runtime.num_ops = 0;
   runtime.num_values = 8;
   struct xnn_value_allocation_tracker tracker;
-  xnn_init_value_allocation_tracker(&tracker, &runtime);
+  xnn_init_value_allocation_tracker(&tracker, &runtime, 0);
   // As this is an empty runtime, we create the following xnn_value_usage stub.
   tracker.usage[0].first_node = 0,
   tracker.usage[0].last_node = 1,
@@ -670,6 +671,197 @@ TEST(MemoryPlanner, Add2WithInputMultipleConsumers) {
   // add_out should reuse conv_out, hard_swish_out is too small.
   ASSERT_NE(runtime->values[conv_out].data, runtime->values[max_pooling_2d_out].data);
   ASSERT_NE(runtime->values[max_pooling_2d_out].data, runtime->values[add_out].data);
+}
+
+TEST(MemoryPlanner, FullyConnectedDynamicFilterDynamicBias) {
+  uint32_t input1_id = 0;
+  uint32_t filter_id = 1;
+  uint32_t bias_id = 2;
+  uint32_t output_id = 3;
+  uint32_t input2_id = 4;
+  uint32_t input3_id = 5;
+
+  // input1 input2 input3
+  //  |      |      |
+  //  |    [pad]  [pad]
+  //  |      |      |
+  //  \  filter_id bias_id
+  //   \     |      |
+  //   [fully connected]
+  RuntimeTester tester(6);
+  tester
+      .AddInputTensorF32({1, 5, 5, 3}, input1_id)
+      .AddInputTensorF32({2, 3, 3, 2}, input2_id)
+      .AddInputTensorF32({1}, input3_id)
+      .AddDynamicTensorF32({2, 3, 3, 3}, filter_id)
+      .AddDynamicTensorF32({2}, bias_id)
+      .AddOutputTensorF32({2, 3, 3, 2}, output_id)
+      .AddConstantPad({0, 0, 0, 1}, {0, 0, 0, 0}, 0.0f, input2_id, filter_id)
+      .AddConstantPad({1}, {0}, 0.0f, input3_id, bias_id)
+      .AddFullyConnected(input1_id, filter_id, bias_id, output_id);
+
+  tester.CreateRuntime();
+  tester.SetupRuntime();
+  xnn_runtime_t runtime = tester.Runtime();
+  xnn_operator_data* fc_opdata = &runtime->opdata[2];
+
+  ASSERT_EQ(fc_opdata->type, xnn_node_type_fully_connected);
+  size_t fc_workspace_size = 0;
+  fc_opdata->setup_workspace(fc_opdata, &fc_workspace_size, nullptr);
+
+  ASSERT_EQ(runtime->workspace->size,
+            round_up_po2(2 * 3 * 3 * 3 * sizeof(float), XNN_EXTRA_BYTES)  // for filter_id
+            + round_up_po2(fc_workspace_size, XNN_EXTRA_BYTES)  // for weights packing
+            + round_up_po2(2 * sizeof(float), XNN_EXTRA_BYTES)  // for bias_id
+            + MEMORY_ARENA_EXTRA_BYTES);
+}
+
+TEST(MemoryPlanner, FullyConnectedDynamicFilterStaticBias) {
+  uint32_t input1_id = 0;
+  uint32_t filter_id = 1;
+  uint32_t bias_id = 2;
+  uint32_t output_id = 3;
+  uint32_t input2_id = 4;
+
+  // input1 input2
+  //  |      |
+  //  |    [pad]
+  //  |      |
+  //  \  filter_id bias_id
+  //   \     |      |
+  //   [fully connected]
+  RuntimeTester tester(6);
+  tester
+      .AddInputTensorF32({1, 5, 5, 3}, input1_id)
+      .AddInputTensorF32({2, 3, 3, 2}, input2_id)
+      .AddDynamicTensorF32({2, 3, 3, 3}, filter_id)
+      .AddStaticTensorF32({2}, TensorType::kDense, bias_id)
+      .AddOutputTensorF32({2, 3, 3, 2}, output_id)
+      .AddConstantPad({0, 0, 0, 1}, {0, 0, 0, 0}, 0.0f, input2_id, filter_id)
+      .AddFullyConnected(input1_id, filter_id, bias_id, output_id);
+
+  tester.CreateRuntime();
+  tester.SetupRuntime();
+  xnn_runtime_t runtime = tester.Runtime();
+  xnn_operator_data* fc_opdata = &runtime->opdata[1];
+
+  ASSERT_EQ(fc_opdata->type, xnn_node_type_fully_connected);
+  size_t fc_workspace_size = 0;
+  fc_opdata->setup_workspace(fc_opdata, &fc_workspace_size, nullptr);
+
+  ASSERT_EQ(runtime->workspace->size,
+            round_up_po2(2 * 3 * 3 * 3 * sizeof(float), XNN_EXTRA_BYTES)  // for filter_id
+            + round_up_po2(fc_workspace_size, XNN_EXTRA_BYTES)  // for weights packing
+            + MEMORY_ARENA_EXTRA_BYTES);
+}
+
+TEST(MemoryPlanner, FullyConnectedDynamicFilterNoBias) {
+  uint32_t input1_id = 0;
+  uint32_t filter_id = 1;
+  uint32_t bias_id = XNN_INVALID_VALUE_ID;
+  uint32_t output_id = 3;
+  uint32_t input2_id = 4;
+
+  // input1 input2
+  //  |      |
+  //  |    [pad]
+  //  |      |
+  //  \  filter_id
+  //   \     |
+  //   [fully connected]
+  RuntimeTester tester(6);
+  tester
+      .AddInputTensorF32({1, 5, 5, 3}, input1_id)
+      .AddInputTensorF32({2, 3, 3, 2}, input2_id)
+      .AddDynamicTensorF32({2, 3, 3, 3}, filter_id)
+      .AddOutputTensorF32({2, 3, 3, 2}, output_id)
+      .AddConstantPad({0, 0, 0, 1}, {0, 0, 0, 0}, 0.0f, input2_id, filter_id)
+      .AddFullyConnected(input1_id, filter_id, bias_id, output_id);
+
+  tester.CreateRuntime();
+  tester.SetupRuntime();
+  xnn_runtime_t runtime = tester.Runtime();
+  xnn_operator_data* fc_opdata = &runtime->opdata[1];
+
+  ASSERT_EQ(fc_opdata->type, xnn_node_type_fully_connected);
+  size_t fc_workspace_size = 0;
+  fc_opdata->setup_workspace(fc_opdata, &fc_workspace_size, nullptr);
+
+  ASSERT_EQ(runtime->workspace->size,
+            round_up_po2(2 * 3 * 3 * 3 * sizeof(float), XNN_EXTRA_BYTES)  // for filter_id
+            + round_up_po2(fc_workspace_size, XNN_EXTRA_BYTES)  // for weights packing
+            + MEMORY_ARENA_EXTRA_BYTES);
+}
+
+TEST(MemoryPlanner, FullyConnectedStaticFilterDynamicBias) {
+  uint32_t input1_id = 0;
+  uint32_t filter_id = 1;
+  uint32_t bias_id = 2;
+  uint32_t output_id = 3;
+  uint32_t input3_id = 5;
+
+  // input1        input3
+  //  |             |
+  //  |           [pad]
+  //  |             |
+  //  \  filter_id bias_id
+  //   \     |      |
+  //   [fully connected]
+  RuntimeTester tester(6);
+  tester
+      .AddInputTensorF32({1, 5, 5, 3}, input1_id)
+      .AddInputTensorF32({1}, input3_id)
+      .AddStaticTensorF32({2, 3, 3, 3}, TensorType::kDense, filter_id)
+      .AddDynamicTensorF32({2}, bias_id)
+      .AddOutputTensorF32({2, 3, 3, 2}, output_id)
+      .AddConstantPad({1}, {0}, 0.0f, input3_id, bias_id)
+      .AddFullyConnected(input1_id, filter_id, bias_id, output_id);
+
+  tester.CreateRuntime();
+  tester.SetupRuntime();
+  xnn_runtime_t runtime = tester.Runtime();
+  xnn_operator_data* fc_opdata = &runtime->opdata[1];
+
+  ASSERT_EQ(fc_opdata->type, xnn_node_type_fully_connected);
+  size_t fc_workspace_size = 0;
+  fc_opdata->setup_workspace(fc_opdata, &fc_workspace_size, nullptr);
+
+  ASSERT_EQ(runtime->workspace->size,
+            round_up_po2(fc_workspace_size, XNN_EXTRA_BYTES)  // for weights packing
+            + round_up_po2(2 * sizeof(float), XNN_EXTRA_BYTES)  // for bias_id
+            + MEMORY_ARENA_EXTRA_BYTES);
+}
+
+TEST(MemoryPlanner, FullyConnectedExternalFilterExternalBias) {
+  uint32_t input_id = 0;
+  uint32_t filter_id = 1;
+  uint32_t bias_id = 2;
+  uint32_t output_id = 3;
+
+  // input1 filter_id bias_id
+  //  |      |         |
+  //   \     |         /
+  //   [fully connected]
+  RuntimeTester tester(6);
+  tester
+      .AddInputTensorF32({1, 5, 5, 3}, input_id)
+      .AddInputTensorF32({2, 3, 3, 3}, filter_id)
+      .AddInputTensorF32({2}, bias_id)
+      .AddOutputTensorF32({2, 3, 3, 2}, output_id)
+      .AddFullyConnected(input_id, filter_id, bias_id, output_id);
+
+  tester.CreateRuntime();
+  tester.SetupRuntime();
+  xnn_runtime_t runtime = tester.Runtime();
+  xnn_operator_data* fc_opdata = &runtime->opdata[0];
+
+  ASSERT_EQ(fc_opdata->type, xnn_node_type_fully_connected);
+  size_t fc_workspace_size = 0;
+  fc_opdata->setup_workspace(fc_opdata, &fc_workspace_size, nullptr);
+
+  ASSERT_EQ(runtime->workspace->size,
+            + round_up_po2(fc_workspace_size, XNN_EXTRA_BYTES)  // for weights packing
+            + MEMORY_ARENA_EXTRA_BYTES);
 }
 
 } // namespace xnnpack
