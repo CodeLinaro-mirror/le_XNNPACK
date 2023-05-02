@@ -143,6 +143,32 @@ static void GEMMBenchmark(benchmark::State& state,
 #endif  // XNN_ARCH_ARM64 && XNN_ENABLE_ASSEMBLY
 
 #if XNN_ARCH_ARM64
+  static void f32_qc8w_gemm_minmax_ukernel_1x8s4__neonfma(benchmark::State& state, const char* net) {
+    GEMMBenchmark(state,
+      xnn_f32_qc8w_gemm_minmax_ukernel_1x8s4__neonfma,
+      xnn_init_f32_minmax_scalar_params,
+      /*mr=*/1, /*nr=*/8, /*kr=*/1, /*sr=*/1);
+  }
+  static void f32_qc8w_gemm_minmax_ukernel_4x8s4__neonfma(benchmark::State& state, const char* net) {
+    GEMMBenchmark(state,
+      xnn_f32_qc8w_gemm_minmax_ukernel_4x8s4__neonfma,
+      xnn_init_f32_minmax_scalar_params,
+      /*mr=*/4, /*nr=*/8, /*kr=*/1, /*sr=*/1);
+  }
+  static void f32_qc8w_gemm_minmax_ukernel_6x8s4__neonfma(benchmark::State& state, const char* net) {
+    GEMMBenchmark(state,
+      xnn_f32_qc8w_gemm_minmax_ukernel_6x8s4__neonfma,
+      xnn_init_f32_minmax_scalar_params,
+      /*mr=*/6, /*nr=*/8, /*kr=*/1, /*sr=*/1);
+  }
+
+  BENCHMARK_GEMM(f32_qc8w_gemm_minmax_ukernel_1x8s4__neonfma)
+  BENCHMARK_GEMM(f32_qc8w_gemm_minmax_ukernel_4x8s4__neonfma)
+  BENCHMARK_GEMM(f32_qc8w_gemm_minmax_ukernel_6x8s4__neonfma)
+#endif  // XNN_ARCH_ARM64
+
+
+#if XNN_ARCH_ARM64
   static void f32_qc8w_gemm_4x2__aarch64_neonfma_lane_ld64(benchmark::State& state, const char* net) {
     GEMMBenchmark(state,
       xnn_f32_qc8w_gemm_minmax_ukernel_4x2__aarch64_neonfma_lane_ld64,
