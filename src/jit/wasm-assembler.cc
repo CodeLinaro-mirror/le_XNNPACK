@@ -86,13 +86,11 @@ void WasmAssembler::EmitExportsSection() {
 static void AppendFunctionBody(const Function& func, std::vector<byte>& out) {
   const auto& locals_declaration = func.locals_declaration;
   const uint32_t locals_declaration_size =
-      std::accumulate(locals_declaration.begin(),
-                      locals_declaration.end(), 0,
+      std::accumulate(locals_declaration.begin(), locals_declaration.end(), 0,
                       [](uint32_t sum, const auto& declaration) {
                         return sum + WidthEncodedU32(declaration.second);
                       }) +
-      locals_declaration.size() +
-      WidthEncodedU32(locals_declaration.size());
+      locals_declaration.size() + WidthEncodedU32(locals_declaration.size());
   AppendEncodedU32(func.body.size() + locals_declaration_size, out);
 
   AppendEncodedU32(locals_declaration.size(), out);

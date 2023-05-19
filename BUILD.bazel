@@ -61,6 +61,7 @@ MICROKERNEL_TEST_DEPS = [
     ":microkernels_h",
     ":microparams",
     ":microparams_init",
+    ":memory",
     ":params",
     ":requantization",
     ":test_microkernels",
@@ -5172,6 +5173,9 @@ xnnpack_cc_library(
     aarch32_srcs = JIT_AARCH32_SRCS,
     aarch64_srcs = JIT_AARCH64_SRCS,
     msvc_copts = xnnpack_msvc_std_copts(),
+    wasm_srcs = ["src/f32-vrelu/xnn_f32_vrelu_ukernel__jit_wasm32_shr.cc"],
+    wasmrelaxedsimd_srcs = ["src/f32-vrelu/xnn_f32_vrelu_ukernel__jit_wasm32_shr.cc"],
+    wasmsimd_srcs = ["src/f32-vrelu/xnn_f32_vrelu_ukernel__jit_wasm32_shr.cc"],
     deps = [
         ":common",
         ":logging",
@@ -6149,7 +6153,8 @@ xnnpack_benchmark(
     srcs = [
         "bench/f32-vrelu.cc",
     ],
-    deps = MICROKERNEL_BENCHMARK_DEPS,
+    linkopts = WASM_JIT_LINKOPTS,
+    deps = MICROKERNEL_BENCHMARK_DEPS + [":jit"],
 )
 
 xnnpack_benchmark(
@@ -8470,6 +8475,16 @@ xnnpack_unit_test(
         "test/vunary-microkernel-tester.h",
     ],
     deps = MICROKERNEL_TEST_DEPS,
+)
+
+xnnpack_unit_test(
+    name = "f32_vrelu_wasmjit_test",
+    srcs = [
+        "test/f32-vrelu-wasmjit.cc",
+        "test/vunary-microkernel-tester.h",
+    ],
+    linkopts = WASM_JIT_LINKOPTS,
+    deps = MICROKERNEL_TEST_DEPS + [":jit"],
 )
 
 xnnpack_unit_test(
