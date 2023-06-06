@@ -16,6 +16,7 @@
 #include <xnnpack/config.h>
 #include <xnnpack/log.h>
 #include <xnnpack/operator.h>
+#include <xnnpack/operator-utils.h>
 #include <xnnpack/microparams-init.h>
 
 
@@ -101,6 +102,14 @@ static enum xnn_status create_unary_elementwise_nc(
       sizeof(struct xnn_operator), xnn_operator_type_to_string(operator_type));
     return xnn_status_out_of_memory;
   }
+  xnn_vunary_ukernel_fn ukernel = config->ukernel;
+  #if XNN_ENABLE_JIT
+    xnn_generate_vunary_ukernel(config, unary_elementwise_op);
+    xnn_vunary_ukernel_fn generated = unary_elementwise_op->ukernel.vunary.generated_function;
+    if (generated != NULL) {
+      ukernel = generated;
+    }
+  #endif
 
   init_unary_elementwise_nc(
     channels,
@@ -108,7 +117,7 @@ static enum xnn_status create_unary_elementwise_nc(
     flags,
     params, params_size,
     operator_type,
-    config->ukernel,
+    ukernel,
     unary_elementwise_op);
 
   *unary_elementwise_op_out = unary_elementwise_op;
@@ -343,6 +352,7 @@ enum xnn_status xnn_create_clamp_nc_f32(
 
   const bool relu_activation = (output_max == INFINITY) && (output_min == 0.0f);
   const struct xnn_unary_elementwise_config* config = f32_clamp_config;
+
   if (relu_activation && f32_relu_config != NULL && f32_relu_config->ukernel != NULL) {
     config = f32_relu_config;
   }

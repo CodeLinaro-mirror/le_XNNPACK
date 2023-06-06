@@ -92,6 +92,9 @@ struct xnn_ukernel_vbinary {
 
 struct xnn_ukernel_vunary {
   xnn_vunary_ukernel_fn function;
+  #if XNN_PLATFORM_JIT
+    xnn_vunary_ukernel_fn generated_function;
+  #endif
 };
 
 struct xnn_ukernel {
