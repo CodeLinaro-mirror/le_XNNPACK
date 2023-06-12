@@ -181,6 +181,7 @@ TABLE_SRCS = [
 ]
 
 PROD_SCALAR_MICROKERNEL_SRCS = [
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x2-minmax-scalar.c",
     "src/u8-lut32norm/u8-lut32norm-scalar.c",
     "src/xx-copy/xx-copy-scalar-memcpy.c",
     "src/xx-transposev/xx-transposev-1x1-scalar-memcpy.c",
@@ -1032,6 +1033,8 @@ PROD_NEONBF16_AARCH64_MICROKERNEL_SRCS = [
 ]
 
 PROD_NEONDOT_MICROKERNEL_SRCS = [
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x8c4-minmax-neondot.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x16c4-minmax-neondot.c",
     "src/qs8-gemm/gen/qs8-gemm-1x8c4-minmax-rndnu-neondot.c",
     "src/qs8-gemm/gen/qs8-gemm-1x16c4-minmax-rndnu-neondot.c",
     "src/qs8-gemm/gen/qs8-gemm-4x8c4-minmax-rndnu-neondot.c",
@@ -1146,6 +1149,8 @@ PROD_SSE2_MICROKERNEL_SRCS = [
     "src/f32-vrnd/gen/f32-vrndz-sse2-x8.c",
     "src/f32-vsigmoid/gen/f32-vsigmoid-sse2-rr2-lut64-p2-div-x8.c",
     "src/f32-vtanh/gen/f32-vtanh-sse2-expm1minus-rr1-lut8-p4h3ts-div-x16.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x4c8-minmax-sse2-ld64.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-3x4c8-minmax-sse2-ld64.c",
     "src/qs8-dwconv/gen/qs8-dwconv-9p8c-minmax-fp32-sse2-mul16-add16.c",
     "src/qs8-dwconv/gen/qs8-dwconv-25p8c-minmax-fp32-sse2-mul16-add16.c",
     "src/qs8-f32-vcvt/gen/qs8-f32-vcvt-sse2-x32.c",
@@ -1236,6 +1241,8 @@ PROD_SSE41_MICROKERNEL_SRCS = [
     "src/f32-vrnd/gen/f32-vrndz-sse41-x8.c",
     "src/f32-vsigmoid/gen/f32-vsigmoid-sse41-rr2-lut64-p2-div-x8.c",
     "src/f32-vtanh/gen/f32-vtanh-sse41-expm1minus-rr1-lut8-p4h3ts-div-x20.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x4c8-minmax-sse41-ld64.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-3x4c8-minmax-sse41-ld64.c",
     "src/qs8-dwconv/gen/qs8-dwconv-9p8c-minmax-fp32-sse41-mul16-add16.c",
     "src/qs8-dwconv/gen/qs8-dwconv-25p8c-minmax-fp32-sse41-mul16-add16.c",
     "src/qs8-f32-vcvt/gen/qs8-f32-vcvt-sse41-x16.c",
@@ -1326,6 +1333,8 @@ PROD_AVX_MICROKERNEL_SRCS = [
     "src/f32-vunary/gen/f32-vabs-avx-x16.c",
     "src/f32-vunary/gen/f32-vneg-avx-x16.c",
     "src/f32-vunary/gen/f32-vsqr-avx-x16.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x4c8-minmax-avx-ld128.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-2x4c8-minmax-avx-ld128.c",
     "src/qs8-dwconv/gen/qs8-dwconv-9p16c-minmax-fp32-avx-mul16-add16.c",
     "src/qs8-dwconv/gen/qs8-dwconv-25p16c-minmax-fp32-avx-mul16-add16.c",
     "src/qs8-f32-vcvt/gen/qs8-f32-vcvt-avx-x32.c",
@@ -1406,6 +1415,8 @@ PROD_F16C_MICROKERNEL_SRCS = [
 ]
 
 PROD_XOP_MICROKERNEL_SRCS = [
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-2x4c8-minmax-xop-ld64.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x4c8-minmax-xop-ld64.c",
     "src/qs8-dwconv/gen/qs8-dwconv-9p16c-minmax-fp32-xop-mul16-add16.c",
     "src/qs8-dwconv/gen/qs8-dwconv-25p16c-minmax-fp32-xop-mul16-add16.c",
     "src/qs8-gemm/gen/qs8-gemm-1x4c8-minmax-fp32-xop-ld64.c",
@@ -1561,6 +1572,8 @@ PROD_AVX512SKX_MICROKERNEL_SRCS = [
     "src/f32-qs8-vcvt/gen/f32-qs8-vcvt-avx512skx-x128.c",
     "src/f32-qu8-vcvt/gen/f32-qu8-vcvt-avx512skx-x128.c",
     "src/f32-vtanh/gen/f32-vtanh-avx512skx-expm1minus-rr1-lut4-p4h3ts-perm-div-x64.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-1x16c8-minmax-avx512skx.c",
+    "src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-4x16c8-minmax-avx512skx.c",
     "src/qs8-dwconv/gen/qs8-dwconv-9p32c-minmax-fp32-avx512skx-mul32.c",
     "src/qs8-dwconv/gen/qs8-dwconv-25p32c-minmax-fp32-avx512skx-mul32.c",
     "src/qs8-f32-vcvt/gen/qs8-f32-vcvt-avx512skx-x32.c",

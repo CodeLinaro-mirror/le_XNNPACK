@@ -2171,6 +2171,21 @@ enum xnn_status xnn_run_floor_nc_f32(
   uint32_t flags,
   pthreadpool_t threadpool);
 
+enum xnn_status xnn_create_fully_connected_nc_qd8_f32_qc8w(
+  size_t input_channels,
+  size_t output_channels,
+  size_t input_stride,
+  size_t output_stride,
+  const float* kernel_scale,
+  const int8_t* kernel,
+  const float* bias,
+  float output_min,
+  float output_max,
+  uint32_t flags,
+  xnn_code_cache_t code_cache,
+  xnn_weights_cache_t weights_cache,
+  xnn_operator_t* fully_connected_op_out);
+
 enum xnn_status xnn_create_fully_connected_nc_f32(
   size_t input_channels,
   size_t output_channels,
@@ -2189,6 +2204,17 @@ enum xnn_status xnn_reshape_fully_connected_nc_f32(
   xnn_operator_t fully_connected_op,
   size_t batch_size,
   pthreadpool_t threadpool);
+
+struct xnn_dynamic_quantization_params {
+  int32_t zero_point;
+  float scale;
+};
+
+enum xnn_status xnn_setup_fully_connected_nc_qd8_f32_qc8w(
+  xnn_operator_t fully_connected_op,
+  const int8_t* input,
+  float* output,
+  const struct xnn_dynamic_quantization_params* quantization_params);
 
 enum xnn_status xnn_setup_fully_connected_nc_f32(
   xnn_operator_t fully_connected_op,
@@ -4200,6 +4226,11 @@ enum xnn_status xnn_create_fully_connected_nc_qs8(
   xnn_weights_cache_t weights_cache,
   xnn_operator_t* fully_connected_op_out);
 
+enum xnn_status xnn_reshape_fully_connected_nc_qd8_f32_qc8w(
+  xnn_operator_t fully_connected_op,
+  size_t batch_size,
+  pthreadpool_t threadpool);
+
 enum xnn_status xnn_reshape_fully_connected_nc_qs8(
   xnn_operator_t fully_connected_op,
   size_t batch_size,
@@ -5093,11 +5124,6 @@ enum xnn_status xnn_run_transpose_nd_x8(
     const size_t* output_perm,
     uint32_t flags,
     pthreadpool_t threadpool);
-
-struct xnn_dynamic_quantization_params {
-  int32_t zero_point;
-  float scale;
-};
 
 enum xnn_status xnn_create_convert_nc_f32_qd8(
   size_t channels,

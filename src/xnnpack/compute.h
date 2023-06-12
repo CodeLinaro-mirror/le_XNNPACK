@@ -235,7 +235,12 @@ struct gemm_context {
   // Size, in bytes, of each element of C.
   uint32_t log2_csize;
   // GEMM microkernels.
-  struct xnn_hmp_gemm_ukernel ukernel;
+  union {
+    struct xnn_hmp_gemm_ukernel ukernel;
+    struct xnn_hmp_dqgemm_ukernel qd_ukernel;
+  };
+  // Parameters for dynamically quantized inputs.
+  const struct xnn_qd8_quantization_params* quantization_params;
   // Parameters for fused GEMM.
   void* fused_params;
   // Parameters for fused activations.
@@ -251,6 +256,13 @@ struct gemm_context {
   XNN_PRIVATE void xnn_compute_grouped_gemm(
       const struct gemm_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t group_index,
+      size_t mr_block_start,
+      size_t nr_block_start,
+      size_t mr_block_size,
+      size_t nr_block_size);
+
+  XNN_PRIVATE void xnn_compute_dqgemm(
+      const struct gemm_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t mr_block_start,
       size_t nr_block_start,
       size_t mr_block_size,
@@ -274,6 +286,14 @@ struct gemm_context {
         size_t nr_block_size);
 
     XNN_PRIVATE void xnn_compute_hmp_gemm(
+        const struct gemm_context context[restrict XNN_MIN_ELEMENTS(1)],
+        uint32_t uarch_index,
+        size_t mr_block_start,
+        size_t nr_block_start,
+        size_t mr_block_size,
+        size_t nr_block_size);
+
+    XNN_PRIVATE void xnn_compute_hmp_dqgemm(
         const struct gemm_context context[restrict XNN_MIN_ELEMENTS(1)],
         uint32_t uarch_index,
         size_t mr_block_start,
