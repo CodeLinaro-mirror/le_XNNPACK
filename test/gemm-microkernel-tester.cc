@@ -2093,7 +2093,21 @@ void GemmMicrokernelTester::Test(xnn_f32_igemm_minmax_ukernel_fn igemm_minmax, x
   }
 }
 
-#if XNN_PLATFORM_JIT && !XNN_PLATFORM_WEB
+#if XNN_PLATFORM_JIT
+
+void GemmMicrokernelTester::Test(
+  xnn_jit_gemm_code_generator_fn gemm_generator) const
+{
+  xnn_code_buffer b;
+  ASSERT_EQ(xnn_allocate_code_memory(&b, XNN_DEFAULT_CODE_BUFFER_SIZE), xnn_status_success);
+  ASSERT_EQ(gemm_generator(&b, mr(), n() % nr(), k() * sizeof(uint32_t), nullptr), xnn_status_success);
+  xnn_finalize_code_memory(&b);
+  auto kernel = (xnn_f32_gemm_ukernel_fn)(xnn_first_function_ptr(&b));
+  Test(kernel);
+  xnn_release_code_memory(&b);
+}
+
+#if !XNN_PLATFORM_WEB
 
 enum class TrampolineType {
   kGEMM,
@@ -3548,4 +3562,6 @@ void GemmMicrokernelTester::Test(
     ASSERT_EQ(xnn_status_success, xnn_release_code_memory(&code_buffer));
 }
 
-#endif  // XNN_PLATFORM_JIT && !XNN_PLATFORM_WEB
+#endif  // XNN_PLATFORM_JIT
+#endif  // !XNN_PLATFORM_WEB
+

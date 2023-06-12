@@ -103,6 +103,7 @@ def main(args):
   c_microkernels_per_isa['neonbf16_aarch64'] = list()
   asm_microkernels_per_arch = {arch: [] for arch in ARCH_LIST}
   for root, dirs, files in os.walk(src_dir, topdown=False):
+    print(files)
     if root in ignore_roots:
       continue
     for name in files:

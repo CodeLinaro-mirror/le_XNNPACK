@@ -263,6 +263,8 @@ class GemmMicrokernelTester {
 
 #if XNN_PLATFORM_JIT
   void Test(
+    xnn_jit_gemm_code_generator_fn gemm_generator) const;
+  void Test(
     xnn_jit_gemm_code_generator_fn gemm_generator,
     xnn_init_f16_minmax_params_fn init_params) const;
   void Test(

@@ -292,6 +292,14 @@ enum xnn_status xnn_finalize_code_memory(struct xnn_code_buffer* buffer) {
     return set_memory_permission(buffer->start, buffer->size, xnn_memory_permission_read_execute);
   #endif // XNN_PLATFORM_WEB
 }
+
+void* xnn_first_function_ptr(const struct xnn_code_buffer* buffer) {
+  #if (XNN_ARCH_ARM || XNN_ARCH_ARM64)
+    return buffer->start;
+  #elif XNN_PLATFORM_WEB
+    return (void*) ((uintptr_t) buffer->first_function_index);
+  #endif
+}
 #endif  // XNN_PLATFORM_JIT
 
 enum xnn_status xnn_release_code_memory(struct xnn_code_buffer* buffer) {

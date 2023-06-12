@@ -200,22 +200,24 @@ void xnn_generate_vunary_ukernel(
   const struct xnn_unary_elementwise_config* config,
   xnn_operator_t op)
 {
-  #if XNN_PLATFORM_WEB
-    xnn_vunary_ukernel_fn* jit_ptr = &op->ukernel.vunary.function;
-    if (config->generator != NULL && *jit_ptr == NULL) {
-      struct xnn_code_buffer b;
-      if (xnn_allocate_code_memory(&b, XNN_DEFAULT_CODE_BUFFER_SIZE) != xnn_status_success) {
-        xnn_log_warning("failed to allocate memory");
-        return;
-      }
-      if (config->generator(&b, config->element_tile, 0) != xnn_status_success) {
-        xnn_log_warning("failed to generate vunary kernel");
-        return;
-      }
-      *jit_ptr = (xnn_vunary_ukernel_fn) b.first_function_index;
-      xnn_release_code_memory(&b);
+  xnn_vunary_ukernel_fn* jit_ptr = &op->ukernel.vunary.function;
+  if (config->generator != NULL && *jit_ptr == NULL) {
+    struct xnn_code_buffer b;
+    if (xnn_allocate_code_memory(&b, XNN_DEFAULT_CODE_BUFFER_SIZE) != xnn_status_success) {
+      xnn_log_warning("failed to allocate memory");
+      return;
     }
-  #endif // XNN_PLATFORM_WEB
+    if (config->generator(&b, config->element_tile, 0) != xnn_status_success) {
+      xnn_log_warning("failed to generate vunary kernel");
+      return;
+    }
+    if (xnn_finalize_code_memory(&b) != xnn_status_success) {
+      xnn_log_warning("failed to finalize vunary kernel code");
+      return;
+    }
+    *jit_ptr = (xnn_vunary_ukernel_fn) xnn_first_function_ptr(&b);
+    xnn_release_code_memory(&b);
+  }
 }
 #endif  // XNN_PLATFORM_JIT
 
