@@ -570,8 +570,9 @@ void GemmMicrokernelTester::Test(
   std::vector<float> c((mr() - 1) * cm_stride() + ((n() - 1) / nr()) * cn_stride() + (n() - 1) % nr() + 1);
   std::vector<int32_t> acc(m() * n());
   std::vector<float> c_ref(m() * n(), 0);
+  {
 
-  for (size_t iteration = 0; iteration < iterations(); iteration++) {
+  //for (size_t iteration = 0; iteration < iterations(); iteration++) {
     std::generate(input.begin(), input.end(), std::ref(f32rng));
     for (int i = 0; i < m(); ++i) {
       quantization_params[i] = calculate_asymmetric_f32_qs8_params(&input[i * k()], k());
