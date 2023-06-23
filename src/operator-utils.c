@@ -71,7 +71,7 @@ void xnn_generate_gemms_up_to_max_mr(
   if (op->code_cache == NULL || !xnn_code_cache_valid(op->code_cache)) {
     return;
   }
-  for (size_t mr = 1; mr <= max_mr; mr++) {
+  for (size_t mr = 1; mr <= XNN_MAX_MR; mr++) {
     // Get smallest generator that is >= mr.
     size_t smallest_mr = mr;
     while (generators.gemm[smallest_mr - 1].function[XNN_UARCH_DEFAULT] == NULL && smallest_mr < max_mr) {
@@ -174,7 +174,17 @@ void xnn_overwrite_gemm_cases_with_generated_code(
   for (size_t i = 0; i < XNN_MAX_UARCH_TYPES; i++) {
     const size_t jit_code_offset = gemm_cases[mr - 1].generated_code_offset[i];
     if (jit_code_offset != XNN_CACHE_NOT_FOUND) {
-      gemm_cases[mr - 1].function[i] = (xnn_gemm_ukernel_fn) cached_code_at_offset(op, jit_code_offset);
+      size_t jit_code_offset_end = op->code_cache->cache.code.size;
+      if (mr < XNN_MAX_MR) {
+        size_t next_offset = gemm_cases[mr].generated_code_offset[i];
+        if (next_offset != 0) jit_code_offset_end = next_offset;
+      }
+      const uintptr_t gemm_kernel = xnn_first_function_in_chunk_ptr(&op->code_cache->cache.code, jit_code_offset, jit_code_offset_end);
+      if (gemm_kernel == (uintptr_t) XNN_INVALID_FUNCTION_INDEX) {
+        xnn_log_warning("failed to finalize gemm kernel code");
+        continue;
+      }
+      gemm_cases[mr - 1].function[i] = (xnn_gemm_ukernel_fn) gemm_kernel;
     }
   }
 }
@@ -214,9 +224,14 @@ void xnn_generate_vunary_ukernel(
       }
       if (xnn_finalize_code_memory(&b) != xnn_status_success) {
         xnn_log_warning("failed to finalize vunary kernel code");
+      }
+      const uintptr_t function_index = xnn_first_function_in_chunk_ptr(&b, 0, b.size);
+      if (function_index == XNN_INVALID_FUNCTION_INDEX) {
+        xnn_log_warning("failed to finalize vunary kernel code");
         return;
       }
-      *jit_ptr = (xnn_vunary_ukernel_fn) xnn_first_function_ptr(&b);
+
+      *jit_ptr = (xnn_vunary_ukernel_fn) function_index;
       xnn_release_code_memory(&b);
     }
   #endif // XNN_PLATFORM_WEB

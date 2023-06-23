@@ -9869,6 +9869,7 @@ xnnpack_unit_test(
         "test/convolution-nhwc.cc",
         "test/convolution-operator-tester.h",
     ],
+    linkopts = WASM_JIT_LINKOPTS,
     shard_count = 10,
     deps = OPERATOR_TEST_DEPS + [
         ":convolution_test_helpers",
@@ -9912,6 +9913,7 @@ xnnpack_unit_test(
         "test/deconvolution-nhwc.cc",
         "test/deconvolution-operator-tester.h",
     ],
+    linkopts = WASM_JIT_LINKOPTS,
     shard_count = 10,
     deps = OPERATOR_TEST_DEPS + [
         ":convolution_test_helpers",
@@ -9988,6 +9990,7 @@ xnnpack_unit_test(
         "test/fully-connected-nc.cc",
         "test/fully-connected-operator-tester.h",
     ],
+    linkopts = WASM_JIT_LINKOPTS,
     deps = OPERATOR_TEST_DEPS,
 )
 
