@@ -20,7 +20,7 @@
 #     int8_t* restrict c,        x6
 #     size_t cm_stride,          x7
 #     size_t cn_stride,          [sp] -> x12
-#     const union xnn_qs8_conv_minmax_params params)  [sp + 8] -> x11
+#     const union xnn_qs8_conv_minmax_params *params)  [sp + 8] -> x11
 
 # d8-d15, x19-x30 need to be preserved if used. x18 is reserved by the OS.
 
@@ -65,16 +65,16 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_fp32_ukernel_4x16c4__asm_aarch64_neondot_ld64
 0:
         # Load initial bias from w into accumulators
         LDP         q16, q20, [x5], 32
+        SUBS        x0, x2, 8               // k = kc - 8
         MOV         v17.16b, v16.16b
         MOV         v18.16b, v16.16b
-        LDP         q24, q28, [x5], 32
         MOV         v19.16b, v16.16b
         MOV         v21.16b, v20.16b
+        LDP         q24, q28, [x5], 32
         MOV         v22.16b, v20.16b
         MOV         v23.16b, v20.16b
         MOV         v25.16b, v24.16b
         MOV         v26.16b, v24.16b
-        SUBS        x0, x2, 8               // k = kc - 8
         MOV         v27.16b, v24.16b
         MOV         v29.16b, v28.16b
         MOV         v30.16b, v28.16b
