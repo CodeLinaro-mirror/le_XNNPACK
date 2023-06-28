@@ -204,8 +204,8 @@ TEST_F(SpaceToDepth2DTestQS8, matches_operator_api)
 
   ASSERT_EQ(
     xnn_status_success,
-    xnn_setup_space_to_depth_nhwc_x8(
-      op, batch_size, input_height, input_width, input.data(), operator_output.data(), /*threadpool=*/nullptr));
+    xnn_reshape_space_to_depth_nhwc_x8(op, batch_size, input_height, input_width, /*threadpool=*/nullptr));
+  ASSERT_EQ(xnn_status_success, xnn_setup_space_to_depth_nhwc_x8(op, input.data(), operator_output.data()));
   ASSERT_EQ(xnn_status_success, xnn_run_operator(op, /*threadpool=*/nullptr));
 
   // Call subgraph API.
@@ -284,8 +284,8 @@ TEST_F(SpaceToDepth2DTestQU8, matches_operator_api)
 
   ASSERT_EQ(
     xnn_status_success,
-    xnn_setup_space_to_depth_nhwc_x8(
-      op, batch_size, input_height, input_width, input.data(), operator_output.data(), /*threadpool=*/nullptr));
+    xnn_reshape_space_to_depth_nhwc_x8(op, batch_size, input_height, input_width, /*threadpool=*/nullptr));
+  ASSERT_EQ(xnn_status_success, xnn_setup_space_to_depth_nhwc_x8(op, input.data(), operator_output.data()));
   ASSERT_EQ(xnn_status_success, xnn_run_operator(op, /*threadpool=*/nullptr));
 
   // Call subgraph API.
@@ -359,8 +359,8 @@ TEST_F(SpaceToDepth2DTestF32, matches_operator_api)
 
   ASSERT_EQ(
     xnn_status_success,
-    xnn_setup_space_to_depth_nhwc_x32(
-      op, batch_size, input_height, input_width, input.data(), operator_output.data(), /*threadpool=*/nullptr));
+    xnn_reshape_space_to_depth_nhwc_x32(op, batch_size, input_height, input_width, /*threadpool=*/nullptr));
+  ASSERT_EQ(xnn_status_success, xnn_setup_space_to_depth_nhwc_x32(op, input.data(), operator_output.data()));
   ASSERT_EQ(xnn_status_success, xnn_run_operator(op, /*threadpool=*/nullptr));
 
   // Call subgraph API.
