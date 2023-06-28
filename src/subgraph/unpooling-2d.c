@@ -54,6 +54,20 @@ static enum xnn_status create_unpooling_operator(
   return status;
 }
 
+static enum xnn_status reshape_unpooling_operator(
+  struct xnn_operator_data* opdata,
+  const struct xnn_value* values,
+  size_t num_values,
+  pthreadpool_t threadpool)
+{
+  return xnn_reshape_unpooling2d_nhwc_x32(
+    opdata->operator_objects[0],
+    opdata->batch_size,
+    opdata->input_height,
+    opdata->input_width,
+    threadpool);
+}
+
 static enum xnn_status setup_unpooling_operator(
   const struct xnn_operator_data* opdata,
   const struct xnn_value* values,
@@ -86,13 +100,9 @@ static enum xnn_status setup_unpooling_operator(
 
   return xnn_setup_unpooling2d_nhwc_x32(
     opdata->operator_objects[0],
-    opdata->batch_size,
-    opdata->input_height,
-    opdata->input_width,
     input_value_data,
     input_index_data,
-    output_data,
-    threadpool);
+    output_data);
 }
 
 enum xnn_status xnn_define_unpooling_2d(
@@ -211,6 +221,7 @@ enum xnn_status xnn_define_unpooling_2d(
   node->flags = flags;
 
   node->create = create_unpooling_operator;
+  node->reshape = reshape_unpooling_operator;
   node->setup = setup_unpooling_operator;
 
   return xnn_status_success;
