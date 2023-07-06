@@ -12,7 +12,7 @@
 
 .syntax unified
 
-// void xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55(
+// void xnn_qd8_f32_qs8w_gemm_minmax_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55(
 //     size_t mr,                            r0
 //     size_t nc,                            r1
 //     size_t kc,                            r2 -> r5
@@ -22,7 +22,8 @@
 //     uint8_t* restrict c,        sp + 88 -> r11
 //     size_t cm_stride,          sp + 92 -> (r6)
 //     size_t cn_stride,          sp + 96 -> r7
-//     xnn_qs8_conv_minmax_params params)  sp + 100 -> (r5)
+//     xnn_f32_minmax_params params,  sp + 100 -> (r5)
+//     const struct xnn_qd8_quantization_params *quantization_params) [sp + 104] -> ??
 
 // d8-d15, r4-r11,r14(lr) need to be preserved if used. r13(sp),r15(pc) are reserved.
 
@@ -36,33 +37,29 @@
 // C1   r4 d20-d21 q10  d22-d23 q11
 // C2   r8 d24-d25 q12  d26-d27 q13
 // C3   r6 d28-d29 q14  d30-d31 q15
-// unused q7
-// params structure is 16 bytes
-//  struct {
-//    int32_t right_pre_shift;    d12[0]
-//    int32_t multiplier;         d12[1]
-//    int32_t right_post_shift;   d13[0]
-//    int16_t output_zero_point;  d13[2]
-//    int8_t output_min;          d13[6]
-//    int8_t output_max;          d13[7]
-//  } rndnu_neon;
+// r14 params, zero point & scale
+// d6, d7, d14, d15 zero point and scale
+// params structure is 8 bytes
+// struct {
+//   float min;
+//   float max;
+// } scalar;
 
 // iOS does not support 32 bit ARM with Neon DotProduct.
 #ifndef __APPLE__
 
-BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55
-        # Push 80 bytes
-        PUSH        {r4, r5, r6, r7, r8, r9, r10, r11}  // 32
-        VPUSH       {d8-d13}                            // +48 = 80
+BEGIN_FUNCTION xnn_qd8_f32_qs8w_gemm_minmax_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55
+        # Push 100 bytes
+        PUSH        {r4, r5, r6, r7, r8, r9, r10, r11, r14}  // 36
+        VPUSH       {d8-d15}                                 // +64 = 100
 
-        LDR         r7, [sp, 80]            // a_stride
+        LDR         r7, [sp, 100]            // a_stride
         ADD         r2, r2, 3                           // kc = (kc + 3) & ~3
-        LDR         r11, [sp, 88]       // c
+        LDR         r11, [sp, 108]       // c
 
-        LDR         r6, [sp, 92]       // cm_stride
-        LDR         r9, [sp, 84]        // w
+        LDR         r6, [sp, 112]       // cm_stride
+        LDR         r9, [sp, 104]        // w
         BIC         r2, r2, 3
-        LDR         r5, [sp, 100]     // params
 
         # Clamp A and C pointers
         CMP         r0, 2                   // if mr >= 2
@@ -82,9 +79,7 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cort
         MOVLO       r0, r10                 // a3
         MOVLO       r6, r8                  // c3
 
-        # Load params values
-        VLDM        r5, {d12-d13}           // RNDNU params
-        LDR         r7, [sp, 96]            // cn_stride
+        LDR         r7, [sp, 116]            // cn_stride
 
         .p2align    3
 0:
@@ -93,18 +88,24 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cort
         SUBS        r5, r2, 8               // k = kc - 8
 
         # Prologue + Bias
+        LDR         r14, [sp, 124] // &quantization_params[0].zero_point
+        VLD1.8      {q7},  [r14]!
+        VLD1.8      {q3},  [r14]
+        // ksum * zero_point
+        VMUL.S32    q10, q8, d15[0]
         VLD1.8      {d4},  [r9]!            // B0
-        VMOV        q10, q8
+        VMUL.S32    q12, q8, d6[0]
         VLD1.8      {d0},  [r3]!            // A0
-        VMOV        q11, q9
+        VMUL.S32    q14, q8, d7[0]
         VLD1.8      {d5},  [r9]!            // B1
-        VMOV        q12, q8
-        VLD1.8      {d6},  [r9]!            // B2
-        VMOV        q13, q9
+        VMUL.S32    q8, q8, d14[0]
         VLD1.8      {d1}, [r12]!            // A1
-        VMOV        q14, q8
+        VMUL.S32    q11, q9, d15[0]
+        VMUL.S32    q13, q9, d6[0]
+        VLD1.8      {d6},  [r9]!            // B2
+        VMUL.S32    q15, q9, d7[0]
         VLD1.8      {d7},  [r9]!            // B3
-        VMOV        q15, q9
+        VMUL.S32    q9, q9, d14[0]
         BLO         4f                      // less than 8 channels?
 
         SUBS        r5, r5, 8               // k = k - 8
@@ -178,85 +179,78 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cort
         BNE         3f
 
 2:
-        # RNDNU quantization
-        VDUP.32     q0, d12[0]              // right_pre_shift
+        LDR         r14, [sp, 124] // &quantization_params[0].zero_point
+        VLD1.8      {q7},  [r14]!                  //  quantization_params[0].zero_point, quantization_params[0].scale
+        VLD1.8      {q3},  [r14]                   //  quantization_params[2].zero_point, quantization_params[2].scale
 
-        VQSHL.S32   q8,  q8, q0
-        VQSHL.S32   q9,  q9, q0
-        VQSHL.S32   q10, q10, q0
-        VQSHL.S32   q11, q11, q0
-        VQSHL.S32   q12, q12, q0
-        VQSHL.S32   q13, q13, q0
-        VQSHL.S32   q14, q14, q0
-        VQSHL.S32   q15, q15, q0
+        VCVT.F32.S32    q8,  q8
+        VCVT.F32.S32    q9,  q9
+        VCVT.F32.S32    q10, q10
+        VCVT.F32.S32    q11, q11
+        VCVT.F32.S32    q12, q12
+        VCVT.F32.S32    q13, q13
+        VCVT.F32.S32    q14, q14
+        VCVT.F32.S32    q15, q15
 
-        VDUP.32     q2, d13[0]              // right_post_shift
+        // Load bias
+        VLD1.8      {q0-q1},  [r9]!
 
-        VQDMULH.S32 q8,  q8, d12[1]     // multiplier
-        VQDMULH.S32 q9,  q9, d12[1]
-        VQDMULH.S32 q10, q10, d12[1]
-        VQDMULH.S32 q11, q11, d12[1]
-        VQDMULH.S32 q12, q12, d12[1]
-        VQDMULH.S32 q13, q13, d12[1]
-        VQDMULH.S32 q14, q14, d12[1]
-        VQDMULH.S32 q15, q15, d12[1]
+        VMUL.F32    q8,  q8, d14[1]
+        VMUL.F32    q9,  q9, d14[1]
+        VMUL.F32    q10, q10, d15[1]
+        VMUL.F32    q11, q11, d15[1]
+        VMUL.F32    q12, q12, d6[1]
+        VMUL.F32    q13, q13, d6[1]
+        VMUL.F32    q14, q14, d7[1]
+        VMUL.F32    q15, q15, d7[1]
 
-        VRSHL.S32   q8,  q8, q2
-        VRSHL.S32   q9,  q9, q2
-        VRSHL.S32   q10, q10, q2
-        VRSHL.S32   q11, q11, q2
-        VRSHL.S32   q12, q12, q2
-        VRSHL.S32   q13, q13, q2
-        VRSHL.S32   q14, q14, q2
-        VRSHL.S32   q15, q15, q2
+        LDR         r14, [sp, 120]                 // params
+        VADD.F32    q8,  q8, q0
+        VADD.F32    q9,  q9, q1
+        VADD.F32    q10, q10, q0
+        VADD.F32    q12, q12, q0
+        VADD.F32    q14, q14, q0
+        VLD1.32     {q0[]}, [r14]!                 // params.min
+        VADD.F32    q11, q11, q1
+        VADD.F32    q13, q13, q1
+        VADD.F32    q15, q15, q1
 
-        VDUP.16     q0, d13[2]              // output_zero_point
+        VMAX.F32    q8, q8, q0
+        VMAX.F32    q9, q9, q0
+        VMAX.F32    q10, q10, q0
+        VMAX.F32    q11, q11, q0
+        VMAX.F32    q12, q12, q0
+        VMAX.F32    q13, q13, q0
+        VMAX.F32    q14, q14, q0
+        VMAX.F32    q15, q15, q0
 
-        VQMOVN.S32  d16, q8
-        VQMOVN.S32  d17, q9
-        VQMOVN.S32  d18, q10
-        VQMOVN.S32  d19, q11
-        VQMOVN.S32  d20, q12
-        VQMOVN.S32  d21, q13
-        VQMOVN.S32  d22, q14
-        VQMOVN.S32  d23, q15
-
-        VQADD.S16   q8,  q8, q0
-        VQADD.S16   q9,  q9, q0
-        VQADD.S16   q10, q10, q0
-        VQADD.S16   q11, q11, q0
-
-        VDUP.8      q12, d13[6]             // output_min
-
-        VQMOVN.S16  d0,  q8
-        VQMOVN.S16  d1,  q9
-        VQMOVN.S16  d2, q10
-        VQMOVN.S16  d3, q11
-
-        VDUP.8      q13, d13[7]             // output_max
-
-        VMAX.S8     q0, q0, q12
-        VMAX.S8     q1, q1, q12
+        VLD1.32     {q4[]}, [r14]                  // params.max
+        VMIN.F32    q8, q8, q4
+        VMIN.F32    q9, q9, q4
+        VMIN.F32    q10, q10, q4
+        VMIN.F32    q11, q11, q4
+        VMIN.F32    q12, q12, q4
+        VMIN.F32    q13, q13, q4
+        VMIN.F32    q14, q14, q4
+        VMIN.F32    q15, q15, q4
 
         SUBS        r1, r1, 8
 
-        VMIN.S8     q0, q0, q13
-        VMIN.S8     q1, q1, q13
-
         # Store full 4 x 8
-        BLO         5f
-        VST1.8      {d0}, [r11], r7
+        BLO         9f
+        VST1.32     {q8, q9}, [r11], r7
         SUB         r3, r3, r2
-        VST1.8      {d1}, [r4], r7
+        VST1.32     {q10, q11}, [r4], r7
         SUB         r12, r12, r2
-        VST1.8      {d2}, [r8], r7
+        VST1.32     {q12, q13}, [r8], r7
         SUB         r10, r10, r2
-        VST1.8      {d3}, [r6], r7
+        VST1.32     {q14, q15}, [r6], r7
         SUB         r0, r0, r2
+
         BHI         0b
 
-        VPOP        {d8-d13}
-        POP         {r4, r5, r6, r7, r8, r9, r10, r11}
+        VPOP        {d8-d15}
+        POP         {r4, r5, r6, r7, r8, r9, r10, r11, r14}
         BX          lr
 
         # Remainder prologue
@@ -287,37 +281,17 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cort
 
         # Store odd width
         .p2align    3
-5:
+9:
         TST         r1, 4
-        BEQ         6f
-        VST1.32     {d0[0]}, [r11]!
-        VST1.32     {d1[0]}, [r4]!
-        VST1.32     {d2[0]}, [r8]!
-        VST1.32     {d3[0]}, [r6]!
-        VEXT.8      q0, q0, q0, 4
-        VEXT.8      q1, q1, q1, 4
-6:
-        TST         r1, 2
-        BEQ         7f
-        VST1.16     {d0[0]}, [r11]!
-        VST1.16     {d1[0]}, [r4]!
-        VST1.16     {d2[0]}, [r8]!
-        VST1.16     {d3[0]}, [r6]!
-        VEXT.8      q0, q0, q0, 2
-        VEXT.8      q1, q1, q1, 2
-
-7:
-        TST         r1, 1
-        BEQ         8f
-        VST1.8      {d0[0]}, [r11]
-        VST1.8      {d1[0]}, [r4]
-        VST1.8      {d2[0]}, [r8]
-        VST1.8      {d3[0]}, [r6]
-
-8:
-        VPOP        {d8-d13}
-        POP         {r4, r5, r6, r7, r8, r9, r10, r11}
-        BX          lr
+        BEQ         10f
+        VST1.32     {q8}, [r11]!
+        VMOV        q8, q9
+        VST1.32     {q10}, [r4]!
+        VMOV        q10, q11
+        VST1.32     {q12}, [r8]!
+        VMOV        q12, q13
+        VST1.32     {q14}, [r6]!
+        VMOV        q14, q15
  10:
           TST         r1, 2
           BEQ         11f
@@ -344,7 +318,7 @@ BEGIN_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cort
           BX          lr
 
 
-END_FUNCTION xnn_qs8_gemm_minmax_rndnu_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55
+END_FUNCTION xnn_qd8_f32_qs8w_gemm_minmax_ukernel_4x8c4__asm_aarch32_neondot_cortex_a55
 #endif  // __APPLE__
 
 #ifdef __ELF__
