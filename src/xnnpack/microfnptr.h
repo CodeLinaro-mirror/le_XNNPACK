@@ -1252,6 +1252,7 @@ typedef void (*xnn_x32_zerob_gemm_ukernel_fn)(
     const union xnn_x32_packb_params* params);
 
 // PACKW: PACK W (weights) for GEMM matrix multiplication
+// Weights in GOI layout: Group, Output channels, Input channels.
 
 typedef void (*xnn_packw_gemm_goi_ukernel_fn)(
     size_t g,
@@ -1302,6 +1303,20 @@ typedef void (*xnn_x32_packw_gemm_goi_ukernel_fn)(
     const uint32_t* k,
     const uint32_t* b,
     uint32_t* packed_weights,
+    size_t extra_bytes,
+    const void* params);
+
+// Weights in GIO layout: Group, Input channels, Output channels.
+typedef void (*xnn_packw_gemm_gio_ukernel_fn)(
+    size_t g,
+    size_t nc,
+    size_t kc,
+    size_t nr,
+    size_t kr,
+    size_t sr,
+    const void* k,
+    const void* b,
+    void* packed_weights,
     size_t extra_bytes,
     const void* params);
 

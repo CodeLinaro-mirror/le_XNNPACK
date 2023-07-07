@@ -20,9 +20,33 @@ TEST(BATCH_MATRIX_MULTIPLY_NC_F32, unit_batch) {
     .TestF32();
 }
 
+TEST(BATCH_MATRIX_MULTIPLY_NC_F32, unit_batch_transpose_weights) {
+  BatchMatMulOperatorTester()
+    .transpose_weights(true)
+    .batch_size(1)
+    .m(17)
+    .k(23)
+    .n(19)
+    .iterations(3)
+    .TestF32();
+}
+
 TEST(BATCH_MATRIX_MULTIPLY_NC_F32, small_batch) {
   for (size_t batch_size = 2; batch_size < 13; batch_size++) {
     BatchMatMulOperatorTester()
+      .batch_size(batch_size)
+      .m(17)
+      .k(23)
+      .n(19)
+      .iterations(3)
+      .TestF32();
+  }
+}
+
+TEST(BATCH_MATRIX_MULTIPLY_NC_F32, small_batch_tranpose_weights) {
+  for (size_t batch_size = 2; batch_size < 13; batch_size++) {
+    BatchMatMulOperatorTester()
+      .transpose_weights(true)
       .batch_size(batch_size)
       .m(17)
       .k(23)
