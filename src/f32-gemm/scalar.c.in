@@ -3,7 +3,8 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-$assert DATATYPE in ["F32", "QC8"]
+$assert DATATYPE in ["F32", "QC4", "QC8"]
+$assert ACTIVATION != "MINMAX" or DATATYPE != "QC4"
 $assert ACTIVATION in ["LINEAR", "RELU", "MINMAX"]
 $assert ACTIVATION != "LINEAR" or not WASM
 #include <assert.h>
@@ -14,7 +15,7 @@ $if DATATYPE == "QC8" and not NR % 4 == 0:
   #include <xnnpack/unaligned.h>
 
 
-$DATATYPE_SPEC = {"F32": "f32", "QC8": "f32_qc8w"}[DATATYPE]
+$DATATYPE_SPEC = {"F32": "f32", "QC8": "f32_qc8w", "QC4": "f32_qc4w"}[DATATYPE]
 $MIN_F32 = "__builtin_wasm_min_f32" if WASM else "math_min_f32"
 $MAX_F32 = "__builtin_wasm_max_f32" if WASM else "math_max_f32"
 $KERNEL = "gemminc" if INC else "gemm"
@@ -35,7 +36,10 @@ void xnn_${DATATYPE_SPEC}_${KERNEL}${SUFFIX}_ukernel_${MR}x${NR}__${"wasm" if WA
     size_t cn_stride,
     $if INC:
       const float* restrict acc,
-    const union ${PARAMS} params[restrict XNN_MIN_ELEMENTS(1)])
+    $if DATATYPE == "QC4":
+      const xnn_f32_qc4w_minmax_params params[restrict XNN_MIN_ELEMENTS(1)])
+    $else:
+      const union ${PARAMS} params[restrict XNN_MIN_ELEMENTS(1)])
 {
   assert(mr != 0);
   assert(mr <= ${MR});
@@ -72,6 +76,8 @@ void xnn_${DATATYPE_SPEC}_${KERNEL}${SUFFIX}_ukernel_${MR}x${NR}__${"wasm" if WA
   $if ACTIVATION == "MINMAX":
     const float vmin = params->scalar.min;
     const float vmax = params->scalar.max;
+  $if DATATYPE == "QC4":
+    const int16_t vbias = params->bias[0];
   do {
     $if INC:
       $for M in range(MR):
@@ -103,6 +109,13 @@ void xnn_${DATATYPE_SPEC}_${KERNEL}${SUFFIX}_ukernel_${MR}x${NR}__${"wasm" if WA
         $for N in range(NR):
           const float vb${N} = w[${N}];
         w += ${NR};
+      $elif DATATYPE == "QC4":
+        $for N in range(NR/2):
+          const uint8_t vbi${N} = ((const uint8_t*) w)[${N}];
+        $for N in range(0,NR,2):
+          const float vb${N} = (float) ((int16_t) (vbi${N/2} & 15) + vbias);
+          const float vb${N+1} = (float) ((int16_t) (vbi${N/2+NR/2} >> 4) + vbias);
+        w = (const int8_t*) w + ${NR/2};
       $elif DATATYPE == "QC8":
         $for N in range(NR):
           const float vb${N} = (float) ((const int8_t*) w)[${N}];
@@ -115,7 +128,7 @@ void xnn_${DATATYPE_SPEC}_${KERNEL}${SUFFIX}_ukernel_${MR}x${NR}__${"wasm" if WA
       k -= sizeof(float);
     } while (k != 0);
 
-    $if DATATYPE == "QC8":
+    $if DATATYPE == "QC8" or DATATYPE == "QC4":
       $for N in range(NR):
         $if NR % 4 == 0:
           const float vscale${N} = ((const float*)w)[${N}];
