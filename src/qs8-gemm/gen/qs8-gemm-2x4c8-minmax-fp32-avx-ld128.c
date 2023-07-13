@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include <smmintrin.h>
+#include <immintrin.h>
 
 #include <xnnpack/gemm.h>
 #include <xnnpack/math.h>

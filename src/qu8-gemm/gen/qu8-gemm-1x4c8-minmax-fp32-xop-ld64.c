@@ -14,6 +14,7 @@
 #else
   #include <x86intrin.h>
 #endif
+#include <immintrin.h>
 
 #include <xnnpack/gemm.h>
 #include <xnnpack/math.h>
