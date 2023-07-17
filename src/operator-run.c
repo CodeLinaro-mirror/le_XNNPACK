@@ -296,6 +296,27 @@ void xnn_compute_transposev_6d(
       tile_n);
 }
 
+void xnn_compute_packw_gemm_gio(
+    const struct packw_gemm_gio_context context[restrict XNN_MIN_ELEMENTS(1)],
+    size_t n_block_start,
+    size_t n_block_size)
+{
+  const void* kernel = (const void*) ((const uintptr_t) context->kernel + context->n_stride * n_block_start);
+  const void* bias = context->bias;
+  if (bias != NULL) {
+    bias = (const void*) ((const uintptr_t) bias + (n_block_start * context->b_stride));
+  }
+  void* packed_weights = (void*) ((uintptr_t) context->packed_weights + context->w_stride * n_block_start);
+
+  context->packw_gemm_gio(
+    1, n_block_size, context->kc,
+    context->nr, context->kr, context->sr,
+    context->k_stride_elements,
+    kernel, bias, packed_weights,
+    /*extra_bytes=*/0, /*params=*/NULL);
+}
+
+
 void xnn_compute_batched_packw_gemm_gio(
     const struct packw_gemm_gio_context context[restrict XNN_MIN_ELEMENTS(1)],
     size_t batch_index,
@@ -333,7 +354,7 @@ void xnn_compute_packw_gemm_goi(
   void* packed_weights = (void*) ((uintptr_t) context->packed_weights + context->w_stride * n_block_start);
 
   context->packw_gemm_goi(
-    1, n_block_size, context->kc,
+    context->g, n_block_size, context->kc,
     context->nr, context->kr, context->sr,
     kernel, bias, packed_weights,
     /*extra_bytes=*/0, /*params=*/NULL);
@@ -408,6 +429,139 @@ void xnn_compute_gemm(
       cm_stride,
       context->cn_stride,
       context->fused_params);
+}
+
+void xnn_compute_scaled_dot_attention(
+  const struct scaled_dot_attention_context* context,
+  size_t batch_index,
+  size_t sequence_length_start,
+  size_t sequence_length_block_size)
+{
+  const size_t query_batch_offset = batch_index * context->query_batch_stride;
+  {
+    uintptr_t query_ptr = (uintptr_t) context->query + query_batch_offset + sequence_length_start * context->channels_scaled;
+    uintptr_t q_scaled_ptr = (uintptr_t) context->q_scaled + query_batch_offset + sequence_length_start * context->channels_scaled;
+    // Q_scaled = Q * Scale (along channels).
+    for (size_t i = 0; i < sequence_length_block_size; i++) {
+      context->vmul_ukernel(
+        /*batch=*/context->channels_scaled,
+        /*input_x=*/(void*) query_ptr,
+        /*input_y=*/context->scale,
+        /*output=*/(void*) q_scaled_ptr,
+        /*params=*/&context->minmax_params);
+        query_ptr += context->channels_scaled;
+        q_scaled_ptr += context->channels_scaled;
+    }
+  }
+
+  void* buffer = (void*) context->logits_buffer;
+  const size_t logits_batch_offset = batch_index * context->logits_batch_stride;
+
+  // S = Gemm(Q_scaled, K^t). S is [sequence_length_block_size, sequence_length].
+  context->gemm_ukernel.function[XNN_UARCH_DEFAULT](
+    /*mr=*/sequence_length_block_size,
+    /*nr=*/context->sequence_length,
+    /*k=*/context->channels_scaled,
+    /*a=*/(void*) ((uintptr_t) context->q_scaled +
+        query_batch_offset +
+        sequence_length_start * context->channels_scaled),
+    /*a_stride=*/context->channels_scaled,
+    /*w=*/(void*) ((uintptr_t) context->key + batch_index * context->key_batch_stride),
+    /*c=*/(void*) ((uintptr_t) buffer + logits_batch_offset +
+        sequence_length_start * context->sequence_length_scaled),
+    /*cm_stride=*/context->sequence_length_scaled,
+    /*cn_stride=*/context->cn_stride,
+    /*params=*/&context->minmax_params);
+
+  {
+    void* ptr = (void*) (((uintptr_t) buffer + logits_batch_offset +
+                sequence_length_start * context->sequence_length_scaled));
+
+    if (context->cap > 0.0f) {
+      // (Optional) S = TanH(S/Cap) * Cap. Overwrites buffer.
+      context->vmulc_ukernel(
+        /*batch=*/sequence_length_block_size * context->sequence_length_scaled,
+        /*input_x=*/ptr,
+        /*input_y=*/&context->cap_reciprocal,
+        /*output=*/ptr,
+        /*params=*/&context->minmax_params);
+      context->vtanh_ukernel(
+        /*batch=*/sequence_length_block_size * context->sequence_length_scaled,
+        /*input=*/ptr,
+        /*output=*/ptr,
+        /*params=*/&context->tanh_params);
+      context->vmulc_ukernel(
+        /*batch=*/sequence_length_block_size * context->sequence_length_scaled,
+        /*input_x=*/ptr,
+        /*input_y=*/&context->cap,
+        /*output=*/ptr,
+        /*params=*/&context->minmax_params);
+    }
+
+    // S = S + Mask. Mask has dimensions [sequence_length, sequence_length].
+    // Mask. Overwrites buffer.
+    context->vadd_ukernel(
+      /*batch=*/sequence_length_block_size * context->sequence_length_scaled,
+      /*input_x=*/ptr,
+      /*input_y=*/(void*) ((uintptr_t) context->mask +
+        sequence_length_start * context->sequence_length_scaled),
+      /*output=*/ptr,
+      /*params=*/&context->minmax_params);
+  }
+
+  // Allocate temporaries on stack, this is quite samll, as
+  // sequence_length_block_size is a GEMM's mr (<7 in most cases). So the total
+  // amount of stack we use is 3 * 7 = 21 elements (84 bytes for floats).
+  const size_t log2_element_size = context->log2_element_size;
+  // rowmax is only written to, and then used in vmulc, which only reads a
+  // single element, so no extra size needed.
+  void* rowmax = XNN_SIMD_ALLOCA(sequence_length_block_size << log2_element_size);
+  // rowsum is the input to compute_reciprocal, which does not overread, so no extra size needed.
+  void* rowsum = XNN_SIMD_ALLOCA(sequence_length_block_size << log2_element_size);
+  void* rowscale = XNN_SIMD_ALLOCA(XNN_EXTRA_BYTES + (sequence_length_block_size << log2_element_size));
+
+  // P = Softmax(S). P has dimensions [sequence_length_block_size, sequence_length].
+  uintptr_t ptr = ((uintptr_t) buffer + logits_batch_offset +
+                   (sequence_length_start * context->sequence_length_scaled));
+  for (size_t i = 0; i < sequence_length_block_size; i++) {
+    context->rmax_ukernel(
+      /*batch=*/context->sequence_length_scaled,
+      /*input=*/(void*) ptr,
+      /*output=*/(float*) rowmax + i);
+    context->raddstoreexpminusmax_ukernel(
+      /*batch=*/context->sequence_length_scaled,
+      /*input=*/(void*) ptr,
+      /*max=*/(float*) rowmax + i,
+      /*output=*/(void*) ptr,
+      /*sum=*/(float*) rowsum + i,
+      /*params=*/&context->expminus_params);
+    context->compute_reciprocal(
+      /*input=*/(float *) rowsum + i,
+      /*output=*/(float *) rowscale + i);
+    context->vmulc_ukernel(
+      /*batch=*/context->sequence_length_scaled,
+      /*input_x=*/(void*) ptr,
+      /*input_y=*/(float *) rowscale + i,
+      /*output=*/(void*) ptr,
+      /*params=*/&context->minmax_params);
+    ptr = (uintptr_t) ptr + context->sequence_length_scaled;
+  }
+
+  // O = Gemm(P, V). O has dimension [sequence_length_block_size, channels].
+  context->gemm_ukernel.function[XNN_UARCH_DEFAULT](
+      /*mr=*/sequence_length_block_size,
+      /*nc=*/context->channels,
+      /*kc=*/context->sequence_length_scaled,
+      /*a=*/(void*) ((uintptr_t) buffer +
+        logits_batch_offset + sequence_length_start * context->sequence_length_scaled),
+      /*a_stride=*/context->sequence_length_scaled,
+      /*w=*/(void*) ((uintptr_t) context->value +
+        (batch_index * context->value_batch_stride)),
+      /*c=*/(void*) ((uintptr_t) context->output +
+        query_batch_offset + (sequence_length_start * context->channels_scaled)),
+      /*cm_stride=*/context->channels_scaled,
+      /*cn_stride=*/context->cn_stride,
+      /*params=*/&context->minmax_params);
 }
 
 void xnn_compute_spmm(

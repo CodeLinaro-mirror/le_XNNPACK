@@ -193,6 +193,8 @@ struct packw_gemm_goi_context {
   // Stride, in bytes, between each packed kernel and bias.
   size_t w_stride;
 
+  size_t g;
+
   // Strides used for batched packw.
   // Stride, in bytes, between each group of kernel
   size_t gk_stride;
@@ -254,6 +256,10 @@ struct packw_gemm_gio_context {
 };
 
 #ifndef __cplusplus
+  XNN_PRIVATE void xnn_compute_packw_gemm_gio(
+      const struct packw_gemm_gio_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t n_block_start,
+      size_t n_block_size);
   XNN_PRIVATE void xnn_compute_batched_packw_gemm_gio(
       const struct packw_gemm_gio_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
@@ -1351,4 +1357,86 @@ struct rope_context {
       size_t batch_index,
       size_t head_index,
       size_t sequence_index);
+#endif
+
+struct scaled_dot_attention_context {
+  // Attention uses a single workspace for multiple intermediates:
+  // - scaled query
+  // - packed keys
+  // - packed values
+  // - output of Q * K (known as logits)
+  // These are the offsets into the workspace that can be used to read/write the intermediates.
+  // These are set during reshape, and then used during setup.
+  size_t q_scaled_offset;
+  size_t packed_k_offset;
+  size_t packed_v_offset;
+  size_t logits_offset;
+
+  // Pointer to query.
+  const void* query;
+  // Pointer to packed key.
+  const void* key;
+  // Pointer to packed value.
+  const void* value;
+  // Pointer to scale for query.
+  const void* scale;
+  // Pointer to mask.
+  const void* mask;
+  // Pointer to write output of attention.
+  void* output;
+
+  // Pointer to where we can write the output of Q scaled.
+  void* q_scaled;
+  // Pointer to where we can write the output of Q*K.
+  void* logits_buffer;
+  // A cap for masking + cap of logits.
+  float cap;
+  // 1/cap.
+  float cap_reciprocal;
+
+  // Channels (head dimension).
+  size_t channels;
+  // Channels (head dimension) in bytes.
+  size_t channels_scaled;
+  // Sequence length.
+  size_t sequence_length;
+  // Sequence length in bytes
+  size_t sequence_length_scaled;
+  // Stride, in bytes, between columns of logits and final attention output.
+  size_t cn_stride;
+
+  // Stride, in bytes, between each batch of query.
+  size_t query_batch_stride;
+  // Strid, in bytes,  between each batch of key.
+  size_t key_batch_stride;
+  // Strid, in bytes,  between each batch of value.
+  size_t value_batch_stride;
+  // Strid, in bytes,  between each batch of logits (Q*K).
+  size_t logits_batch_stride;
+
+  // Used for calculating how much to allocate on stack for temporaries (row-wise max, sum, scale).
+  size_t log2_element_size;
+
+  struct xnn_hmp_gemm_ukernel gemm_ukernel;
+  xnn_compute_reciprocal_fn compute_reciprocal;
+  xnn_rmax_ukernel_fn rmax_ukernel;
+  xnn_raddstoreexpminusmax_ukernel_fn raddstoreexpminusmax_ukernel;
+  xnn_vbinary_ukernel_fn vmulc_ukernel;
+  xnn_vbinary_ukernel_fn vmul_ukernel;
+  xnn_vbinary_ukernel_fn vdivc_ukernel;
+  xnn_vbinary_ukernel_fn vadd_ukernel;
+  xnn_vunary_ukernel_fn vtanh_ukernel;
+
+  union xnn_f32_expminus_params expminus_params;
+  union xnn_f32_minmax_params minmax_params;
+  union xnn_f32_tanh_params tanh_params;
+
+};
+
+#ifndef __cplusplus
+  XNN_PRIVATE void xnn_compute_scaled_dot_attention(
+      const struct scaled_dot_attention_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index,
+      size_t sequence_length_start,
+      size_t sequence_length_block_size);
 #endif
