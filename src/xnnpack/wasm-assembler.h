@@ -120,18 +120,17 @@ inline bool operator==(const FuncType& lhs, const FuncType& rhs) {
 }
 
 struct Code {
-  constexpr explicit Code(byte* begin, byte* capacity_end)
-      : begin(begin), end(begin) {}
+  constexpr explicit Code(size_t begin_offset)
+      : begin_offset(begin_offset), end_offset(begin_offset) {}
 
-  size_t size() const { return end - begin; }
+  size_t size() const { return end_offset - begin_offset; }
 
-  byte* begin;
-  byte* end;
+  size_t begin_offset;
+  size_t end_offset;
 };
 
 struct Function {
-  constexpr Function()
-      : Function(nullptr, 0, 0, 0, {}, Code(nullptr, nullptr)) {}
+  constexpr Function() : Function(nullptr, 0, 0, 0, {}, Code(0)) {}
   constexpr Function(const char* name, size_t function_index,
                      uint32_t type_index,
                      const ValTypesToInt& locals_declaration, Code body)
@@ -209,6 +208,8 @@ class V128WasmOps : public WasmOpsBase<Derived, V128WasmOps<Derived>> {
   void f32x4_add() { EncodeVectorOpcode(0xE4); }
   void f32x4_pmax() { EncodeVectorOpcode(0xEB); }
   void f32x4_pmin() { EncodeVectorOpcode(0xEA); }
+  void f32x4_eq() { EncodeVectorOpcode(0x41); }
+  void v128_andnot() { EncodeVectorOpcode(0x4F); }
   void i8x16_shuffle(const std::array<uint8_t, 16>& lanes) {
     EncodeVectorOpcode(0x0D);
     for (auto lane : lanes) {
@@ -380,8 +381,10 @@ std::array<uint8_t, 16> MakeLanesForI8x16Shuffle(const uint8_t* lanes,
                                                  size_t num_lanes);
 
 template <typename Derived>
-class LocalWasmOps : public LocalsManager, public WasmOpsBase<Derived, LocalWasmOps<Derived>> {
+class LocalWasmOps : public LocalsManager,
+                     public WasmOpsBase<Derived, LocalWasmOps<Derived>> {
   using WasmOpsBase<Derived, LocalWasmOps<Derived>>::GetDerived;
+
  public:
   class Local;
 
@@ -577,6 +580,14 @@ class LocalWasmOps : public LocalsManager, public WasmOpsBase<Derived, LocalWasm
     return BinaryOp(a, b, &Derived::f32x4_pmin);
   }
 
+  ValueOnStack F32x4Eq(const ValueOnStack& a, const ValueOnStack& b) {
+    return BinaryOp(a, b, &Derived::f32x4_eq);
+  }
+
+  ValueOnStack V128Andnot(const ValueOnStack& a, const ValueOnStack& b) {
+    return BinaryOp(a, b, &Derived::v128_andnot);
+  }
+
   ValueOnStack I64x2Shuffle(const ValueOnStack& a, const ValueOnStack& b,
                             const std::array<uint8_t, 2>& lanes) {
     return BinaryOp(a, b, [&](Derived* derived) {
@@ -707,13 +718,13 @@ class WasmAssembler : public AssemblerBase,
   using Code = internal::Code;
 
   auto MakeStoreToCode(Code& out) {
-    return [&](uint8_t b) { emit8(b, out.end); };
+    return [&](uint8_t b) { emit8(b, &out.end_offset); };
   }
 
  public:
   explicit WasmAssembler(xnn_code_buffer* buf)
       : AssemblerBase(buf),
-        next_func_body_begin_(cursor_ + kInitialCodeOffset) {}
+        next_func_body_begin_(code_size_in_bytes() + kInitialCodeOffset) {}
 
   template <size_t InSize, typename Body>
   void AddFunc(const ResultType& result, const char* name,
@@ -731,7 +742,7 @@ class WasmAssembler : public AssemblerBase,
       error_ = Error::kMaxNumberOfFunctionsExceeded;
       return;
     }
-    Code code(next_func_body_begin_, top_);
+    Code code(next_func_body_begin_);
     SetOut(&code);
     ResetLocalsManager(InSize, locals_declaration_count);
     std::array<Local, InSize> input_locals{};
@@ -748,7 +759,7 @@ class WasmAssembler : public AssemblerBase,
     RegisterFunction(result, name,
                      Params(params, internal::kPlaceholderValType),
                      locals_declaration_count, code);
-    next_func_body_begin_ = code.end;
+    next_func_body_begin_ = code.end_offset;
   }
 
   void Emit() {
@@ -763,7 +774,7 @@ class WasmAssembler : public AssemblerBase,
   }
 
   void SetOut(Code* out) { out_ = out; }
-  void Encode8Impl(byte b) { emit8(b, out_->end); }
+  void Encode8Impl(byte b) { emit8(b, &out_->end_offset); }
   void EncodeS32Impl(int32_t value) {
     internal::StoreEncodedS32(value, MakeStoreToCode(*out_));
   }
@@ -835,7 +846,7 @@ class WasmAssembler : public AssemblerBase,
 
   internal::ArrayPrefix<Function, kMaxNumFuncs> functions_{0};
   internal::ArrayPrefix<FuncType, kMaxNumFuncTypes> func_types_{0};
-  byte* next_func_body_begin_;
+  size_t next_func_body_begin_;
   Code* out_ = nullptr;
 };
 
