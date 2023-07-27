@@ -139,27 +139,65 @@ void xnn_f32_gemm_minmax_ukernel_4x8__neon_dup_ld128(
       vacc2x4567 = vmlaq_f32(vacc2x4567, va2c3, vb4567c3);
       vacc3x4567 = vmlaq_f32(vacc3x4567, va3c3, vb4567c3);
     }
+    if XNN_UNLIKELY(k >= 2 * sizeof(float)) {
+      const float32x2_t va0 = vld1_f32(a0); a0 += 2;
+      const float32x2_t va1 = vld1_f32(a1); a1 += 2;
+      const float32x2_t va2 = vld1_f32(a2); a2 += 2;
+      const float32x2_t va3 = vld1_f32(a3); a3 += 2;
+
+
+      const float32x4_t vb0123c0 = vld1q_f32(w); w += 4;
+      const float32x4_t vb4567c0 = vld1q_f32(w); w += 4;
+
+      const float32x4_t va0c0 = vdupq_lane_f32(va0, 0);
+      const float32x4_t va1c0 = vdupq_lane_f32(va1, 0);
+      const float32x4_t va2c0 = vdupq_lane_f32(va2, 0);
+      const float32x4_t va3c0 = vdupq_lane_f32(va3, 0);
+      vacc0x0123 = vmlaq_f32(vacc0x0123, va0c0, vb0123c0);
+      vacc1x0123 = vmlaq_f32(vacc1x0123, va1c0, vb0123c0);
+      vacc2x0123 = vmlaq_f32(vacc2x0123, va2c0, vb0123c0);
+      vacc3x0123 = vmlaq_f32(vacc3x0123, va3c0, vb0123c0);
+      vacc0x4567 = vmlaq_f32(vacc0x4567, va0c0, vb4567c0);
+      vacc1x4567 = vmlaq_f32(vacc1x4567, va1c0, vb4567c0);
+      vacc2x4567 = vmlaq_f32(vacc2x4567, va2c0, vb4567c0);
+      vacc3x4567 = vmlaq_f32(vacc3x4567, va3c0, vb4567c0);
+
+      const float32x4_t vb0123c1 = vld1q_f32(w); w += 4;
+      const float32x4_t vb4567c1 = vld1q_f32(w); w += 4;
+
+      const float32x4_t va0c1 = vdupq_lane_f32(va0, 1);
+      const float32x4_t va1c1 = vdupq_lane_f32(va1, 1);
+      const float32x4_t va2c1 = vdupq_lane_f32(va2, 1);
+      const float32x4_t va3c1 = vdupq_lane_f32(va3, 1);
+      vacc0x0123 = vmlaq_f32(vacc0x0123, va0c1, vb0123c1);
+      vacc1x0123 = vmlaq_f32(vacc1x0123, va1c1, vb0123c1);
+      vacc2x0123 = vmlaq_f32(vacc2x0123, va2c1, vb0123c1);
+      vacc3x0123 = vmlaq_f32(vacc3x0123, va3c1, vb0123c1);
+      vacc0x4567 = vmlaq_f32(vacc0x4567, va0c1, vb4567c1);
+      vacc1x4567 = vmlaq_f32(vacc1x4567, va1c1, vb4567c1);
+      vacc2x4567 = vmlaq_f32(vacc2x4567, va2c1, vb4567c1);
+      vacc3x4567 = vmlaq_f32(vacc3x4567, va3c1, vb4567c1);
+      k -= 2 * sizeof(float);
+    }
     if XNN_UNLIKELY(k != 0) {
-      do {
-        const float32x4_t va0 = vld1q_dup_f32(a0); a0 += 1;
-        const float32x4_t va1 = vld1q_dup_f32(a1); a1 += 1;
-        const float32x4_t va2 = vld1q_dup_f32(a2); a2 += 1;
-        const float32x4_t va3 = vld1q_dup_f32(a3); a3 += 1;
+      const float32x4_t va0 = vld1q_dup_f32(a0); a0 += 1;
+      const float32x4_t va1 = vld1q_dup_f32(a1); a1 += 1;
+      const float32x4_t va2 = vld1q_dup_f32(a2); a2 += 1;
+      const float32x4_t va3 = vld1q_dup_f32(a3); a3 += 1;
 
-        const float32x4_t vb0123 = vld1q_f32(w); w += 4;
-        const float32x4_t vb4567 = vld1q_f32(w); w += 4;
+      const float32x4_t vb0123 = vld1q_f32(w); w += 4;
+      const float32x4_t vb4567 = vld1q_f32(w); w += 4;
 
-        vacc0x0123 = vmlaq_f32(vacc0x0123, va0, vb0123);
-        vacc1x0123 = vmlaq_f32(vacc1x0123, va1, vb0123);
-        vacc2x0123 = vmlaq_f32(vacc2x0123, va2, vb0123);
-        vacc3x0123 = vmlaq_f32(vacc3x0123, va3, vb0123);
-        vacc0x4567 = vmlaq_f32(vacc0x4567, va0, vb4567);
-        vacc1x4567 = vmlaq_f32(vacc1x4567, va1, vb4567);
-        vacc2x4567 = vmlaq_f32(vacc2x4567, va2, vb4567);
-        vacc3x4567 = vmlaq_f32(vacc3x4567, va3, vb4567);
+      vacc0x0123 = vmlaq_f32(vacc0x0123, va0, vb0123);
+      vacc1x0123 = vmlaq_f32(vacc1x0123, va1, vb0123);
+      vacc2x0123 = vmlaq_f32(vacc2x0123, va2, vb0123);
+      vacc3x0123 = vmlaq_f32(vacc3x0123, va3, vb0123);
+      vacc0x4567 = vmlaq_f32(vacc0x4567, va0, vb4567);
+      vacc1x4567 = vmlaq_f32(vacc1x4567, va1, vb4567);
+      vacc2x4567 = vmlaq_f32(vacc2x4567, va2, vb4567);
+      vacc3x4567 = vmlaq_f32(vacc3x4567, va3, vb4567);
 
-        k -= sizeof(float);
-      } while (k != 0);
+      k -= sizeof(float);
     }
     const float32x4_t vmax = vld1q_dup_f32(&params->scalar.max);
     vacc0x0123 = vminq_f32(vacc0x0123, vmax);
