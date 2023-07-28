@@ -200,6 +200,10 @@ static enum xnn_status initialize_workspace_values(
       // Value is purely internal to the runtime, allocate it in the workspace.
       value->data =
         (void*) ((uintptr_t) runtime->workspace->data + persistent_size + mem_alloc_tracker->usage[i].alloc_offset);
+      if (value->datatype == xnn_datatype_qdint8) {
+        value->quantization.quantization_params =
+          (void*) ((uintptr_t) runtime->workspace->data + persistent_size + mem_alloc_tracker->usage[i].alloc_offset + value->size);
+      }
     } else if (value->allocation_type == xnn_allocation_type_persistent) {
       value->data = (void*) ((uintptr_t) runtime->workspace->data + persistent_offset);
       persistent_offset += round_up_po2(value->size, XNN_EXTRA_BYTES);
@@ -560,7 +564,15 @@ enum xnn_status xnn_setup_runtime(
 
     if (value->allocation_type == xnn_allocation_type_workspace) {
       // Value is purely internal to the runtime, and must be allocated in its workspace.
-      xnn_add_value_allocation_tracker(&mem_alloc_tracker, i, round_up_po2(value->size, XNN_EXTRA_BYTES));
+      size_t tensor_size = round_up_po2(value->size, XNN_EXTRA_BYTES);
+      if (value->datatype == xnn_datatype_qdint8) {
+        size_t batch_dims_size = 1;
+        for (size_t j = 0; j < value->shape.num_dims - value->quantization.non_batch_dims; ++j) {
+          batch_dims_size *= value->shape.dim[j];
+        }
+        tensor_size += batch_dims_size * sizeof(struct xnn_dynamic_quantization_params);
+      }
+      xnn_add_value_allocation_tracker(&mem_alloc_tracker, i, tensor_size);
     } else if (value->allocation_type == xnn_allocation_type_persistent) {
       persistent_size += round_up_po2(value->size, XNN_EXTRA_BYTES);
     }
@@ -607,6 +619,7 @@ enum xnn_status xnn_setup_runtime(
     const uint32_t value_id = external_value->id;
     struct xnn_value* value = &runtime->values[value_id];
     value->data = external_value->data;
+    value->quantization.quantization_params = external_value->quantization_params;
   }
 
   for (size_t i = 0; i < runtime->num_ops; i++) {
