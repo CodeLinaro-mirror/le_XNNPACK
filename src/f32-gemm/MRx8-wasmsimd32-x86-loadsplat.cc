@@ -1,12 +1,3 @@
-#include <algorithm>
-#include <cstdint>
-#include <iterator>
-#include <limits>
-
-#include <xnnpack/assembler.h>
-#include <xnnpack/microparams.h>
-#include <xnnpack/post-operation.h>
-#include <xnnpack/wasm-assembler.h>
 #include <xnnpack/wasmsimd-gemm-igemm-loadsplat-commons.h>
 
 
@@ -84,24 +75,6 @@ class F32GemmLoadsplatGenerator : public internal::GemmIGemmLoadsplatCommons {
                     },
                     [&] { I32Ne(nc, I32Const(0)); });
                 });
-  }
-
- private:
-  void ClampAsAndCs(LocalsArray& as, LocalsArray& cs, const Local& mr, const Local& a, const Local& c,
-                    const Local& a_stride, const Local& cm_stride) {
-    as[0] = a;
-    cs[0] = c;
-    auto i_local = MakeLocal(I32Const(1));
-    for (size_t i = 1; i < as.size(); i++) {
-      as[i] = I32Add(as[i - 1], a_stride);
-      cs[i] = I32Add(cs[i - 1], cm_stride);
-      If([&] { I32GeU(i_local, mr); },
-         [&] {
-           as[i] = as[i - 1];
-           cs[i] = cs[i - 1];
-         });
-      i_local = I32Add(i_local, I32Const(1));
-    }
   }
 };
 
