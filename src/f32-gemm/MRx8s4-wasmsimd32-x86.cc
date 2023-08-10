@@ -3,7 +3,6 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-
 #include <cstddef>
 
 #include <xnnpack/assembler.h>
@@ -19,7 +18,7 @@ class F32GemmS4Generator : public internal::GemmIGemmS4Commons {
   using GemmIGemmS4Commons::GemmIGemmS4Commons;
 
   void generate(const char* name, size_t max_mr, size_t k_const, size_t k_per_iteration, bool full_unroll,
-                const jit_gemm_params* jit_gemm_params) {
+                size_t nc_mod_nr, const jit_gemm_params* jit_gemm_params) {
     ValTypesToInt locals_declaration = {{i32, max_mr * 2 + 2}, {v128, max_mr * 3 + 8}};
     AddFunc<10>({}, name, locals_declaration,
                 [&](auto mr, auto nc, auto kc, auto a, auto a_stride, auto w, auto c, auto cm_stride, auto cn_stride,
@@ -46,47 +45,52 @@ class F32GemmS4Generator : public internal::GemmIGemmS4Commons {
                       ApplyPostOps(vacc4567);
 
                       // TODO(b/294356273)
-                      IfElse([&] { I32GeU(nc, I32Const(8)); },
-                             [&] {
-                               for (int i = max_mr - 1; i >= 0; i--) {
-                                 V128Store(cs[i], vacc0123[i]);
-                                 V128Store(cs[i], vacc4567[i], /*offset=*/sizeof(v128_t));
-                                 cs[i] = I32Add(cs[i], cn_stride);
-                               }
-                               for (int i = max_mr - 1; i >= 0; i--) {
-                                 as[i] = I32Sub(as[i], kc);
-                               }
-
-                               nc = I32Sub(nc, I32Const(8));
-                             },
-                             [&] {
-                               If([&] { I32And(nc, I32Const(4)); },
-                                  [&] {
-                                    for (int i = max_mr - 1; i >= 0; i--) {
-                                      V128Store(cs[i], vacc0123[i]);
-                                      vacc0123[i] = vacc4567[i];
-                                      cs[i] = I32Add(cs[i], I32Const(sizeof(v128_t)));
-                                    }
-                                  });
-                               If([&] { I32And(nc, I32Const(2)); },
-                                  [&] {
-                                    for (int i = max_mr - 1; i >= 0; i--) {
-                                      V128Store64Lane(cs[i], vacc0123[i], 0);
-                                      vacc0123[i] = I64x2Shuffle(vacc0123[i], vacc0123[i], {1, 1});
-                                      cs[i] = I32Add(cs[i], I32Const(2 * sizeof(float)));
-                                    }
-                                  });
-                               If([&] { I32And(nc, I32Const(1)); },
-                                  [&] {
-                                    for (int i = max_mr - 1; i >= 0; i--) {
-                                      V128Store32Lane(cs[i], vacc0123[i], 0);
-                                    }
-                                  });
-                               Return();
-                             });
+                      if (nc_mod_nr == 0) {
+                        Store8Floats(cs, vacc0123, vacc4567, as, cn_stride, kc, nc, max_mr);
+                      } else {
+                        IfElse([&] { I32GeU(nc, I32Const(8)); },
+                               [&] {
+                                 Store8Floats(cs, vacc0123, vacc4567, as, cn_stride, kc, nc, max_mr);
+                               },
+                               [&] {
+                                 if (nc_mod_nr & 4) {
+                                   for (int i = max_mr - 1; i >= 0; i--) {
+                                     V128Store(cs[i], vacc0123[i]);
+                                     vacc0123[i] = vacc4567[i];
+                                     cs[i] = I32Add(cs[i], I32Const(sizeof(v128_t)));
+                                   }
+                                 }
+                                 if (nc_mod_nr & 2) {
+                                   for (int i = max_mr - 1; i >= 0; i--) {
+                                     V128Store64Lane(cs[i], vacc0123[i], 0);
+                                     vacc0123[i] = I64x2Shuffle(vacc0123[i], vacc0123[i], {1, 1});
+                                     cs[i] = I32Add(cs[i], I32Const(2 * sizeof(float)));
+                                   }
+                                 }
+                                 if (nc_mod_nr & 1) {
+                                   for (int i = max_mr - 1; i >= 0; i--) {
+                                     V128Store32Lane(cs[i], vacc0123[i], 0);
+                                   }
+                                 }
+                                 Return();
+                               });
+                      }
                     },
                     [&] { I32Ne(nc, I32Const(0)); });
                 });
+  }
+ private:
+  void Store8Floats(LocalsArray& cs, LocalsArray& vacc0123, LocalsArray& vacc4567, LocalsArray& as, Local& cn_stride, Local& kc, Local& nc, size_t max_mr) {
+    for (int i = max_mr - 1; i >= 0; i--) {
+      V128Store(cs[i], vacc0123[i]);
+      V128Store(cs[i], vacc4567[i], /*offset=*/sizeof(v128_t));
+      cs[i] = I32Add(cs[i], cn_stride);
+    }
+    for (int i = max_mr - 1; i >= 0; i--) {
+      as[i] = I32Sub(as[i], kc);
+    }
+
+    nc = I32Sub(nc, I32Const(8));
   }
 };
 
@@ -100,28 +104,32 @@ xnn_status_t xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd32_x86_x1(xnn_code_buf
                                                                     size_t kc, const void* params) {
   static const char* kFunctionName = "xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd_x86_x1";
   assert(max_mr <= 6);
-  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/4, /*full_unroll=*/false, params);
+  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/4,
+                           /*full_unroll=*/false, nc_mod_nr, params);
 }
 
 xnn_status_t xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd32_x86_x2(xnn_code_buffer* b, size_t max_mr, size_t nc_mod_nr,
                                                                     size_t kc, const void* params) {
   static const char* kFunctionName = "xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd_x86_x2";
   assert(max_mr <= 6);
-  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/8, /*full_unroll=*/false, params);
+  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/8,
+                           /*full_unroll=*/false, nc_mod_nr, params);
 }
 
 xnn_status_t xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd32_x86_x4(xnn_code_buffer* b, size_t max_mr, size_t nc_mod_nr,
                                                                     size_t kc, const void* params) {
   static const char* kFunctionName = "xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd_x86_x4";
   assert(max_mr <= 6);
-  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/16, /*full_unroll=*/false, params);
+  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/16,
+                           /*full_unroll=*/false, nc_mod_nr, params);
 }
 
 xnn_status_t xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd32_x86_xinf(xnn_code_buffer* b, size_t max_mr,
                                                                       size_t nc_mod_nr, size_t kc, const void* params) {
   static const char* kFunctionName = "xnn_generate_f32_gemm_ukernel_6x8s4__wasmsimd_x86_xinf";
   assert(max_mr <= 6);
-  return xnnpack::generate(b, kFunctionName, max_mr, kc, /*k_per_iteration=*/kc / sizeof(float), /*full_unroll=*/true,
-                           params);
+  return xnnpack::generate(b, kFunctionName, max_mr, kc,
+                           /*k_per_iteration=*/kc / sizeof(float),
+                           /*full_unroll=*/true, nc_mod_nr, params);
 }
 }
