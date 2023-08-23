@@ -1067,6 +1067,38 @@ void xnn_compute_global_average_pooling_ncw(
     &context->params);
 }
 
+void xnn_compute_resize_bilinear_indirection(
+    const struct resize_bilinear_nhwc_indirection_init_context context[restrict XNN_MIN_ELEMENTS(1)],
+    size_t output_y_start,
+    size_t output_y_tile)
+{
+  xnn_indirection_init_resize_bilinear2d_hwc_fn indirection_init;
+  switch (context->data_type) {
+    case xnn_datatype_fp32:
+      indirection_init = (xnn_indirection_init_resize_bilinear2d_hwc_fn) xnn_indirection_init_resize_bilinear2d_hwc_f32;
+      break;
+    case xnn_datatype_fp16:
+      indirection_init = (xnn_indirection_init_resize_bilinear2d_hwc_fn) xnn_indirection_init_resize_bilinear2d_hwc_f16;
+      break;
+    case xnn_datatype_quint8:
+    case xnn_datatype_qint8:
+      indirection_init = (xnn_indirection_init_resize_bilinear2d_hwc_fn) xnn_indirection_init_resize_bilinear2d_hwc_q11;
+      break;
+    default:
+      // Should never reach here.
+      return;
+  }
+  indirection_init(
+    output_y_start,
+    output_y_start + output_y_tile,
+    context->input_pixel_stride_in_bytes,
+    context->input_height, context->input_width,
+    context->output_height, context->output_width,
+    context->input,
+    context->indirection_buffer, /*packed_weights=*/NULL,
+    context->align_corners, context->tensorflow_legacy_mode);
+}
+
 void xnn_compute_resize_bilinear(
     const struct resize_bilinear_context context[restrict XNN_MIN_ELEMENTS(1)],
     size_t batch_index,

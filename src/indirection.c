@@ -385,18 +385,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_f16(
         const uint32_t input_x_left = (uint32_t) (int32_t) input_x;
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        w[0] = fp16_ieee_from_fp32_value(alpha_x);
-        w[1] = fp16_ieee_from_fp32_value(alpha_y);
-        indirection_buffer += 4;
-        w += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (w != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          w[index] = fp16_ieee_from_fp32_value(alpha_x);
+          w[index + 1] = fp16_ieee_from_fp32_value(alpha_y);
+        }
       }
     }
   } else {
@@ -416,18 +420,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_f16(
         assert((int32_t) input_x_left >= 0);
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        w[0] = fp16_ieee_from_fp32_value(alpha_x);
-        w[1] = fp16_ieee_from_fp32_value(alpha_y);
-        indirection_buffer += 4;
-        w += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (w != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          w[index] = fp16_ieee_from_fp32_value(alpha_x);
+          w[index + 1] = fp16_ieee_from_fp32_value(alpha_y);
+        }
       }
     }
   }
@@ -482,18 +490,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_f32(
         const uint32_t input_x_left = (uint32_t) (int32_t) input_x;
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        packed_weights[0] = alpha_x;
-        packed_weights[1] = alpha_y;
-        indirection_buffer += 4;
-        packed_weights += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (packed_weights != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          packed_weights[index] = alpha_x;
+          packed_weights[index + 1] = alpha_y;
+        }
       }
     }
   } else {
@@ -513,18 +525,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_f32(
         assert((int32_t) input_x_left >= 0);
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        packed_weights[0] = alpha_x;
-        packed_weights[1] = alpha_y;
-        indirection_buffer += 4;
-        packed_weights += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (packed_weights != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          packed_weights[index] = alpha_x;
+          packed_weights[index + 1] = alpha_y;
+        }
       }
     }
   }
@@ -579,18 +595,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_q11(
         const uint32_t input_x_left = (uint32_t) (int32_t) input_x;
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        packed_weights[0] = (int16_t) lrintf(alpha_x * 0x1.0p+11f);
-        packed_weights[1] = (int16_t) lrintf(alpha_y * 0x1.0p+11f);
-        indirection_buffer += 4;
-        packed_weights += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (packed_weights != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          packed_weights[index] = (int16_t) lrintf(alpha_x * 0x1.0p+11f);
+          packed_weights[index + 1] = (int16_t) lrintf(alpha_y * 0x1.0p+11f);
+        }
       }
     }
   } else {
@@ -610,18 +630,22 @@ void xnn_indirection_init_resize_bilinear2d_hwc_q11(
         assert((int32_t) input_x_left >= 0);
         const uint32_t input_x_right = math_min_u32(input_x_left + 1, input_x_max);
         const float alpha_x = input_x - (float) input_x_left;
-        indirection_buffer[0] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[1] =
-          (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
-        indirection_buffer[2] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
-        indirection_buffer[3] =
-          (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
-        packed_weights[0] = (int16_t) lrintf(alpha_x * 0x1.0p+11f);
-        packed_weights[1] = (int16_t) lrintf(alpha_y * 0x1.0p+11f);
-        indirection_buffer += 4;
-        packed_weights += 2;
+        if (indirection_buffer != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 4;
+          indirection_buffer[index] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 1] =
+            (void*) ((uintptr_t) input + (input_y_top * input_width + input_x_right) * input_pixel_stride);
+          indirection_buffer[index + 2] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_left) * input_pixel_stride);
+          indirection_buffer[index + 3] =
+            (void*) ((uintptr_t) input + (input_y_bottom * input_width + input_x_right) * input_pixel_stride);
+        }
+        if (packed_weights != NULL) {
+          const size_t index = (output_y * output_width + output_x) * 2;
+          packed_weights[index] = (int16_t) lrintf(alpha_x * 0x1.0p+11f);
+          packed_weights[index + 1] = (int16_t) lrintf(alpha_y * 0x1.0p+11f);
+        }
       }
     }
   }

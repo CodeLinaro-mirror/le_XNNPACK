@@ -992,6 +992,20 @@ struct global_average_pooling_ncw_context {
       size_t channels_slice);
 #endif
 
+struct resize_bilinear_nhwc_indirection_init_context {
+  const void** indirection_buffer;
+  const void* input;
+  size_t input_pixel_stride_in_bytes;
+  size_t input_offset;
+  size_t input_height;
+  size_t input_width;
+  size_t output_height;
+  size_t output_width;
+  bool align_corners;
+  bool tensorflow_legacy_mode;
+  enum xnn_datatype data_type;
+};
+
 struct resize_bilinear_context {
   // Number of channels multiplied by sizeof(input element).
   size_t scaled_channels;
@@ -1041,16 +1055,20 @@ struct resize_bilinear_chw_context {
 };
 
 #ifndef __cplusplus
+  XNN_PRIVATE void xnn_compute_resize_bilinear_indirection(
+      const struct resize_bilinear_nhwc_indirection_init_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t output_y_start,
+      size_t output_y_tile);
   XNN_PRIVATE void xnn_compute_resize_bilinear(
       const struct resize_bilinear_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t pixel_start,
       size_t pixel_range);
   XNN_PRIVATE void xnn_compute_resize_bilinear_chw(
-    const struct resize_bilinear_chw_context context[restrict XNN_MIN_ELEMENTS(1)],
-    size_t batch_index,
-    size_t pixel_start,
-    size_t pixel_range);
+      const struct resize_bilinear_chw_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index,
+      size_t pixel_start,
+      size_t pixel_range);
 #endif
 
 struct elementwise_binary_context {
