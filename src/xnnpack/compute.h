@@ -985,6 +985,10 @@ struct global_average_pooling_nwc_context {
       const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index);
 
+  XNN_PRIVATE void xnn_compute_global_average_pooling_nwc_multipass(
+      const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index);
+
   XNN_PRIVATE void xnn_compute_global_average_pooling_nwc_multipass_with_thread(
       const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t thread_index,

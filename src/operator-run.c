@@ -1055,6 +1055,28 @@ void xnn_compute_global_average_pooling_nwc_unipass(
     &context->params);
 }
 
+void xnn_compute_global_average_pooling_nwc_multipass(
+    const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
+    size_t batch_index)
+{
+  const void* input =
+    (const void*) ((uintptr_t) context->input + batch_index * context->input_batch_stride);
+  void* output =
+    (void*) ((uintptr_t) context->output + batch_index * context->output_batch_stride);
+
+  assert(context->multipass_buffer != NULL);
+
+  context->multipass_ukernel(
+    context->input_elements,
+    context->channels,
+    input,
+    context->input_pixel_stride,
+    context->zero,
+    (void*) ((uintptr_t) context->multipass_buffer + batch_index * context->buffer_size),
+    output,
+    &context->params);
+}
+
 void xnn_compute_global_average_pooling_nwc_multipass_with_thread(
     const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
     size_t thread_index,

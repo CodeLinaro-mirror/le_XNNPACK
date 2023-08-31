@@ -526,18 +526,28 @@ static enum xnn_status reshape_global_average_pooling_nwc(
     global_average_pooling_op->compute[0].task_1d = (pthreadpool_task_1d_t) xnn_compute_global_average_pooling_nwc_unipass;
     global_average_pooling_op->context.global_average_pooling_nwc.unipass_ukernel = gavgpool->unipass;
   } else {
-    const size_t num_threads = pthreadpool_get_threads_count(threadpool);
     const size_t buffer_size =
         round_up_po2(
         (channels + (XNN_MULTIPASS_EXTRA_BYTES >> log2_data_element_size)) << log2_accumulator_element_size,
           XNN_ALLOCATION_ALIGNMENT);
-
-    *workspace_size = num_threads * buffer_size;
-    *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
-    global_average_pooling_op->compute[0].type = xnn_parallelization_type_1d_with_thread;
     global_average_pooling_op->context.global_average_pooling_nwc.buffer_size = buffer_size;
-    global_average_pooling_op->compute[0].task_1d_with_thread =
-      (pthreadpool_task_1d_with_thread_t) xnn_compute_global_average_pooling_nwc_multipass_with_thread;
+
+    const size_t num_threads = pthreadpool_get_threads_count(threadpool);
+    const bool use_threads_workspace_size = num_threads < batch_size;
+    if (use_threads_workspace_size) {
+      *workspace_size = num_threads * buffer_size;
+      *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+      global_average_pooling_op->compute[0].type = xnn_parallelization_type_1d_with_thread;
+      global_average_pooling_op->compute[0].task_1d_with_thread =
+        (pthreadpool_task_1d_with_thread_t) xnn_compute_global_average_pooling_nwc_multipass_with_thread;
+    } else {
+      *workspace_size = batch_size * buffer_size;
+      *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+      global_average_pooling_op->compute[0].type = xnn_parallelization_type_1d;
+      global_average_pooling_op->compute[0].task_1d =
+        (pthreadpool_task_1d_t) xnn_compute_global_average_pooling_nwc_multipass;
+    }
+
     global_average_pooling_op->context.global_average_pooling_nwc.multipass_ukernel = gavgpool->multipass;
   }
   global_average_pooling_op->state = xnn_run_state_needs_setup;
