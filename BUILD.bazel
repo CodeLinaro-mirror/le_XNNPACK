@@ -5557,6 +5557,13 @@ xnnpack_cc_library(
     }),
 )
 
+xnnpack_cc_library(
+    name = "gemm_benchmark",
+    srcs = ["bench/gemm.h"],
+    hdrs = ["bench/gemm-benchmark.h"],
+    deps = MICROKERNEL_BENCHMARK_DEPS,
+)
+
 ######################### Benchmarks for micro-kernels #########################
 
 xnnpack_benchmark(
@@ -5612,6 +5619,17 @@ xnnpack_benchmark(
         "bench/qs8-f32-vcvt.cc",
     ],
     deps = MICROKERNEL_BENCHMARK_DEPS,
+)
+
+xnnpack_benchmark(
+    name = "qs8_gemm_fp32_bench",
+    srcs = [
+        "bench/qs8-gemm-fp32.cc",
+    ],
+    deps = MICROKERNEL_BENCHMARK_DEPS + [
+        ":gemm_benchmark",
+        ":isa_checks",
+    ],
 )
 
 xnnpack_benchmark(
