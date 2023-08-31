@@ -779,12 +779,22 @@ static enum xnn_status reshape_average_pooling2d(
       const size_t buffer_size = round_up_po2(
         (channels + (XNN_MULTIPASS_EXTRA_BYTES >> log2_data_element_size)) << log2_accumulator_element_size,
         XNN_ALLOCATION_ALIGNMENT);
-      *workspace_size = num_threads * buffer_size;
-      *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
-      average_pooling_op->compute[0].type = xnn_parallelization_type_1d_with_thread;
       average_pooling_op->context.global_average_pooling_nwc.buffer_size = buffer_size;
-      average_pooling_op->compute[0].task_1d_with_thread =
-        (pthreadpool_task_1d_with_thread_t) xnn_compute_global_average_pooling_nwc_multipass_with_thread;
+      const bool use_threads_workspace_size = num_threads < batch_size;
+      if (use_threads_workspace_size) {
+        *workspace_size = num_threads * buffer_size;
+        *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+        average_pooling_op->compute[0].type = xnn_parallelization_type_1d_with_thread;
+        average_pooling_op->compute[0].task_1d_with_thread =
+          (pthreadpool_task_1d_with_thread_t) xnn_compute_global_average_pooling_nwc_multipass_with_thread;
+      } else {
+        *workspace_size = batch_size * buffer_size;
+        *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+        average_pooling_op->compute[0].type = xnn_parallelization_type_1d;
+        average_pooling_op->compute[0].task_1d =
+          (pthreadpool_task_1d_t) xnn_compute_global_average_pooling_nwc_multipass;
+      }
+
       average_pooling_op->context.global_average_pooling_nwc.multipass_ukernel = gavgpool->multipass;
     }
   } else {
@@ -879,6 +889,7 @@ static enum xnn_status reshape_average_pooling2d(
         .pixelwise_buffer_height_stride = output_width << log2_data_element_size,
         .output_batch_stride = output_height * output_height_stride,
         .output_height_stride = output_height_stride,
+        .output_height = output_height,
         .output_width = output_width,
         .pooling_size = pooling_size,
         .channels = channels,
@@ -897,13 +908,24 @@ static enum xnn_status reshape_average_pooling2d(
         const size_t buffer_size = round_up_po2(
           (channels + (XNN_MULTIPASS_EXTRA_BYTES >> log2_data_element_size)) << log2_accumulator_element_size,
           XNN_ALLOCATION_ALIGNMENT);
-        *workspace_size = num_threads * buffer_size;
-        *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
         average_pooling_op->context.pixelwise_average_pooling.buffer_size = buffer_size;
+
+        const bool use_threads_workspace_size = num_threads < batch_size * output_height;
+        if (use_threads_workspace_size) {
+          *workspace_size = num_threads * buffer_size;
+          *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+          average_pooling_op->compute[0].type = xnn_parallelization_type_2d_with_thread;
+          average_pooling_op->compute[0].task_2d_with_thread =
+            (pthreadpool_task_2d_with_thread_t) xnn_compute_pixelwise_average_pooling_multipass_with_thread;
+        } else {
+          *workspace_size = batch_size * output_height * buffer_size;
+          *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+          average_pooling_op->compute[0].type = xnn_parallelization_type_2d;
+          average_pooling_op->compute[0].task_2d =
+            (pthreadpool_task_2d_t) xnn_compute_pixelwise_average_pooling_multipass;
+        }
+
         average_pooling_op->context.pixelwise_average_pooling.multipass_ukernel = pavgpool->multipass;
-        average_pooling_op->compute[0].type = xnn_parallelization_type_2d_with_thread;
-        average_pooling_op->compute[0].task_2d_with_thread =
-          (pthreadpool_task_2d_with_thread_t) xnn_compute_pixelwise_average_pooling_multipass_with_thread;
       }
     } else {
       // Not pixelwise.
@@ -917,6 +939,7 @@ static enum xnn_status reshape_average_pooling2d(
         .input_batch_stride = input_height * input_width * average_pooling_op->input_pixel_stride << log2_data_element_size,
         .output_batch_stride = output_height * output_height_stride,
         .output_height_stride = output_height_stride,
+        .output_height = output_height,
         .output_width = output_width,
         .pooling_size = pooling_size,
         .channels = channels,
@@ -936,13 +959,22 @@ static enum xnn_status reshape_average_pooling2d(
         const size_t buffer_size = round_up_po2(
             ((channels + (XNN_MULTIPASS_EXTRA_BYTES >> log2_data_element_size)) << log2_accumulator_element_size) * 4,
             XNN_ALLOCATION_ALIGNMENT);
-        *workspace_size = num_threads * buffer_size;
-        *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
         average_pooling_op->context.average_pooling.buffer_size = buffer_size;
+        const bool use_threads_workspace_size = num_threads < batch_size * output_height;
+        if (use_threads_workspace_size) {
+          *workspace_size = num_threads * buffer_size;
+          *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+          average_pooling_op->compute[0].type = xnn_parallelization_type_2d_with_thread;
+          average_pooling_op->compute[0].task_2d_with_thread =
+            (pthreadpool_task_2d_with_thread_t) xnn_compute_average_pooling_multipass_with_thread;
+        } else {
+          *workspace_size = batch_size * output_height * buffer_size;
+          *workspace_alignment = XNN_ALLOCATION_ALIGNMENT;
+          average_pooling_op->compute[0].type = xnn_parallelization_type_2d;
+          average_pooling_op->compute[0].task_2d =
+            (pthreadpool_task_2d_t) xnn_compute_average_pooling_multipass;
+        }
         average_pooling_op->context.average_pooling.multipass_ukernel = avgpool->multipass;
-        average_pooling_op->compute[0].type = xnn_parallelization_type_2d_with_thread;
-        average_pooling_op->compute[0].task_2d_with_thread =
-          (pthreadpool_task_2d_with_thread_t) xnn_compute_average_pooling_multipass_with_thread;
       }
     }
     average_pooling_op->compute[0].range[0] = batch_size;

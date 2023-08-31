@@ -892,6 +892,7 @@ struct average_pooling_context {
   void* output;
   size_t output_batch_stride;
   size_t output_height_stride;
+  size_t output_height;
   size_t output_width;
   size_t pooling_size;
   size_t channels;
@@ -917,6 +918,11 @@ struct average_pooling_context {
       size_t batch_index,
       size_t output_y);
 
+  XNN_PRIVATE void xnn_compute_average_pooling_multipass(
+      const struct average_pooling_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index,
+      size_t output_y);
+
   XNN_PRIVATE void xnn_compute_average_pooling_multipass_with_thread(
       const struct average_pooling_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t thread_index,
@@ -934,6 +940,7 @@ struct pixelwise_average_pooling_context {
   void* output;
   size_t output_batch_stride;
   size_t output_height_stride;
+  size_t output_height;
   size_t output_width;
   size_t pooling_size;
   size_t channels;
@@ -955,6 +962,11 @@ struct pixelwise_average_pooling_context {
 
 #ifndef __cplusplus
   XNN_PRIVATE void xnn_compute_pixelwise_average_pooling_unipass(
+      const struct pixelwise_average_pooling_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index,
+      size_t output_y);
+
+  XNN_PRIVATE void xnn_compute_pixelwise_average_pooling_multipass(
       const struct pixelwise_average_pooling_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index,
       size_t output_y);
@@ -991,6 +1003,10 @@ struct global_average_pooling_nwc_context {
 
 #ifndef __cplusplus
   XNN_PRIVATE void xnn_compute_global_average_pooling_nwc_unipass(
+      const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
+      size_t batch_index);
+
+  XNN_PRIVATE void xnn_compute_global_average_pooling_nwc_multipass(
       const struct global_average_pooling_nwc_context context[restrict XNN_MIN_ELEMENTS(1)],
       size_t batch_index);
 
