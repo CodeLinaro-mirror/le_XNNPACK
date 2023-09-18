@@ -625,13 +625,11 @@ void GemmMicrokernelTester::Test(
       std::uniform_int_distribution<int32_t>(0, std::numeric_limits<uint8_t>::max()),
       std::ref(rng));
 
-  const size_t kr_bytes = (kr() + 1) / 2;
-  const size_t k_stride = (k() + 1) / 2;
-  const size_t packed_k_bytes = (packed_k() + 1) / 2;
+  const size_t packed_k_bytes = packed_k();
   std::vector<float> input(m() * k());
   std::vector<int8_t> a((m() - 1) * a_stride() + k() + XNN_EXTRA_BYTES / sizeof(int8_t));
   std::vector<xnn_qd8_quantization_params> quantization_params(mr());
-  std::vector<uint8_t> b(n() * k_stride);
+  std::vector<uint8_t> b(n() * k() / 2);
   std::vector<float> bias(n());
   std::vector<float> kernel_scale(n());
   std::vector<uint8_t, AlignedAllocator<uint8_t, 64>> packed_w(packed_n() * packed_k_bytes +
@@ -665,7 +663,7 @@ void GemmMicrokernelTester::Test(
     // Row sums are multiplied by input zero point, since we don't know it
     // until runtime, set it to 1.
     const xnn_qs8_qc4w_packing_params packing_params = { /*input_zero_point=*/1, b_zero_point()};
-    pack(/*g=*/1, n(), k(), nr(), kr_bytes, sr(),
+    pack(/*g=*/1, n(), k(), nr(), kr(), sr(),
       b.data(), /*bias=*/nullptr, /*scale=*/nullptr,
       packed_w.data(), 2 * sizeof(float) * nr(), &packing_params);
     // Fill in packed kernel scale
@@ -692,7 +690,7 @@ void GemmMicrokernelTester::Test(
       for (size_t n_index = 0; n_index < n(); n_index++) {
         int32_t ksum = 0;
         for (size_t k_index = 0; k_index < k(); k_index++) {
-          const size_t nb_index = n_index * k_stride + k_index / 2;
+          const size_t nb_index = (n_index * k() + k_index) / 2;
           const int32_t bv = int32_t((k_index % 2 == 0) ? (b[nb_index] & UINT8_C(0xF)) : (b[nb_index] >> 4)) - b_zero_point();
           ksum += bv;
           c_ref[m_index * n() + n_index] += int32_t(a[m_index * a_stride() + k_index]) * int32_t(bv);

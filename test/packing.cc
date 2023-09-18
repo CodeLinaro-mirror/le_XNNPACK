@@ -68,7 +68,7 @@ TEST(PACK_QD8_F32_QC4W_GEMM_GIO_W, g_eq_1) {
   };
   EXPECT_EQ(expected, packed_weights);
 }
-
+#if 0
 TEST(PACK_QD8_F32_QC4W_GEMM_GOI_W, g_eq_1) {
   size_t g = 1;
   size_t nc = 3;
@@ -115,7 +115,87 @@ TEST(PACK_QD8_F32_QC4W_GEMM_GOI_W, g_eq_1) {
   };
   EXPECT_EQ(expected, packed_weights);
 }
+#endif
+TEST(PACK_QD8_F32_QC4W_GEMM_GOI_W, kr_eq_4) {
+  size_t g = 1;
+  size_t nc = 1;
+  size_t kc = 16;
+  size_t nr = 1;
+  size_t kr = 4;
+  size_t sr = 1;
 
+  std::vector<int32_t> b(g * nc);
+  std::iota(b.begin(), b.end(), 0);
+  std::vector<uint8_t> k(g * nc * kc / 2);
+  k[0] = 0x98; k[1] = 0xBA; k[2] = 0xDC; k[3] = 0xFE; k[4] = 0x10; k[5] = 0x32; k[6] = 0x54; k[7] = 0x76;
+  std::vector<uint8_t> packed_weights(g * round_up(nc, nr) * (sizeof(float) + round_up_po2(kc, kr * sr) / 2));
+  auto a = xnn_qs8_qc4w_packing_params{ 0, 0x8 };
+  xnn_pack_qs8_qc4w_gemm_goi_w(g, nc, kc, nr, kr, sr,
+    k.data(), b.data(), /*scale=*/nullptr, packed_weights.data(), /*extra_bytes=*/0, /*params=*/&a);
+
+  const std::vector<uint8_t> expected = {
+    // 1 bias.
+    0x00, 0x00, 0x00, 0x00,
+    0x40, 0x51, 0x62, 0x73, 0xC8, 0xD9, 0xEA, 0xFB,
+  };
+  EXPECT_EQ(expected, packed_weights);
+}
+
+TEST(PACK_QD8_F32_QC4W_GEMM_GOI_W, kr_eq_4_nr_eq_2) {
+  size_t g = 1;
+  size_t nc = 2;
+  size_t kc = 8;
+  size_t nr = 2;
+  size_t kr = 4;
+  size_t sr = 1;
+
+  std::vector<int32_t> b(g * nc);
+  std::iota(b.begin(), b.end(), 0);
+  std::vector<uint8_t> k(g * nc * kc / 2);
+  k[0] = 0x98; k[1] = 0xBA; k[2] = 0xDC; k[3] = 0xFE;
+  k[4] = 0x10; k[5] = 0x32; k[6] = 0x54; k[7] = 0x76;
+  std::vector<uint8_t> packed_weights(g * round_up(nc, nr) * (sizeof(float) + round_up_po2(kc, kr * sr) / 2));
+  auto a = xnn_qs8_qc4w_packing_params{ 0, 0x8 };
+  xnn_pack_qs8_qc4w_gemm_goi_w(g, nc, kc, nr, kr, sr,
+    k.data(), b.data(), /*scale=*/nullptr, packed_weights.data(), /*extra_bytes=*/0, /*params=*/&a);
+
+  const std::vector<uint8_t> expected = {
+    // 2 bias.
+    0x00, 0x00, 0x00, 0x00,
+    0x01, 0x00, 0x00, 0x00,
+    0x40, 0x51, 0x62, 0x73,
+    0xC8, 0xD9, 0xEA, 0xFB,
+  };
+  EXPECT_EQ(expected, packed_weights);
+}
+#if 0
+TEST(PACK_F32_GEMM_GIO_W, kr_eq_4) {
+  size_t g = 1;
+  size_t nc = 2;
+  size_t kc = 8;
+  size_t nr = 2;
+  size_t kr = 4;
+  size_t sr = 1;
+
+  std::vector<float> b(g * nc);
+  std::iota(b.begin(), b.end(), 0.0f);  // b = [0, 1]
+  std::vector<float> k(g * nc * kc);
+  for (size_t i = 0; i < g * nc * kc; ++i) {
+    k[i] = (i * 2) + (i * 2 + 1) * 16;
+  }
+  std::vector<float> packed_weights(g * round_up(nc, nr) * (1 + round_up_po2(kc, kr * sr)));
+  xnn_pack_f32_gemm_gio_w(g, nc, kc, nr, kr, sr, nc,
+    k.data(), b.data(), /*scale=*/nullptr, packed_weights.data(), /*extra_bytes=*/0, /*params=*/nullptr);
+
+  const std::vector<float> expected = {
+    0.0f,
+    2.0f, 4.f,
+    1.0f,
+    3.0f, 5.0f,
+  };
+  EXPECT_EQ(expected, packed_weights);
+}
+#endif
 TEST(PACK_F32_GEMM_GIO_W, g_eq_1) {
   size_t g = 1;
   size_t nc = 2;
