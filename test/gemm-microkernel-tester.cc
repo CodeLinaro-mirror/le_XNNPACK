@@ -665,11 +665,9 @@ void GemmMicrokernelTester::Test(
     }
 
     std::generate(b.begin(), b.end(), std::ref(w8rng));
-
     std::generate(bias.begin(), bias.end(), std::ref(f32rng));
     std::generate(kernel_scale.begin(), kernel_scale.end(), std::ref(scalerng));
     std::fill(c.begin(), c.end(), nanf(""));
-
     std::fill(packed_w.begin(), packed_w.end(), 0);
     // Row sums are multiplied by input zero point, since we don't know it
     // until runtime, set it to 1.
@@ -702,7 +700,7 @@ void GemmMicrokernelTester::Test(
         int32_t ksum = 0;
         for (size_t k_index = 0; k_index < k(); k_index++) {
           const size_t nb_index = n_index * k_stride + k_index / 2;
-          const int32_t bv = int32_t(((k_index % 2 == 0) ? (b[nb_index] & UINT8_C(0xF)) : (b[nb_index] >> 4))) - 8;;
+          const int32_t bv = int32_t((k_index % 2 == 0) ? (b[nb_index] & UINT8_C(0xF)) : (b[nb_index] >> 4)) - b_zero_point();
           ksum += bv;
           c_ref[m_index * n() + n_index] += int32_t(a[m_index * a_stride() + k_index]) * int32_t(bv);
         }
@@ -2441,13 +2439,7 @@ void GemmMicrokernelTester::Test(
   for (size_t iteration = 0; iteration < iterations(); iteration++) {
     std::generate(a.begin(), a.end(), [&]() { return f32dist(rng); });
     std::generate(b.begin(), b.end(), [&]() { return f32dist(rng); });
-    std::generate(bias.begin(), bias.end(), [&]() { return f32dist(rng); });
-    std::fill(c.begin(), c.end(), nanf(""));
     std::fill(c_ref.begin(), c_ref.end(), 0.0f);
-
-    std::fill(packed_w.begin(), packed_w.end(), 0.0f);
-    xnn_pack_f32_gemm_goi_w(/*g=*/1, n(), k(), nr(), kr(), sr(),
-      b.data(), bias.data(), /*scale=*/nullptr, packed_w.data(), /*extra_bytes=*/0, /*params=*/nullptr);
 
     for (size_t m_index = 0; m_index < m(); m_index++) {
       for (size_t n_index = 0; n_index < n(); n_index++) {
@@ -2458,18 +2450,39 @@ void GemmMicrokernelTester::Test(
             a[m_index * a_stride() + k_index] *
             b[n_index * k() + k_index];
         }
+      }
+    }
+    const float unbiased_accumulated_min = *std::min_element(c_ref.cbegin(), c_ref.cend());
+    const float unbiased_accumulated_max = *std::max_element(c_ref.cbegin(), c_ref.cend());
+    std::uniform_real_distribution<float> bias_dist(-unbiased_accumulated_max, unbiased_accumulated_min);
+    std::generate(bias.begin(), bias.end(), [&]() { return bias_dist(rng); });
+    for (size_t m_index = 0; m_index < m(); m_index++) {
+      for (size_t n_index = 0; n_index < n(); n_index++) {
         c_ref[m_index * n() + n_index] += bias[n_index];
       }
     }
 
+    std::fill(c.begin(), c.end(), nanf(""));
+
+    std::fill(packed_w.begin(), packed_w.end(), 0.0f);
+    xnn_pack_f32_gemm_goi_w(/*g=*/1, n(), k(), nr(), kr(), sr(),
+      b.data(), bias.data(), /*scale=*/nullptr, packed_w.data(), /*extra_bytes=*/0, /*params=*/nullptr);
+
+
     const float accumulated_min = *std::min_element(c_ref.cbegin(), c_ref.cend());
     const float accumulated_max = *std::max_element(c_ref.cbegin(), c_ref.cend());
-    const float c_min =
-        qmin() == std::numeric_limits<uint8_t>::min() ? -std::numeric_limits<float>::infinity()
-                    : accumulated_min + (accumulated_max - accumulated_min) / 255.0f * float(qmin());
-    const float c_max =
-        qmax() == std::numeric_limits<uint8_t>::max() ? +std::numeric_limits<float>::infinity()
-                      : accumulated_max - (accumulated_max - accumulated_min) / 255.0f * float(255 - qmax());
+    float c_min = -std::numeric_limits<float>::infinity();
+    float c_max = +std::numeric_limits<float>::infinity();
+    if (relu()) {
+      c_min = 0;
+    } else {
+      if (qmin() != std::numeric_limits<uint8_t>::min()) {
+        c_min = accumulated_min + (accumulated_max - accumulated_min) / 255.0f * float(qmin());
+      }
+      if (qmax() != std::numeric_limits<uint8_t>::max()) {
+        c_max = accumulated_max - (accumulated_max - accumulated_min) / 255.0f * float(255 - qmax());
+      }
+    }
 
     // Prepare parameters.
     xnn_f32_minmax_params params;
@@ -2680,10 +2693,6 @@ void GemmMicrokernelTester::Test(
     std::fill(c.begin(), c.end(), nanf(""));
     std::fill(c_ref.begin(), c_ref.end(), 0.0f);
 
-    std::fill(packed_w.begin(), packed_w.end(), 0.0f);
-    xnn_pack_f32_conv_goki_w(/*g=*/1, n(), ks(), k(), nr(), kr(), sr(),
-      b.data(), bias.data(), /*scale=*/nullptr, packed_w.data(), /*extra_bytes=*/0, /*params=*/nullptr);
-
     for (size_t ks_index = 0; ks_index < ks(); ks_index++) {
       for (size_t m_index = 0; m_index < mr(); m_index++) {
         im2col[ks_index * mr() + m_index] = a.data() + a_stride() * m_index - a_offset();
@@ -2701,7 +2710,6 @@ void GemmMicrokernelTester::Test(
       }
     }
 
-    std::fill(c_ref.begin(), c_ref.end(), 0.0f);
     for (size_t m_index = 0; m_index < m(); m_index++) {
       for (size_t n_index = 0; n_index < n(); n_index++) {
         for (size_t ks_index = 0; ks_index < ks(); ks_index++) {
@@ -2720,14 +2728,36 @@ void GemmMicrokernelTester::Test(
             }
           }
         }
+      }
+    }
+    const float unbiased_accumulated_min = *std::min_element(c_ref.cbegin(), c_ref.cend());
+    const float unbiased_accumulated_max = *std::max_element(c_ref.cbegin(), c_ref.cend());
+    std::uniform_real_distribution<float> bias_dist(-unbiased_accumulated_max, unbiased_accumulated_min);
+    std::generate(bias.begin(), bias.end(), [&]() { return bias_dist(rng); });
+    for (size_t m_index = 0; m_index < m(); m_index++) {
+      for (size_t n_index = 0; n_index < n(); n_index++) {
         c_ref[m_index * n() + n_index] += bias[n_index];
       }
     }
 
+    std::fill(packed_w.begin(), packed_w.end(), 0.0f);
+    xnn_pack_f32_conv_goki_w(/*g=*/1, n(), ks(), k(), nr(), kr(), sr(),
+      b.data(), bias.data(), /*scale=*/nullptr, packed_w.data(), /*extra_bytes=*/0, /*params=*/nullptr);
+
     const float accumulated_min = *std::min_element(c_ref.cbegin(), c_ref.cend());
     const float accumulated_max = *std::max_element(c_ref.cbegin(), c_ref.cend());
-    const float c_min = accumulated_min + (accumulated_max - accumulated_min) / 255.0f * float(qmin());
-    const float c_max = accumulated_max - (accumulated_max - accumulated_min) / 255.0f * float(255 - qmax());
+    float c_min = -std::numeric_limits<float>::infinity();
+    float c_max = +std::numeric_limits<float>::infinity();
+    if (relu()) {
+      c_min = 0;
+    } else {
+      if (qmin() != std::numeric_limits<uint8_t>::min()) {
+        c_min = accumulated_min + (accumulated_max - accumulated_min) / 255.0f * float(qmin());
+      }
+      if (qmax() != std::numeric_limits<uint8_t>::max()) {
+        c_max = accumulated_max - (accumulated_max - accumulated_min) / 255.0f * float(255 - qmax());
+      }
+    }
     for (size_t m_index = 0; m_index < m(); m_index++) {
       for (size_t n_index = 0; n_index < n(); n_index++) {
         c_ref[m_index * n() + n_index] = std::min(c_ref[m_index * n() + n_index], c_max);
