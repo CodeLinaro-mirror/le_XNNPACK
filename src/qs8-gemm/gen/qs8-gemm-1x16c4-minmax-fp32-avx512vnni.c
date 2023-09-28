@@ -2,7 +2,7 @@
 //   Template: src/qs8-gemm/MRx16c4-avx512vnni.c.in
 //   Generator: tools/xngen
 //
-// Copyright 2020 Google LLC
+// Copyright 2023 Google LLC
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
@@ -42,10 +42,10 @@ void xnn_qs8_gemm_minmax_fp32_ukernel_1x16c4__avx512vnni(
   const int8_t* a0 = a;
   int8_t* c0 = c;
 
-  const __m512i vsign_mask = _mm512_load_si512(params->fp32_avx512vnni.sign_mask);
   const __m512 vscale = _mm512_load_ps(params->fp32_avx512vnni.scale);
   const __m512 voutput_max_less_zero_point = _mm512_load_ps(params->fp32_avx512vnni.output_max_less_zero_point);
-  const __m256i voutput_zero_point = _mm256_load_si256((const __m256i*) params->fp32_avx512vnni.output_zero_point);
+  const __m512i vsign_mask = _mm512_load_si512(params->fp32_avx512vnni.sign_mask);
+  const __m512i voutput_zero_point = _mm512_load_epi32(params->fp32_avx512vnni.output_zero_point);
   const __m128i voutput_min = _mm_load_si128((const __m128i*) params->fp32_avx512vnni.output_min);
   do {
     __m512i vacc0x0123456789ABCDEF = _mm512_load_epi32(w);
@@ -53,7 +53,7 @@ void xnn_qs8_gemm_minmax_fp32_ukernel_1x16c4__avx512vnni(
 
     size_t k = kc;
     do {
-      __m512i va0x0123 = _mm512_set1_epi32((int) unaligned_load_u32(a0));
+      __m512i va0x0123 = _mm512_set1_epi32((int32_t)unaligned_load_u32(a0));
 
       a0 += 4;
 
@@ -76,11 +76,11 @@ void xnn_qs8_gemm_minmax_fp32_ukernel_1x16c4__avx512vnni(
 
     vacc0x0123456789ABCDEF = _mm512_cvtps_epi32(vscaled0x0123456789ABCDEF);
 
-    __m256i vacc0x012389AB4567CDEF = _mm256_packs_epi32(_mm512_castsi512_si256(vacc0x0123456789ABCDEF), _mm512_extracti32x8_epi32(vacc0x0123456789ABCDEF, 1));
+    vacc0x0123456789ABCDEF = _mm512_add_epi32(vacc0x0123456789ABCDEF, voutput_zero_point);
 
-    vacc0x012389AB4567CDEF = _mm256_adds_epi16(vacc0x012389AB4567CDEF, voutput_zero_point);
+    const __m256i vacc0x0123456789ABCDEF_w = _mm256_packs_epi32(_mm512_castsi512_si256(vacc0x0123456789ABCDEF), _mm512_extracti32x8_epi32(vacc0x0123456789ABCDEF, 1));
 
-    const __m128i vout0x012389AB4567CDEF = _mm_packs_epi16(_mm256_castsi256_si128(vacc0x012389AB4567CDEF), _mm256_extracti128_si256(vacc0x012389AB4567CDEF, 1));
+    const __m128i vout0x012389AB4567CDEF = _mm_packs_epi16(_mm256_castsi256_si128(vacc0x0123456789ABCDEF_w), _mm256_extracti128_si256(vacc0x0123456789ABCDEF_w, 1));
 
     __m128i vout0x0123456789ABCDEF = _mm_shuffle_epi8(vout0x012389AB4567CDEF, _mm_loadu_epi8(params->fp32_avx512vnni.shuffle_control_mask));
 
