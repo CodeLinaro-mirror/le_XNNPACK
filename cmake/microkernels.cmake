@@ -7601,6 +7601,10 @@ SET(ALL_WASM_MICROKERNEL_SRCS
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-2x4-minmax-wasm.c
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-2x8-minmax-wasm.c
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-4x4-minmax-wasm.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x2-minmax-wasm.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x2-minmax-wasm.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x2-minmax-wasm.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x2-minmax-wasm.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l1c1s1r-minmax-fp32-wasm-fmagic.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l2c1s1r-minmax-fp32-wasm-fmagic.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l4c1s1r-minmax-fp32-wasm-fmagic.c
@@ -8093,6 +8097,10 @@ SET(ALL_WASMRELAXEDSIMD_MICROKERNEL_SRCS
   src/qs8-qc8w-gemm/gen/qs8-qc8w-gemm-2x4c16-minmax-fp32-wasmsdot.c
   src/qs8-qc8w-gemm/gen/qs8-qc8w-gemm-3x4c16-minmax-fp32-wasmsdot.c
   src/qs8-qc8w-gemm/gen/qs8-qc8w-gemm-4x4c16-minmax-fp32-wasmsdot.c
+  src/qs8-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c16-minmax-wasmsdot.c
+  src/qs8-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c16-minmax-wasmsdot.c
+  src/qs8-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c16-minmax-wasmsdot.c
+  src/qs8-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c16-minmax-wasmsdot.c
   src/qs8-qc8w-igemm/gen/qs8-qc8w-igemm-1x4c16-minmax-fp32-wasmsdot.c
   src/qs8-qc8w-igemm/gen/qs8-qc8w-igemm-2x4c16-minmax-fp32-wasmsdot.c
   src/qs8-qc8w-igemm/gen/qs8-qc8w-igemm-3x4c16-minmax-fp32-wasmsdot.c
@@ -9038,6 +9046,30 @@ SET(ALL_WASMSIMD_MICROKERNEL_SRCS
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-4x4c2s4-minmax-wasmsimd-dot16x2-ld128.c
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-4x4c8-minmax-wasmsimd-dot16x2-ld64.c
   src/qd8-f32-qc8w-gemm/gen/qd8-f32-qc8w-gemm-4x4c8-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c2-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c2-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c2s4-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c2s4-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c8-minmax-fp32-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-1x4c8-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c2-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c2-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c2s4-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c2s4-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c8-minmax-fp32-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-2x4c8-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c2-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c2-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c2s4-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c2s4-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c8-minmax-fp32-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-3x4c8-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c2-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c2-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c2s4-minmax-wasmsimd-dot16x2-ld64.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c2s4-minmax-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c8-minmax-fp32-wasmsimd-dot16x2-ld128.c
+  src/qd8-f32-qc8w-igemm/gen/qd8-f32-qc8w-igemm-4x4c8-minmax-wasmsimd-dot16x2-ld64.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l8c8s8r-minmax-fp32-wasmsimd-mul16-add16.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l8c8s8r-minmax-fp32-wasmsimd-mul16.c
   src/qs8-dwconv/gen/qs8-dwconv-5f5m5l16c8s8r-minmax-fp32-wasmsimd-mul16-add16.c
