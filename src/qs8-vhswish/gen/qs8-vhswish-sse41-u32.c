@@ -31,7 +31,7 @@ void xnn_qs8_vhswish_ukernel__sse41_u32(
   const __m128i voutput_zero_point = _mm_load_si128((const __m128i*) params->sse2.output_zero_point);
   const __m128i vinput_scale_div = _mm_load_si128((const __m128i*) params->sse2.input_scale_div);
   const __m128i vscale_ratio = _mm_load_si128((const __m128i*) params->sse2.scale_ratio);
-  const __m128i vhalf = _mm_load_si128((const __m128i*) params->sse2.half);
+  const __m128i vhalf = _mm_set1_epi32(0x4000);
   const __m128i vzero = _mm_setzero_si128();
   for (; batch >= 32 * sizeof(int8_t); batch -= 32 * sizeof(int8_t)) {
     __m128i vextx0 = _mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*) input));
@@ -88,10 +88,10 @@ void xnn_qs8_vhswish_ukernel__sse41_u32(
     vin2 = _mm_min_epi16(vin2, vzero);
     vin3 = _mm_min_epi16(vin3, vzero);
 
-    const __m128i vout0 = _mm_mulhi_epi16(vextx0, vscale_ratio);
-    const __m128i vout1 = _mm_mulhi_epi16(vextx1, vscale_ratio);
-    const __m128i vout2 = _mm_mulhi_epi16(vextx2, vscale_ratio);
-    const __m128i vout3 = _mm_mulhi_epi16(vextx3, vscale_ratio);
+    const __m128i vout0 = _mm_mulhrs_epi16(vextx0, vscale_ratio);
+    const __m128i vout1 = _mm_mulhrs_epi16(vextx1, vscale_ratio);
+    const __m128i vout2 = _mm_mulhrs_epi16(vextx2, vscale_ratio);
+    const __m128i vout3 = _mm_mulhrs_epi16(vextx3, vscale_ratio);
 
     __m128i vacc0 = _mm_mulhrs_epi16(vout0, vin0);
     __m128i vacc1 = _mm_mulhrs_epi16(vout1, vin1);
@@ -122,7 +122,7 @@ void xnn_qs8_vhswish_ukernel__sse41_u32(
     vprod32lastfour = _mm_sub_epi32(vprod32lastfour, vhalf);
     __m128i vin = _mm_packs_epi32(vprod32firstfour, vprod32lastfour);
     vin = _mm_min_epi16(vin, vzero);
-    const __m128i vout = _mm_mulhi_epi16(vextx, vscale_ratio);
+    const __m128i vout = _mm_mulhrs_epi16(vextx, vscale_ratio);
     __m128i vacc = _mm_mulhrs_epi16(vout, vin);
     vacc = _mm_adds_epi16(vacc, voutput_zero_point);
     input += 8;
@@ -147,7 +147,7 @@ void xnn_qs8_vhswish_ukernel__sse41_u32(
     vprod32lastfour = _mm_sub_epi32(vprod32lastfour, vhalf);
     __m128i vin = _mm_packs_epi32(vprod32firstfour, vprod32lastfour);
     vin = _mm_min_epi16(vin, vzero);
-    const __m128i vout = _mm_mulhi_epi16(vextx, vscale_ratio);
+    const __m128i vout = _mm_mulhrs_epi16(vextx, vscale_ratio);
     __m128i vacc = _mm_mulhrs_epi16(vout, vin);
     vacc = _mm_adds_epi16(vacc, voutput_zero_point);
 
