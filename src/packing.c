@@ -405,8 +405,8 @@ void xnn_pack_qs8_qc4w_gemm_goi_w(
   const size_t skr = sr * kr;
   const uint32_t izp = (uint32_t) params->input_zero_point;
   do {
-    for (size_t nr_block_start = 0; nr_block_start < nc; nr_block_start += nr) {
-
+    size_t nr_block_start = 0;
+    do {
       const size_t nr_block_size = min(nc - nr_block_start, nr);
       int32_t* packed_b = (int32_t*) packed_weights;
       if XNN_LIKELY(b != NULL) {
@@ -448,7 +448,8 @@ void xnn_pack_qs8_qc4w_gemm_goi_w(
         packed_weights = (uint8_t*) packed_weights + (nr - nr_block_size) * kr;  // skip NR remainder
       }
       packed_weights = (void*) ((uintptr_t) packed_weights + extra_bytes);
-    }
+      nr_block_start += nr;
+    } while (nr_block_start < nc);
     k += nc * kc;  // kc * 2 nibbles
     if XNN_UNPREDICTABLE(b != NULL) {
       b += nc;
@@ -488,7 +489,8 @@ void xnn_pack_qs8_qc4w_legacy_gemm_goi_w(
   const uint32_t kzp = (uint32_t) params->kernel_zero_point;
   assert(kzp == 8);
   do {
-    for (size_t nr_block_start = 0; nr_block_start < nc; nr_block_start += nr) {
+    size_t nr_block_start = 0;
+    do {
       const size_t nr_block_size = min(nc - nr_block_start, nr);
       int32_t* packed_b = (int32_t*) packed_weights;
       if XNN_LIKELY(b != NULL) {
@@ -529,7 +531,8 @@ void xnn_pack_qs8_qc4w_legacy_gemm_goi_w(
         packed_weights = (uint8_t*) packed_weights + (nr - nr_block_size) * kr;
       }
       packed_weights = (void*) ((uintptr_t) packed_weights + extra_bytes);
-    }
+      nr_block_start += nr;
+    } while (nr_block_start < nc);
     k += nc * kb;
     if XNN_UNPREDICTABLE(b != NULL) {
       b += nc;
@@ -566,8 +569,8 @@ void xnn_pack_qs8_qc4w_gemm_gio_w(
   const size_t skr = sr * kr;
   const uint32_t izp = (uint32_t) params->input_zero_point;
   do {
-    for (size_t nr_block_start = 0; nr_block_start < nc; nr_block_start += nr) {
-
+    size_t nr_block_start = 0;
+    do {
       const size_t nr_block_size = min(nc - nr_block_start, nr);
       int32_t* packed_b = (int32_t*) packed_weights;
       if XNN_LIKELY(b != NULL) {
@@ -609,7 +612,8 @@ void xnn_pack_qs8_qc4w_gemm_gio_w(
         packed_weights = (uint8_t*) packed_weights + (nr - nr_block_size) * kr;  // skip NR remainder
       }
       packed_weights = (void*) ((uintptr_t) packed_weights + extra_bytes);
-    }
+      nr_block_start += nr;
+    } while (nr_block_start < nc);
     k += nc * kc;  // kc * 2 nibbles
     if XNN_UNPREDICTABLE(b != NULL) {
       b += nc;
