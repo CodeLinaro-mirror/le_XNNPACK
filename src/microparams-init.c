@@ -2028,6 +2028,15 @@ size_t xnn_init_f32_minmax_avx512vnni_params(
   }
   return sizeof(params->avx512vnni);
 }
+
+size_t xnn_init_f32_minmax_avxvnni_params(
+  union xnn_f32_minmax_params params[XNN_MIN_ELEMENTS(1)],
+  float output_min,
+  float output_max) {
+  params->avxvnni.min = output_min;
+  params->avxvnni.max = output_max;
+  return sizeof(params->avxvnni);
+}
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
 #if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD

@@ -151,6 +151,10 @@ union xnn_f32_minmax_params {
     float max;
     XNN_ALIGN(64) int8_t sign_mask[64];
   } avx512vnni;
+  struct {
+    float min;
+    float max;
+  } avxvnni;
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 #if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
   struct {
