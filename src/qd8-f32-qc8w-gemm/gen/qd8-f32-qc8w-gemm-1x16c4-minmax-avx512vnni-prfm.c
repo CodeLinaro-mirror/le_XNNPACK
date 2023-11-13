@@ -47,28 +47,28 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512vnni_prfm(
   const __m512i vinput_zero_point0 = _mm512_set1_epi32((int) quantization_params[0].zero_point + 128);
   const __m512 voutput_min = _mm512_set1_ps(params->avx512vnni.min);
   const __m512 voutput_max = _mm512_set1_ps(params->avx512vnni.max);
-  const __m512i vsign_mask = _mm512_load_si512(params->avx512vnni.sign_mask);
+  const __m512i vsign_mask = _mm512_set1_epi8(params->avx512vnni.sign_mask);  // 0x80
   do {
     const __m512i vksum0123456789ABCDEF = _mm512_load_epi32(w);
     __m512i vacc0x0123456789ABCDEF = _mm512_mullo_epi32(vksum0123456789ABCDEF, vinput_zero_point0);
     w = (const int32_t*) w + 16;
 
     size_t k = kc;
-    do {
+
+    while (k >= 4 * sizeof(int8_t)) {
       __m512i va0x0123 = _mm512_set1_epi32((int) unaligned_load_u32(a0));
       a0 += 4;
 
       va0x0123 = _mm512_xor_epi32(va0x0123, vsign_mask);
 
       const __m512i vb0123456789ABCDEF = _mm512_load_si512(w);
-
       xnn_prefetch_to_l1((const int8_t*) w + 960);
 
       vacc0x0123456789ABCDEF = _mm512_dpbusd_epi32(vacc0x0123456789ABCDEF, va0x0123, vb0123456789ABCDEF);
 
       w = (const int8_t*) w + 64;
       k -= 4 * sizeof(int8_t);
-    } while (k != 0);
+    }
 
     __m512 vscaled0x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc0x0123456789ABCDEF);
 
