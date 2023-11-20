@@ -25,7 +25,7 @@
 
 #ifndef XNN_LOG_TO_STDIO
   #if defined(__ANDROID__)
-    #define XNN_LOG_TO_STDIO 0
+    #define XNN_LOG_TO_STDIO 1
   #else
     #define XNN_LOG_TO_STDIO 1
   #endif
