@@ -7763,6 +7763,32 @@ size_t xnn_init_qs8_f32_cvt_neon_params(
 }
 #endif  // XNN_ARCH_ARM || XNN_ARCH_ARM64
 
+#if XNN_ARCH_ARM || XNN_ARCH_ARM64
+size_t xnn_init_qs8_f16_cvt_neonfp16arith_params(
+  union xnn_qs8_f16_cvt_params params[XNN_MIN_ELEMENTS(1)],
+  uint16_t scale,
+  int8_t zero_point)
+{
+  params->neon.minus_zero_point = -(int16_t) zero_point;
+  params->neon.scale = scale;
+  return sizeof(params->neon);
+}
+#endif  // XNN_ARCH_ARM || XNN_ARCH_ARM64
+
+#if XNN_ARCH_X86 || XNN_ARCH_X86_64
+size_t xnn_init_qs8_f16_cvt_avx_params(
+  union xnn_qs8_f16_cvt_params params[XNN_MIN_ELEMENTS(1)],
+  uint16_t scale,
+  int8_t zero_point)
+{
+  for (uint32_t i = 0; i < 8; i++) {
+    params->avx.minus_zero_point[i] = -(int32_t) zero_point;
+    params->avx.scale[i] = fp16_ieee_to_fp32_value(scale);
+  }
+  return sizeof(params->avx);
+}
+#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
+
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
 size_t xnn_init_qs8_f32_cvt_sse2_params(
   union xnn_qs8_f32_cvt_params params[XNN_MIN_ELEMENTS(1)],
