@@ -480,6 +480,9 @@ struct xnn_runtime {
   // True if runtime has ever been setup. If it has been setup, the pointers inside of opdata need to be updated if
   // workspace changes.
   bool has_been_setup;
+
+  // True if memory planning is up to date. Memory planning is necessary when a runtime has been created or reshaped.
+  bool memory_planning_ready;
 };
 
 struct xnn_value* xnn_subgraph_new_internal_value(xnn_subgraph_t subgraph);
@@ -492,9 +495,6 @@ enum xnn_status xnn_subgraph_add_nodes(xnn_subgraph_t subgraph, size_t num_nodes
 size_t xnn_tensor_get_size(const struct xnn_value* value);
 
 size_t xnn_tensor_get_size_by_id(xnn_subgraph_t subgraph, uint32_t value_id);
-
-// Checks if a tensor shape is completely known.
-bool xnn_tensor_shape_is_static(const struct xnn_value* value);
 
 XNN_INLINE static size_t xnn_get_rounded_size(size_t size)
 {
@@ -513,8 +513,7 @@ XNN_INLINE static size_t xnn_tensor_get_rounded_size(const struct xnn_value* val
 enum xnn_shape_inference_status xnn_tensor_propagate_dimension(
   struct xnn_value* to,
   uint32_t to_dim,
-  const struct xnn_value* from,
-  uint32_t from_dim);
+  size_t infer_dim);
 
 // Product of all shape dimensions
 size_t xnn_shape_multiply_all_dims(

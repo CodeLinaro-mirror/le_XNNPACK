@@ -342,82 +342,144 @@ static enum xnn_status reshape_fully_connected_operator(
     input_channels = values[filter_id].shape.dim[1];
   }
   const size_t batch_size = num_input_elements / input_channels;
+  const size_t old_workspace_size = opdata->workspace_size;
+  enum xnn_status status = xnn_status_invalid_state;
 
   switch (opdata->operator_objects[0]->type) {
     case xnn_operator_type_dynamic_fully_connected_nc_f16:
-      return xnn_reshape_dynamic_fully_connected_nc_f16(
+      status = xnn_reshape_dynamic_fully_connected_nc_f16(
         opdata->operator_objects[0],
         batch_size,
         input_channels, output_channels,
         input_channels, output_channels,
         &opdata->workspace_size, &opdata->workspace_alignment,
         threadpool);
+      break;
     case xnn_operator_type_dynamic_fully_connected_nc_f32:
-      return xnn_reshape_dynamic_fully_connected_nc_f32(
+      status = xnn_reshape_dynamic_fully_connected_nc_f32(
         opdata->operator_objects[0],
         batch_size,
         input_channels, output_channels,
         input_channels, output_channels,
         &opdata->workspace_size, &opdata->workspace_alignment,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_f16:
-      return xnn_reshape_fully_connected_nc_f16(
+      status = xnn_reshape_fully_connected_nc_f16(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_f32:
-      return xnn_reshape_fully_connected_nc_f32(
+      status = xnn_reshape_fully_connected_nc_f32(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_f32_qc4w:
-      return xnn_reshape_fully_connected_nc_f32_qc4w(
+      status = xnn_reshape_fully_connected_nc_f32_qc4w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_f32_qc8w:
-      return xnn_reshape_fully_connected_nc_f32_qc8w(
+      status = xnn_reshape_fully_connected_nc_f32_qc8w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qd8_f32_qc4w:
-      return xnn_reshape_fully_connected_nc_qd8_f32_qc4w(
+      status = xnn_reshape_fully_connected_nc_qd8_f32_qc4w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qd8_f16_qc4w:
-      return xnn_reshape_fully_connected_nc_qd8_f16_qc4w(
+      status = xnn_reshape_fully_connected_nc_qd8_f16_qc4w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qd8_f16_qc8w:
-      return xnn_reshape_fully_connected_nc_qd8_f16_qc8w(
+      status = xnn_reshape_fully_connected_nc_qd8_f16_qc8w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qd8_f32_qc8w:
-      return xnn_reshape_fully_connected_nc_qd8_f32_qc8w(
+      status = xnn_reshape_fully_connected_nc_qd8_f32_qc8w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qs8:
-      return xnn_reshape_fully_connected_nc_qs8(
+      status = xnn_reshape_fully_connected_nc_qs8(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qs8_qc8w:
-      return xnn_reshape_fully_connected_nc_qs8_qc8w(
+      status = xnn_reshape_fully_connected_nc_qs8_qc8w(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     case xnn_operator_type_fully_connected_nc_qu8:
-      return xnn_reshape_fully_connected_nc_qu8(
+      status = xnn_reshape_fully_connected_nc_qu8(
         opdata->operator_objects[0],
         batch_size,
         threadpool);
+      break;
     default:
       XNN_UNREACHABLE;
   }
+  if (status != xnn_status_success) {
+    return status;
+  }
+  // Infer output channels.
+  const uint32_t output_channel_index = (opdata->flags & XNN_FLAG_TRANSPOSE_WEIGHTS) ? 1 : 0;
+  const struct xnn_value* input = &values[input_id];
+  const struct xnn_value* filter = &values[filter_id];
+  const uint32_t output_id = opdata->outputs[0];
+  struct xnn_value* output = &values[output_id];
+  enum xnn_shape_inference_status shape_status = xnn_tensor_propagate_dimension(output, output->shape.num_dims - 1, filter->shape.dim[output_channel_index]);
+  if (status == xnn_shape_inference_status_error) {
+    return xnn_status_invalid_parameter;
+  }
+  if (opdata->flags & XNN_FLAG_TENSORFLOW_RESHAPE_2D) {
+    size_t output_batch = xnn_shape_multiply_leading_dims(&input->shape, input->shape.num_dims - 1);
+    if (output->shape.dim[0] != output_batch) {
+      output->shape.dim[0] = output_batch;
+      output->shape.maximum_dim[0] = output_batch;
+
+      const size_t new_size = xnn_tensor_get_size(output);
+      if (new_size > output->size || opdata->workspace_size > old_workspace_size) {
+        output->size = new_size;
+        return xnn_status_reallocation_required;
+      }
+    } else {
+      return xnn_status_success;
+    }
+  }
+  // Propagate input shape to output.
+  bool changed = !(opdata->workspace_size > old_workspace_size);
+  for (size_t cur_dim = 0; cur_dim < input->shape.num_dims - 1; cur_dim++) {
+    shape_status = xnn_tensor_propagate_dimension(output, cur_dim, input->shape.dim[cur_dim]);
+    if (shape_status == xnn_shape_inference_status_error) {
+      return xnn_status_invalid_parameter;
+    }
+    changed |= true;
+  }
+
+  if (!changed) {
+    return xnn_status_success;
+  }
+  const size_t new_size = xnn_tensor_get_size(output);
+  if (new_size > output->size || old_workspace_size > opdata->workspace_size) {
+    output->size = new_size;
+    return xnn_status_reallocation_required;
+  }
+  return xnn_status_success;
 }
 
 static enum xnn_status setup_fully_connected_operator(
@@ -581,10 +643,11 @@ static enum xnn_shape_inference_status infer_shape_forward(
   const struct xnn_node* node,
   struct xnn_value* values)
 {
+  const uint32_t input_id = node->inputs[0];
+  const struct xnn_value* input = &values[input_id];
   // Assert that filter tensor has static shape.
   const uint32_t filter_id = node->inputs[1];
   const struct xnn_value* filter = &values[filter_id];
-  assert(xnn_tensor_shape_is_static(filter));
 
   enum xnn_shape_inference_status status = xnn_shape_inference_status_no_change;
 
@@ -592,20 +655,26 @@ static enum xnn_shape_inference_status infer_shape_forward(
   const uint32_t output_channel_index = (node->flags & XNN_FLAG_TRANSPOSE_WEIGHTS) ? 1 : 0;
   const uint32_t output_id = node->outputs[0];
   struct xnn_value* output = &values[output_id];
-  status = xnn_tensor_propagate_dimension(output, output->shape.num_dims - 1, filter, output_channel_index);
+  status = xnn_tensor_propagate_dimension(output, output->shape.num_dims - 1, filter->shape.dim[output_channel_index]);
   if (status == xnn_shape_inference_status_error) {
     return status;
   }
 
   if (node->flags & XNN_FLAG_TENSORFLOW_RESHAPE_2D) {
-    // No inference for input/output shape possible.
-    return status;
+    size_t output_batch = xnn_shape_multiply_leading_dims(&input->shape, input->shape.num_dims - 1);
+    if (output->shape.dim[0] != output_batch) {
+      output->shape.dim[0] = output_batch;
+      output->shape.maximum_dim[0] = output_batch;
+      output->size = xnn_tensor_get_size(output);
+      return xnn_shape_inference_status_changed;
+    } else {
+      return xnn_shape_inference_status_no_change;
+    }
   }
 
   // Propagate input shape to output.
-  const struct xnn_value* input = &values[node->inputs[0]];
   for (size_t cur_dim = 0; cur_dim < input->shape.num_dims - 1; cur_dim++) {
-    const enum xnn_shape_inference_status changed = xnn_tensor_propagate_dimension(output, cur_dim, input, cur_dim);
+    const enum xnn_shape_inference_status changed = xnn_tensor_propagate_dimension(output, cur_dim, input->shape.dim[cur_dim]);
     if (changed == xnn_shape_inference_status_error) {
       return changed;
     } else if (changed == xnn_shape_inference_status_changed) {
@@ -625,7 +694,6 @@ static enum xnn_shape_inference_status infer_shape_backward(
   // Assert that filter tensor has static shape.
   const uint32_t filter_id = node->inputs[1];
   const struct xnn_value* filter = &values[filter_id];
-  assert(xnn_tensor_shape_is_static(filter));
 
   enum xnn_shape_inference_status status = xnn_shape_inference_status_no_change;
 
@@ -633,7 +701,7 @@ static enum xnn_shape_inference_status infer_shape_backward(
   const uint32_t input_channel_index = (node->flags & XNN_FLAG_TRANSPOSE_WEIGHTS) ? 0 : 1;
   const uint32_t input_id = node->inputs[0];
   struct xnn_value* input = &values[input_id];
-  status = xnn_tensor_propagate_dimension(input, input->shape.num_dims - 1, filter, input_channel_index);
+  status = xnn_tensor_propagate_dimension(input, input->shape.num_dims - 1, filter->shape.dim[input_channel_index]);
   if (status == xnn_shape_inference_status_error) {
     return status;
   }
@@ -647,7 +715,7 @@ static enum xnn_shape_inference_status infer_shape_backward(
   const struct xnn_value* output = &values[node->outputs[0]];
   for (size_t cur_dim = 0; cur_dim < output->shape.num_dims - 1; cur_dim++) {
     const enum xnn_shape_inference_status changed =
-      xnn_tensor_propagate_dimension(input, cur_dim, output, cur_dim);
+      xnn_tensor_propagate_dimension(input, cur_dim, output->shape.dim[cur_dim]);
     if (changed == xnn_shape_inference_status_error) {
       return changed;
     } else if (changed == xnn_shape_inference_status_changed) {
@@ -843,14 +911,6 @@ enum xnn_status xnn_define_fully_connected(
     return xnn_status_invalid_parameter;
   }
 
-  // Check that filter shape is fully known.
-  if (!xnn_tensor_shape_is_static(kernel_value)) {
-    xnn_log_error(
-      "failed to define %s operator with filter ID #%" PRIu32 ": filter must have static dimensions.",
-      xnn_node_type_to_string(xnn_node_type_fully_connected), filter_id);
-    return xnn_status_invalid_parameter;
-  }
-
   // Non-static kernel is supported, but only for some data types
   switch (kernel_value->datatype) {
     case xnn_datatype_fp32:
@@ -926,14 +986,6 @@ enum xnn_status xnn_define_fully_connected(
       xnn_log_error(
         "failed to define %s operator with bias ID #%" PRIu32 ": unsupported Value type %d (expected dense tensor)",
         xnn_node_type_to_string(xnn_node_type_fully_connected), bias_id, bias_value->type);
-      return xnn_status_invalid_parameter;
-    }
-
-    // Check that bias shape is fully known.
-    if (!xnn_tensor_shape_is_static(bias_value)) {
-      xnn_log_error(
-        "failed to define %s operator with bias ID #%" PRIu32 ": bias must have static dimensions.",
-        xnn_node_type_to_string(xnn_node_type_fully_connected), bias_id);
       return xnn_status_invalid_parameter;
     }
 

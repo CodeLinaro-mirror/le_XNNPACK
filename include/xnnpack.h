@@ -232,23 +232,6 @@ enum xnn_datatype {
   xnn_datatype_qdint8 = 9,
 };
 
-/// Define a tensor-type Value and add it to a Subgraph.
-///
-/// @param subgraph - a Subgraph object that will own the created Value.
-/// @param datatype - type of the tensor elements.
-/// @param num_dims - number of dimensions in the shape.
-/// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
-///               XNNPACK does not keep any pointers to this array after the function returns.
-/// @param data - pointer to static data used for tensor initialization. If the tensor is not statically initialized,
-///               this pointer must be is NULL. If non-NULL, the life-time of the static data must exceed the life-time
-///               of the Subgraph object, and of any Runtime objects created from the Subgraph.
-/// @param external_id - external ID for the Value. The ID must be within the range of reversed Value IDs specified on
-///                      the Subgraph creation. If the external ID is XNN_INVALID_VALUE_ID, an internal ID will be
-///                      created for the Value.
-/// @param flags - binary features of the Value. Supported values are any combination of XNN_VALUE_FLAG_EXTERNAL_INPUT
-///                and XNN_VALUE_FLAG_EXTERNAL_OUTPUT.
-/// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
-///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
 enum xnn_status xnn_define_tensor_value(
   xnn_subgraph_t subgraph,
   enum xnn_datatype datatype,
@@ -258,16 +241,16 @@ enum xnn_status xnn_define_tensor_value(
   uint32_t external_id,
   uint32_t flags,
   uint32_t* id_out);
-
-/// Define a quantized tensor-type Value and add it to a Subgraph.
+/// Define a tensor-type Value and add it to a Subgraph.
 ///
 /// @param subgraph - a Subgraph object that will own the created Value.
 /// @param datatype - type of the tensor elements.
-/// @param zero_point - offset from zero to subtract from the quantized elements in the Value.
-/// @param scale - multiplication factor to convert quantized elements to real representation.
 /// @param num_dims - number of dimensions in the shape.
 /// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
 ///               XNNPACK does not keep any pointers to this array after the function returns.
+/// @param max_num_dims - number of maxium dimensions in the shape. Must be equal to num_dims;
+/// @param max_dims - pointer to an array of @a max_num_dims shape dimensions. If max_num_dims is 0, this pointer can be NULL.
+///                   XNNPACK does not keep any pointers to this array after the function returns.
 /// @param data - pointer to static data used for tensor initialization. If the tensor is not statically initialized,
 ///               this pointer must be is NULL. If non-NULL, the life-time of the static data must exceed the life-time
 ///               of the Subgraph object, and of any Runtime objects created from the Subgraph.
@@ -278,6 +261,18 @@ enum xnn_status xnn_define_tensor_value(
 ///                and XNN_VALUE_FLAG_EXTERNAL_OUTPUT.
 /// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
 ///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
+enum xnn_status xnn_define_tensor_value_v2(
+  xnn_subgraph_t subgraph,
+  enum xnn_datatype datatype,
+  size_t num_dims,
+  const size_t* dims,
+  size_t max_num_dims,
+  const size_t* max_dims,
+  const void* data,
+  uint32_t external_id,
+  uint32_t flags,
+  uint32_t* id_out);
+
 enum xnn_status xnn_define_quantized_tensor_value(
   xnn_subgraph_t subgraph,
   enum xnn_datatype datatype,
@@ -285,6 +280,41 @@ enum xnn_status xnn_define_quantized_tensor_value(
   float scale,
   size_t num_dims,
   const size_t* dims,
+  const void* data,
+  uint32_t external_id,
+  uint32_t flags,
+  uint32_t* id_out);
+/// Define a quantized tensor-type Value and add it to a Subgraph.
+///
+/// @param subgraph - a Subgraph object that will own the created Value.
+/// @param datatype - type of the tensor elements.
+/// @param zero_point - offset from zero to subtract from the quantized elements in the Value.
+/// @param scale - multiplication factor to convert quantized elements to real representation.
+/// @param num_dims - number of dimensions in the shape.
+/// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
+///               XNNPACK does not keep any pointers to this array after the function returns.
+/// @param max_num_dims - number of maxium dimensions in the shape. Must be equal to num_dims;
+/// @param max_dims - pointer to an array of @a max_num_dims shape dimensions. If max_num_dims is 0, this pointer can be NULL.
+///                   XNNPACK does not keep any pointers to this array after the function returns.
+/// @param data - pointer to static data used for tensor initialization. If the tensor is not statically initialized,
+///               this pointer must be is NULL. If non-NULL, the life-time of the static data must exceed the life-time
+///               of the Subgraph object, and of any Runtime objects created from the Subgraph.
+/// @param external_id - external ID for the Value. The ID must be within the range of reversed Value IDs specified on
+///                      the Subgraph creation. If the external ID is XNN_INVALID_VALUE_ID, an internal ID will be
+///                      created for the Value.
+/// @param flags - binary features of the Value. Supported values are any combination of XNN_VALUE_FLAG_EXTERNAL_INPUT
+///                and XNN_VALUE_FLAG_EXTERNAL_OUTPUT.
+/// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
+///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
+enum xnn_status xnn_define_quantized_tensor_value_v2(
+  xnn_subgraph_t subgraph,
+  enum xnn_datatype datatype,
+  int32_t zero_point,
+  float scale,
+  size_t num_dims,
+  const size_t* dims,
+  size_t max_num_dims,
+  const size_t* max_dims,
   const void* data,
   uint32_t external_id,
   uint32_t flags,
@@ -302,6 +332,18 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value(
   uint32_t flags,
   uint32_t* id_out);
 
+enum xnn_status xnn_define_channelwise_quantized_tensor_value_v2(
+  xnn_subgraph_t subgraph,
+  enum xnn_datatype datatype,
+  int32_t zero_point,
+  const float* scale,
+  size_t num_dims,
+  size_t channel_dim,
+  const size_t* dims,
+  const void* data,
+  uint32_t external_id,
+  uint32_t flags,
+  uint32_t* id_out);
 /// Define a channelwise quantized tensor-type Value and add it to a Subgraph.
 ///
 /// @param subgraph - a Subgraph object that will own the created Value.
@@ -315,6 +357,9 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value(
 ///                      the Depthwise Convolution operators.
 /// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
 ///               XNNPACK does not keep any pointers to this array after the function returns.
+/// @param max_num_dims - number of maxium dimensions in the shape. Must be equal to num_dims;
+/// @param max_dims - pointer to an array of @a max_num_dims shape dimensions. If max_num_dims is 0, this pointer can be NULL.
+///                   XNNPACK does not keep any pointers to this array after the function returns.
 /// @param data - pointer to static data used for tensor initialization. If the tensor is not statically initialized,
 ///               this pointer must be is NULL. If non-NULL, the life-time of the static data must exceed the life-time
 ///               of the Subgraph object, and of any Runtime objects created from the Subgraph.
@@ -325,7 +370,7 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value(
 ///                and XNN_VALUE_FLAG_EXTERNAL_OUTPUT.
 /// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
 ///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
-enum xnn_status xnn_define_channelwise_quantized_tensor_value_v2(
+enum xnn_status xnn_define_channelwise_quantized_tensor_value_v3(
   xnn_subgraph_t subgraph,
   enum xnn_datatype datatype,
   int32_t zero_point,
@@ -333,11 +378,22 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value_v2(
   size_t num_dims,
   size_t channel_dim,
   const size_t* dims,
+  size_t max_num_dims,
+  const size_t* max_dims,
   const void* data,
   uint32_t external_id,
   uint32_t flags,
   uint32_t* id_out);
 
+enum xnn_status xnn_define_dynamically_quantized_tensor_value(
+  xnn_subgraph_t subgraph,
+  enum xnn_datatype datatype,
+  size_t num_dims,
+  size_t num_nonbatch_dims,
+  const size_t* dims,
+  uint32_t external_id,
+  uint32_t flags,
+  uint32_t* id_out);
 /// Define a dynamically quantized tensor-type Value and add it to a Subgraph.
 ///
 /// @param subgraph - a Subgraph object that will own the created Value.
@@ -348,18 +404,23 @@ enum xnn_status xnn_define_channelwise_quantized_tensor_value_v2(
 ///                             will be calculated for each batch element.
 /// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
 ///               XNNPACK does not keep any pointers to this array after the function returns.
+/// @param max_num_dims - number of maxium dimensions in the shape. Must be equal to num_dims;
+/// @param max_dims - pointer to an array of @a max_num_dims shape dimensions. If max_num_dims is 0, this pointer can be NULL.
+///                   XNNPACK does not keep any pointers to this array after the function returns.
 /// @param external_id - external ID for the Value. The ID must be within the range of reversed Value IDs specified on
 ///                      the Subgraph creation. If the external ID is XNN_INVALID_VALUE_ID, an internal ID will be
 ///                      created for the Value.
 /// @param flags - binary features of the Value. No supported flags are currently defined.
 /// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
 ///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
-enum xnn_status xnn_define_dynamically_quantized_tensor_value(
+enum xnn_status xnn_define_dynamically_quantized_tensor_value_v2(
   xnn_subgraph_t subgraph,
   enum xnn_datatype datatype,
   size_t num_dims,
   size_t num_nonbatch_dims,
   const size_t* dims,
+  size_t max_num_dims,
+  const size_t* max_dims,
   uint32_t external_id,
   uint32_t flags,
   uint32_t* id_out);
@@ -1829,6 +1890,20 @@ struct xnn_external_value {
   void* data;
 };
 
+/// Reshape an external value.
+///
+/// @param external_id - external ID for the Value. The ID must be within the range of reversed Value IDs specified on
+///                      the Subgraph creation. If the external ID is XNN_INVALID_VALUE_ID, an internal ID will be
+///                      created for the Value.
+/// @param num_dims - number of dimensions in the shape.
+/// @param dims - pointer to an array of @a num_dims shape dimensions. If num_dims is 0, this pointer can be NULL.
+///               XNNPACK does not keep any pointers to this array after the function returns.
+enum xnn_status xnn_reshape_external_value(
+  xnn_runtime_t runtime,
+  uint32_t external_id,
+  size_t num_dims,
+  const size_t* dims);
+
 /// Setup data pointers for external inputs and outputs in a Runtime object.
 ///
 /// @param runtime - a Runtime object created with @ref xnn_create_runtime or @ref xnn_create_runtime_v2.
@@ -1836,6 +1911,14 @@ struct xnn_external_value {
 ///                              match the number of external inputs and outputs in the runtime, i.e. all external
 ///                              inputs and outputs in the runtime must be specified in one call.
 /// @param external_values - array with location information for all external inputs and outputs in the runtime.
+const size_t* xnn_get_output_value_shape(
+  xnn_runtime_t runtime,
+  uint32_t external_id,
+  size_t *num_dims);
+
+enum xnn_status xnn_reshape_runtime(
+  xnn_runtime_t runtime);
+
 enum xnn_status xnn_setup_runtime(
   xnn_runtime_t runtime,
   size_t num_external_values,
