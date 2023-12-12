@@ -196,7 +196,7 @@ static enum xnn_status create_fully_connected_nc(
   }
 
   if (use_weights_cache(fully_connected_op)) {
-    fully_connected_op->packed_weights.offset = xnn_get_or_insert_weights_cache(
+    fully_connected_op->packed_weights.offset = xnn_look_up_or_insert_weights_cache(
         fully_connected_op->weights_cache, weights_ptr, aligned_total_weights_size);
   }
 

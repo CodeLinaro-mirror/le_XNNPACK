@@ -230,7 +230,7 @@ static enum xnn_status create_deconvolution2d_nhwc(
   }
 
   if (use_weights_cache(deconvolution_op)) {
-    deconvolution_op->packed_weights.offset = xnn_get_or_insert_weights_cache(
+    deconvolution_op->packed_weights.offset = xnn_look_up_or_insert_weights_cache(
         deconvolution_op->weights_cache, weights_ptr, aligned_total_weights_size);
   }
 

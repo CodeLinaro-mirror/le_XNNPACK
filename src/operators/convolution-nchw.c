@@ -191,7 +191,7 @@ static enum xnn_status create_conv2d_hwc2chw_path(
     kernel, bias, weights_ptr, NULL);
 
   if (use_weights_cache(convolution_op)) {
-    convolution_op->packed_weights.offset = xnn_get_or_insert_weights_cache(
+    convolution_op->packed_weights.offset = xnn_look_up_or_insert_weights_cache(
         convolution_op->weights_cache, weights_ptr, aligned_total_weights_size);
   }
 
@@ -244,7 +244,7 @@ static enum xnn_status create_dwconv_path(
   }
 
   if (use_weights_cache(convolution_op)) {
-    convolution_op->packed_weights.offset = xnn_get_or_insert_weights_cache(
+    convolution_op->packed_weights.offset = xnn_look_up_or_insert_weights_cache(
         convolution_op->weights_cache, weights_ptr, aligned_total_weights_size);
   }
 

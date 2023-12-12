@@ -1701,19 +1701,6 @@ enum xnn_status xnn_define_tanh(
 /// Code cache is a cache for JIT generated code.
 typedef struct xnn_code_cache* xnn_code_cache_t;
 
-/// Weights cache is a cache for packed weights. It can be reused between runtimes.
-typedef struct xnn_weights_cache* xnn_weights_cache_t;
-
-enum xnn_status xnn_create_weights_cache(xnn_weights_cache_t* weights_cache_out);
-
-/// Create a weights cache object specifying the initial size of weights cache (in bytes).
-/// @size - initial capacity of the weights cache (in bytes), i.e. it can hold size bytes without growing.
-/// @param weights_cache_out - pointer to the variable that will be initialized to a handle to the weights cache object
-///                            upon successful return. Once created, the weights cache object can be shared between
-///                            different Runtime objects.
-enum xnn_status xnn_create_weights_cache_with_size(size_t size, xnn_weights_cache_t* weights_cache_out);
-
-
 /// Weights cache can be finalized in these ways:
 enum xnn_weights_cache_finalization_kind {
   /// Weights cache is finalized, no insert operations into the weights cache is allowed, even if the "inserted"
@@ -1724,6 +1711,73 @@ enum xnn_weights_cache_finalization_kind {
   /// if the weights are already in the cache, and errors on inserting uncached weights. There is memory overhead.
   xnn_weights_cache_finalization_kind_soft,
 };
+
+/// A group of function pointers to manage weights cache. All functions may be
+/// called on multi threads.
+struct xnn_weights_cache_provider {
+  /// User-specified pointer that will be passed as-is to all functions in this
+  /// structure.
+  void* context;
+
+  /// Release any allocated memory hosted by context. Note it should not deallocate
+  /// context itself.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  enum xnn_status (*release)(void* context);
+
+  /// Looks up the tuple of {cache_key, kernel, bias} in the cache. If it is found,
+  /// returns the pointer to the found entry for reuse. Otherwise, returns NULL.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  /// @param cache_key - The unique key for each ukernel. It is guaranteed that each ukernel provides
+  ///                    a consistent and identical key.
+  /// @param kernel - Pointer to the original kernel.
+  /// @param bias - Pointer to the original bias, could be NULL.
+  size_t (*look_up)(void* context, size_t cache_key, const void* kernel, const void* bias);
+
+  /// Ensures that cache has enough space for `n` bytes. Returns the address to
+  /// store weight cache.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  /// @param n - size to be reserved.
+  void* (*reserve_space)(void* context, size_t n);
+
+  /// Looks up packed weights at `ptr` in the cache. If it is found, reuse it.
+  /// Otherwise, it is added to the cache.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  /// @param ptr - pointer pointing to the packed weight.
+  /// @param size - size of the packed weight.
+  size_t (*look_up_or_insert)(void* context, void* ptr, size_t size);
+
+  /// Finalizes the weights cache. The kind of finalization is specified by `finalization_kind`.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  /// @param finalization_kind - the kind of finalization.
+  enum xnn_status (*finalize)(void* context, enum xnn_weights_cache_finalization_kind finalization_kind);
+
+  /// Returns whether the cache is finalized.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  bool (*is_finalized)(void* context);
+
+  /// Returns the absolute pointer corresponding to `offset`, where the offset is returned from
+  /// `look_up` or `get_or_insert`. This function must be called after finalize.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  /// @param offset - offset to the start of internal buffer
+  void* (*offset_to_addr)(void* context, size_t offset);
+
+  /// Destroy a weights cache object, as well as memory used for the cache.
+  /// @param context - The user-specified pointer from xnn_weights_cache_provider structure.
+  enum xnn_status (*delete_cache)(void* context);
+};
+
+/// Weights cache is a cache for packed weights. It can be reused between runtimes.
+typedef struct xnn_weights_cache_provider* xnn_weights_cache_t;
+
+/// Create a weights cache object specifying the initial size of weights cache (in bytes).
+///
+/// @param[in] size - initial capacity of the weights cache (in bytes), i.e. it can hold size bytes without growing.
+/// @param weights_cache_out - pointer to the variable that will be initialized to a handle to the weights cache provider
+///                            upon successful return. Once created, the weights cache provider can be shared between
+///                            different Runtime objects.
+enum xnn_status xnn_create_weights_cache_with_size(size_t size, xnn_weights_cache_t* weights_cache_out);
+
+enum xnn_status xnn_create_weights_cache(xnn_weights_cache_t* weights_cache_out);
 
 /// Finalizes the weights cache. The kind of finalization is specified by `finalization_kind`.
 /// @param weights_cache - the weights cache object to finalize.

@@ -2764,6 +2764,7 @@ xnnpack_unit_test(
     deps = OPERATOR_TEST_DEPS + [
         ":convolution_test_helpers",
         "//:aligned_allocator",
+        "//:memory",
     ],
 )
 
