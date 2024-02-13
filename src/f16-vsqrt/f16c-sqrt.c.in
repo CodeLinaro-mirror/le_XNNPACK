@@ -8,6 +8,7 @@ $assert BATCH_TILE >= 8
 $SIMD_TILE = BATCH_TILE // 8
 $ABC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #include <assert.h>
+#include <math.h>
 
 #include <immintrin.h>
 
@@ -15,6 +16,14 @@ $ABC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #include <xnnpack/intrinsics-polyfill.h>
 #include <xnnpack/vunary.h>
 
+
+// In the following, instead of computing `sqrt(x)` on the converted `float`
+// values, we compute `x * rsqrt(x)` where `rsqrt(x)` is the 12-bit
+// approximation of the reciprocal square root.
+//
+// Since the result will be converted back to an `f16` value with a 10-bit
+// mantissa, the 12-bit `rsqrt` approximation is more than sufficiently
+// accurate.
 
 void xnn_f16_vsqrt_ukernel__f16c_sqrt_u${BATCH_TILE}(
     size_t batch,
@@ -29,6 +38,7 @@ void xnn_f16_vsqrt_ukernel__f16c_sqrt_u${BATCH_TILE}(
 
   const uint16_t* i = (const uint16_t*) input;
   uint16_t* o = (uint16_t*) output;
+  const __m256 vinf = _mm256_set1_ps(INFINITY);
   $if BATCH_TILE > 8:
     for (; batch >= ${BATCH_TILE} * sizeof(uint16_t); batch -= ${BATCH_TILE} * sizeof(uint16_t)) {
       __m256 vacc${ABC[0]} = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
@@ -37,7 +47,11 @@ void xnn_f16_vsqrt_ukernel__f16c_sqrt_u${BATCH_TILE}(
       i += ${BATCH_TILE};
 
       $for N in range(SIMD_TILE):
-        vacc${ABC[N]} = _mm256_sqrt_ps(vacc${ABC[N]});
+        const __m256 vt0_${ABC[N]} = _mm256_rsqrt_ps(vacc${ABC[N]});
+      $for N in range(SIMD_TILE):
+        const __m256 vt1_${ABC[N]} = _mm256_and_ps(vt0_${ABC[N]}, _mm256_cmp_ps(vt0_${ABC[N]}, vinf, _CMP_LT_OQ));
+      $for N in range(SIMD_TILE):
+        vacc${ABC[N]} = _mm256_mul_ps(vacc${ABC[N]}, vt1_${ABC[N]});
 
       _mm_storeu_si128((__m128i*) o, _mm256_cvtps_ph(vacc${ABC[0]}, _MM_FROUND_TO_NEAREST_INT));
       $for N in range(1, SIMD_TILE):
@@ -47,13 +61,17 @@ void xnn_f16_vsqrt_ukernel__f16c_sqrt_u${BATCH_TILE}(
   for (; batch >= 8 * sizeof(uint16_t); batch -= 8 * sizeof(uint16_t)) {
     __m256 vacc = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
     i += 8;
-    vacc = _mm256_sqrt_ps(vacc);
+    const __m256 vt0 = _mm256_rsqrt_ps(vacc);
+    const __m256 vt1 = _mm256_and_ps(vt0, _mm256_cmp_ps(vt0, vinf, _CMP_LT_OQ));
+    vacc = _mm256_mul_ps(vacc, vt1);
     _mm_storeu_si128((__m128i*) o, _mm256_cvtps_ph(vacc, _MM_FROUND_TO_NEAREST_INT));
     o += 8;
   }
   if XNN_UNLIKELY(batch != 0) {
     __m256 vacc = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
-    vacc = _mm256_sqrt_ps(vacc);
+    const __m256 vt0 = _mm256_rsqrt_ps(vacc);
+    const __m256 vt1 = _mm256_and_ps(vt0, _mm256_cmp_ps(vt0, vinf, _CMP_LT_OQ));
+    vacc = _mm256_mul_ps(vacc, vt1);
     __m128i vh = _mm256_cvtps_ph(vacc, _MM_FROUND_TO_NEAREST_INT);
     if (batch & (4 * sizeof(uint16_t))) {
       _mm_storel_epi64((__m128i*) o, vh);

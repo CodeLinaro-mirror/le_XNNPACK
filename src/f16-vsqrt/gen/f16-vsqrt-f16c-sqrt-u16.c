@@ -8,6 +8,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <math.h>
 
 #include <immintrin.h>
 
@@ -15,6 +16,14 @@
 #include <xnnpack/intrinsics-polyfill.h>
 #include <xnnpack/vunary.h>
 
+
+// In the following, instead of computing `sqrt(x)` on the converted `float`
+// values, we compute `x * rsqrt(x)` where `rsqrt(x)` is the 12-bit
+// approximation of the reciprocal square root.
+//
+// Since the result will be converted back to an `f16` value with a 10-bit
+// mantissa, the 12-bit `rsqrt` approximation is more than sufficiently
+// accurate.
 
 void xnn_f16_vsqrt_ukernel__f16c_sqrt_u16(
     size_t batch,
@@ -29,13 +38,18 @@ void xnn_f16_vsqrt_ukernel__f16c_sqrt_u16(
 
   const uint16_t* i = (const uint16_t*) input;
   uint16_t* o = (uint16_t*) output;
+  const __m256 vinf = _mm256_set1_ps(INFINITY);
   for (; batch >= 16 * sizeof(uint16_t); batch -= 16 * sizeof(uint16_t)) {
     __m256 vacc0 = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
     __m256 vacc1 = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) (i + 8)));
     i += 16;
 
-    vacc0 = _mm256_sqrt_ps(vacc0);
-    vacc1 = _mm256_sqrt_ps(vacc1);
+    const __m256 vt0_0 = _mm256_rsqrt_ps(vacc0);
+    const __m256 vt0_1 = _mm256_rsqrt_ps(vacc1);
+    const __m256 vt1_0 = _mm256_and_ps(vt0_0, _mm256_cmp_ps(vt0_0, vinf, _CMP_LT_OQ));
+    const __m256 vt1_1 = _mm256_and_ps(vt0_1, _mm256_cmp_ps(vt0_1, vinf, _CMP_LT_OQ));
+    vacc0 = _mm256_mul_ps(vacc0, vt1_0);
+    vacc1 = _mm256_mul_ps(vacc1, vt1_1);
 
     _mm_storeu_si128((__m128i*) o, _mm256_cvtps_ph(vacc0, _MM_FROUND_TO_NEAREST_INT));
     _mm_storeu_si128((__m128i*) (o + 8), _mm256_cvtps_ph(vacc1, _MM_FROUND_TO_NEAREST_INT));
@@ -44,13 +58,17 @@ void xnn_f16_vsqrt_ukernel__f16c_sqrt_u16(
   for (; batch >= 8 * sizeof(uint16_t); batch -= 8 * sizeof(uint16_t)) {
     __m256 vacc = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
     i += 8;
-    vacc = _mm256_sqrt_ps(vacc);
+    const __m256 vt0 = _mm256_rsqrt_ps(vacc);
+    const __m256 vt1 = _mm256_and_ps(vt0, _mm256_cmp_ps(vt0, vinf, _CMP_LT_OQ));
+    vacc = _mm256_mul_ps(vacc, vt1);
     _mm_storeu_si128((__m128i*) o, _mm256_cvtps_ph(vacc, _MM_FROUND_TO_NEAREST_INT));
     o += 8;
   }
   if XNN_UNLIKELY(batch != 0) {
     __m256 vacc = _mm256_cvtph_ps(_mm_loadu_si128((const __m128i*) i));
-    vacc = _mm256_sqrt_ps(vacc);
+    const __m256 vt0 = _mm256_rsqrt_ps(vacc);
+    const __m256 vt1 = _mm256_and_ps(vt0, _mm256_cmp_ps(vt0, vinf, _CMP_LT_OQ));
+    vacc = _mm256_mul_ps(vacc, vt1);
     __m128i vh = _mm256_cvtps_ph(vacc, _MM_FROUND_TO_NEAREST_INT);
     if (batch & (4 * sizeof(uint16_t))) {
       _mm_storel_epi64((__m128i*) o, vh);
