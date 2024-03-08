@@ -27,17 +27,18 @@ typedef struct __tile_config {
   uint8_t reserved_2[8];
 } __tilecfg;
 
-void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x16c4__avx512amx(
+void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
     size_t mr,
     size_t nc,
     size_t kc,
     const int8_t* restrict a,
     size_t a_stride,
     const void* restrict w,
-    int8_t* restrict c,
+    float* restrict c,
     size_t cm_stride,
     size_t cn_stride,
-    const union xnn_qs8_qc8w_conv_minmax_params params[restrict XNN_MIN_ELEMENTS(1)]) XNN_OOB_READS
+    const union xnn_f32_minmax_params params[restrict XNN_MIN_ELEMENTS(1)],
+    const struct xnn_qd8_quantization_params quantization_params[restrict XNN_MIN_ELEMENTS(1)]) XNN_OOB_READS
 {
   assert(mr != 0);
   assert(mr <= 1);
@@ -74,11 +75,10 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x16c4__avx512amx(
   tile_data.colsb[4] = 64;
   _tile_loadconfig(&tile_data);
 
-  int8_t* c0 = c;
+  float* c0 = c;
 
-  const __m512 voutput_max_less_zero_point = _mm512_set1_ps(params->fp32_avx512.output_max_less_zero_point);
-  const __m512i voutput_zero_point = _mm512_set1_epi32(params->fp32_avx512.output_zero_point);
-  const __m128i voutput_min = _mm_load_si128((const __m128i*) params->fp32_avx512.output_min);
+  const __m512 voutput_min = _mm512_set1_ps(params->scalar.min);
+  const __m512 voutput_max = _mm512_set1_ps(params->scalar.max);
 
   do {
     const __m512i vksum0123456789ABCDEF = _mm512_load_epi32(w);
@@ -114,35 +114,34 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x16c4__avx512amx(
 
     // Add tile to bias
     _tile_stored(0, res, 64);
-    __m512i vacc0x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 0));
+    __m512i vacc0x0123456789ABCDEF = _mm512_mullo_epi32(vksum0123456789ABCDEF, _mm512_set1_epi32((int) quantization_params[0].zero_point));
+    vacc0x0123456789ABCDEF = _mm512_add_epi32(vacc0x0123456789ABCDEF, _mm512_load_epi32(res + 0));
 
     __m512 vscaled0x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc0x0123456789ABCDEF);
 
-    const __m512 vscale012345678ABCDEF = _mm512_load_ps(w);
-    w = (const float*) w + 16;
-    vscaled0x0123456789ABCDEF = _mm512_mul_ps(vscaled0x0123456789ABCDEF, vscale012345678ABCDEF);
+    vscaled0x0123456789ABCDEF = _mm512_mul_ps(vscaled0x0123456789ABCDEF, _mm512_set1_ps(quantization_params[0].inv_scale));
 
-    vscaled0x0123456789ABCDEF = _mm512_min_ps(vscaled0x0123456789ABCDEF, voutput_max_less_zero_point);
+    const __m512 vfilter_output_scale0123456789ABCDEF = _mm512_load_ps((const float*) w);
+    const __m512 vbias0123456789ABCDEF = _mm512_load_ps((const float*) w + 16);
+    w = (const float*) w + 32;
 
-    vacc0x0123456789ABCDEF = _mm512_cvtps_epi32(vscaled0x0123456789ABCDEF);
+    vscaled0x0123456789ABCDEF = _mm512_fmadd_ps(vscaled0x0123456789ABCDEF, vfilter_output_scale0123456789ABCDEF, vbias0123456789ABCDEF);
 
-    vacc0x0123456789ABCDEF = _mm512_add_epi32(vacc0x0123456789ABCDEF, voutput_zero_point);
+    vscaled0x0123456789ABCDEF = _mm512_max_ps(vscaled0x0123456789ABCDEF, voutput_min);
 
-    __m128i vout0x0123456789ABCDEF = _mm512_cvtsepi32_epi8(vacc0x0123456789ABCDEF);
+    vscaled0x0123456789ABCDEF = _mm512_min_ps(vscaled0x0123456789ABCDEF, voutput_max);
 
-    vout0x0123456789ABCDEF = _mm_max_epi8(vout0x0123456789ABCDEF, voutput_min);
+    if XNN_LIKELY(nc >= 16) {
+      _mm512_storeu_ps(c0, vscaled0x0123456789ABCDEF);
 
-    if (nc >= 16) {
-      _mm_storeu_si128((__m128i*) c0, vout0x0123456789ABCDEF);
-      c0 = (int8_t*) ((uintptr_t) c0 + cn_stride);
+      c0 = (float*) ((uintptr_t) c0 + cn_stride);
+
       a -= kc;
       nc -= 16;
     } else {
-      // Prepare mask for valid 8-bit elements (depends on nc).
-      const __mmask16 vmask = _cvtu32_mask16((UINT32_C(1) << nc) - UINT32_C(1));
-
-      _mm_mask_storeu_epi8(c0, vmask, vout0x0123456789ABCDEF);
-
+      // Prepare mask for valid 32-bit elements (depends on nc).
+      const __mmask16 vmask = _cvtu32_mask16((UINT32_C(1) << nc) - 1);
+      _mm512_mask_storeu_ps(c0, vmask, vscaled0x0123456789ABCDEF);
       nc = 0;
     }
   } while (nc != 0);

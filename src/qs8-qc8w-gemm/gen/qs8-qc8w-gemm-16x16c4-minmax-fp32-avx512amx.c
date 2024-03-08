@@ -74,7 +74,6 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_16x16c4__avx512amx(
   tile_data.colsb[4] = 64;
   _tile_loadconfig(&tile_data);
 
-  //const int8_t* a0 = a;
   int8_t* c0 = c;
   int8_t* c1 = (int8_t*) ((uintptr_t) c0 + cm_stride);
   if XNN_UNPREDICTABLE(mr < 2) {
@@ -142,7 +141,7 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_16x16c4__avx512amx(
   const __m128i voutput_min = _mm_load_si128((const __m128i*) params->fp32_avx512.output_min);
 
   do {
-    __m512i vacc0123456789ABCDEF = _mm512_load_epi32(w);
+    const __m512i vksum0123456789ABCDEF = _mm512_load_epi32(w);
     w = (const int32_t*) w + 16;
 
    // Zero tile accumulator
@@ -175,22 +174,22 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_16x16c4__avx512amx(
 
     // Add tile to bias
     _tile_stored(0, res, 64);
-    __m512i vacc0x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 0));
-    __m512i vacc1x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 16));
-    __m512i vacc2x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 32));
-    __m512i vacc3x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 48));
-    __m512i vacc4x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 64));
-    __m512i vacc5x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 80));
-    __m512i vacc6x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 96));
-    __m512i vacc7x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 112));
-    __m512i vacc8x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 128));
-    __m512i vacc9x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 144));
-    __m512i vacc10x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 160));
-    __m512i vacc11x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 176));
-    __m512i vacc12x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 192));
-    __m512i vacc13x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 208));
-    __m512i vacc14x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 224));
-    __m512i vacc15x0123456789ABCDEF = _mm512_add_epi32(vacc0123456789ABCDEF, _mm512_load_epi32(res + 240));
+    __m512i vacc0x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 0));
+    __m512i vacc1x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 16));
+    __m512i vacc2x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 32));
+    __m512i vacc3x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 48));
+    __m512i vacc4x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 64));
+    __m512i vacc5x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 80));
+    __m512i vacc6x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 96));
+    __m512i vacc7x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 112));
+    __m512i vacc8x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 128));
+    __m512i vacc9x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 144));
+    __m512i vacc10x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 160));
+    __m512i vacc11x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 176));
+    __m512i vacc12x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 192));
+    __m512i vacc13x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 208));
+    __m512i vacc14x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 224));
+    __m512i vacc15x0123456789ABCDEF = _mm512_add_epi32(vksum0123456789ABCDEF, _mm512_load_epi32(res + 240));
 
     __m512 vscaled0x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc0x0123456789ABCDEF);
     __m512 vscaled1x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc1x0123456789ABCDEF);
@@ -346,8 +345,7 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_16x16c4__avx512amx(
       c1 = (int8_t*) ((uintptr_t) c1 + cn_stride);
       _mm_storeu_si128((__m128i*) c0, vout0x0123456789ABCDEF);
       c0 = (int8_t*) ((uintptr_t) c0 + cn_stride);
-
-      a = (const int8_t*) ((uintptr_t) a - kc);
+      a -= kc;
       nc -= 16;
     } else {
       // Prepare mask for valid 8-bit elements (depends on nc).
