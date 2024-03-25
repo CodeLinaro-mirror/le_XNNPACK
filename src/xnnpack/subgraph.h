@@ -74,6 +74,24 @@ enum xnn_allocation_type {
   xnn_allocation_type_dynamic,
 };
 
+XNN_INLINE const char* xnn_allocation_type_to_string(
+    enum xnn_allocation_type type) {
+  switch (type) {
+    case xnn_allocation_type_invalid:
+      return "invalid";
+    case xnn_allocation_type_static:
+      return "static";
+    case xnn_allocation_type_workspace:
+      return "workspace";
+    case xnn_allocation_type_external:
+      return "external";
+    case xnn_allocation_type_persistent:
+      return "persistent";
+    case xnn_allocation_type_dynamic:
+      return "dynamic";
+  }
+}
+
 /// Abstraction for a collections of elements produced and consumed by nodes.
 struct xnn_value {
   /// Unique ID for the value.
