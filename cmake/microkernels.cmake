@@ -132,6 +132,9 @@ SET(ALL_AVX_MICROKERNEL_SRCS
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-avx-u16.c
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-avx-u24.c
   src/f32-qu8-vcvt/gen/f32-qu8-vcvt-avx-u32.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx-c16.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx-c32.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx-c64.c
   src/f32-rminmax/gen/f32-rmax-avx-u8.c
   src/f32-rminmax/gen/f32-rmax-avx-u16-acc2.c
   src/f32-rminmax/gen/f32-rmax-avx-u24-acc3.c
@@ -1293,6 +1296,10 @@ SET(ALL_AVX512F_MICROKERNEL_SRCS
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx512f-rr1-p5-scalef-u192-acc3.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx512f-rr1-p5-scalef-u192-acc6.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx512f-rr1-p5-scalef-u192.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx512f-c16.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx512f-c32.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx512f-c64.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-avx512f-c128.c
   src/f32-rminmax/gen/f32-rmax-avx512f-u16.c
   src/f32-rminmax/gen/f32-rmax-avx512f-u32-acc2.c
   src/f32-rminmax/gen/f32-rmax-avx512f-u48-acc3.c
@@ -4518,6 +4525,9 @@ SET(ALL_NEONFP16ARITH_MICROKERNEL_SRCS
   src/f16-dwconv/gen/f16-dwconv-25p16c-minmax-neonfp16arith.c
   src/f16-dwconv/gen/f16-dwconv-25p32c-minmax-neonfp16arith-acc2.c
   src/f16-dwconv/gen/f16-dwconv-25p32c-minmax-neonfp16arith.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c16.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c32.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c64.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u4.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u8.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u16-acc2.c
@@ -6577,6 +6587,9 @@ SET(ALL_SSE_MICROKERNEL_SRCS
   src/f32-ppmm/gen/f32-ppmm-4x8-minmax-sse.c
   src/f32-prelu/gen/f32-prelu-sse-2x4.c
   src/f32-prelu/gen/f32-prelu-sse-2x8.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-sse-c16.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-sse-c32.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-sse-c64.c
   src/f32-rminmax/gen/f32-rmax-sse-u4.c
   src/f32-rminmax/gen/f32-rmax-sse-u8-acc2.c
   src/f32-rminmax/gen/f32-rmax-sse-u12-acc3.c
@@ -8811,6 +8824,9 @@ SET(ALL_WASMSIMD_MICROKERNEL_SRCS
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmsimd-rr2-p5-u20-acc2.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmsimd-rr2-p5-u20-acc5.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmsimd-rr2-p5-u20.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-wasmsimd-c16.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-wasmsimd-c32.c
+  src/f32-rdsum/gen/f32-rdsum-7p7x-minmax-wasmsimd-c64.c
   src/f32-rminmax/gen/f32-rmax-wasmsimd-minmax-u4.c
   src/f32-rminmax/gen/f32-rmax-wasmsimd-minmax-u8-acc2.c
   src/f32-rminmax/gen/f32-rmax-wasmsimd-minmax-u12-acc3.c
