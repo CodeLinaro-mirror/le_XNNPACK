@@ -1570,6 +1570,10 @@ SET(ALL_AVX512FP16_MICROKERNEL_SRCS
 SET(ALL_AVX512SKX_MICROKERNEL_SRCS
   src/f16-f32-vcvt/gen/f16-f32-vcvt-avx512skx-u16.c
   src/f16-f32-vcvt/gen/f16-f32-vcvt-avx512skx-u32.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-avx512skx-c16.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-avx512skx-c32.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-avx512skx-c64.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-avx512skx-c128.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-avx512skx-u16.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-avx512skx-u32-acc2.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-avx512skx-u48-acc3.c
@@ -2462,6 +2466,10 @@ SET(ALL_F16C_MICROKERNEL_SRCS
   src/f16-avgpool/f16-avgpool-9x-minmax-f16c-c8.c
   src/f16-f32-vcvt/gen/f16-f32-vcvt-f16c-u8.c
   src/f16-f32-vcvt/gen/f16-f32-vcvt-f16c-u16.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-f16c-c16.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-f16c-c32.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-f16c-c64.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-f16c-c128.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-f16c-u8.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-f16c-u16-acc2.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-f16c-u24-acc3.c
@@ -4612,6 +4620,9 @@ SET(ALL_NEONFP16ARITH_MICROKERNEL_SRCS
   src/f16-dwconv/gen/f16-dwconv-25p16c-minmax-neonfp16arith.c
   src/f16-dwconv/gen/f16-dwconv-25p32c-minmax-neonfp16arith-acc2.c
   src/f16-dwconv/gen/f16-dwconv-25p32c-minmax-neonfp16arith.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c16.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c32.c
+  src/f16-f32acc-rdsum/gen/f16-f32acc-rdsum-7p7x-minmax-neonfp16arith-c64.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u4.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u8.c
   src/f16-f32acc-rsum/gen/f16-f32acc-rsum-neonfp16arith-u16-acc2.c
