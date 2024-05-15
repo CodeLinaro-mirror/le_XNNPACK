@@ -43,6 +43,7 @@ OPTION(USE_GNU_SOURCE "Use _GNU_SOURCE macro" OFF)
 IF(XNNPACK_BUILD_BENCHMARKS OR XNNPACK_BUILD_TESTS)
   SET(XNNPACK_BUILD_ALL_MICROKERNELS ON)
 ENDIF()
+OPTION(XNNPACK_ENABLE_KLEIDIAI "Use KleidiAI GEMM microkernels for Arm" OFF)
 
 # --- [ Determine target processor
 IF(CMAKE_OSX_ARCHITECTURES)
@@ -160,6 +161,7 @@ ADD_COMPILE_DEFINITIONS("XNN_ENABLE_SPARSE=$<BOOL:${XNNPACK_ENABLE_SPARSE}>")
 ADD_COMPILE_DEFINITIONS("XNN_ENABLE_GEMM_M_SPECIALIZATION=$<BOOL:${XNNPACK_ENABLE_GEMM_M_SPECIALIZATION}>")
 ADD_COMPILE_DEFINITIONS("XNN_ENABLE_DWCONV_MULTIPASS=$<BOOL:${XNNPACK_ENABLE_DWCONV_MULTIPASS}>")
 ADD_COMPILE_DEFINITIONS("XNN_ENABLE_HVX=$<BOOL:${XNNPACK_ENABLE_HVX}>")
+ADD_COMPILE_DEFINITIONS("XNN_ENABLE_KLEIDIAI=$<BOOL:${XNNPACK_ENABLE_KLEIDIAI}>")
 
 IF(XNNPACK_PLATFORM_JIT STREQUAL "ON" OR XNNPACK_PLATFORM_JIT STREQUAL "OFF")
   ADD_COMPILE_DEFINITIONS("XNN_PLATFORM_JIT=$<BOOL:${XNNPACK_PLATFORM_JIT}>")
@@ -252,6 +254,16 @@ IF(NOT XNNPACK_USE_SYSTEM_LIBS)
     EXECUTE_PROCESS(COMMAND "${CMAKE_COMMAND}" --build .
       WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/googlebenchmark-download")
     SET(GOOGLEBENCHMARK_SOURCE_DIR "${CMAKE_BINARY_DIR}/googlebenchmark-source" CACHE STRING "Google Benchmark source directory")
+  ENDIF()
+
+  IF(XNNPACK_ENABLE_KLEIDIAI AND NOT DEFINED KLEIDIAI_SOURCE_DIR)
+    MESSAGE(STATUS "Downloading KleidiAI to ${CMAKE_BINARY_DIR}/kleidiai-source (define KLEIDIAI_SOURCE_DIR to avoid it)")
+    CONFIGURE_FILE(cmake/DownloadKleidiAI.cmake "${CMAKE_BINARY_DIR}/kleidiai-download/CMakeLists.txt")
+    EXECUTE_PROCESS(COMMAND "${CMAKE_COMMAND}" -G "${CMAKE_GENERATOR}" .
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/kleidiai-download")
+    EXECUTE_PROCESS(COMMAND "${CMAKE_COMMAND}" --build .
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/kleidiai-download")
+    SET(KLEIDIAI_SOURCE_DIR "${CMAKE_BINARY_DIR}/kleidiai-source" CACHE STRING "kleidiai source directory")
   ENDIF()
 ENDIF()
 
@@ -1136,6 +1148,34 @@ IF(XNNPACK_BUILD_LIBRARY)
       PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 ENDIF()
 
+# ---[ Configure KleidiAI
+IF(XNNPACK_ENABLE_KLEIDIAI)
+  IF(NOT TARGET kleidiai)
+    IF(NOT XNNPACK_USE_SYSTEM_LIBS)
+      SET(KLEIDIAI_BUILD_TESTS OFF CACHE BOOL "")
+      ADD_SUBDIRECTORY(
+        "${KLEIDIAI_SOURCE_DIR}"
+        "${CMAKE_BINARY_DIR}/kleidiai")
+    ELSE()
+      ADD_LIBRARY(kleidiai SHARED IMPORTED)
+      FIND_LIBRARY(KLEIDIAI_LIBRARY kleidiai PATHS "${KLEIDIAI_SOURCE_DIR}/lib")
+      IF(NOT KLEIDIAI_LIBRARY)
+        MESSAGE(FATAL_ERROR "Cannot find KleidiAI")
+      ENDIF()
+      TARGET_INCLUDE_DIRECTORIES(kleidiai INTERFACE "${KLEIDIAI_SOURCE_DIR}")
+      SET_PROPERTY(TARGET kleidiai PROPERTY IMPORTED_LOCATION "${KLEIDIAI_LIBRARY}")
+      SET_PROPERTY(TARGET kleidiai PROPERTY IMPORTED_IMPLIB "${KLEIDIAI_LIBRARY}")
+    ENDIF()
+  ENDIF()
+  IF(XNNPACK_BUILD_ALL_MICROKERNELS)
+    TARGET_LINK_LIBRARIES(microkernels-all PRIVATE kleidiai)
+  ENDIF()
+  TARGET_LINK_LIBRARIES(microkernels-prod PRIVATE kleidiai)
+  IF(XNNPACK_BUILD_LIBRARY)
+    TARGET_LINK_LIBRARIES(XNNPACK PRIVATE kleidiai)
+  ENDIF()
+ENDIF()
+
 # ---[ XNNPACK unit tests
 IF(XNNPACK_BUILD_TESTS)
   # ---[ Build google test
@@ -1192,6 +1232,13 @@ IF(XNNPACK_BUILD_TESTS)
   ADD_LIBRARY(convolution-test-helpers OBJECT test/convolution-test-helpers.cc)
   TARGET_INCLUDE_DIRECTORIES(convolution-test-helpers PRIVATE include src)
   TARGET_LINK_LIBRARIES(convolution-test-helpers PRIVATE fp16)
+
+  ADD_LIBRARY(packq-microkernel-tester STATIC test/packq-microkernel-tester.cc)
+  TARGET_INCLUDE_DIRECTORIES(packq-microkernel-tester PRIVATE . include src test)
+  TARGET_LINK_LIBRARIES(packq-microkernel-tester PRIVATE XNNPACK fp16 pthreadpool  GTest::gtest)
+  IF(XNNPACK_ENABLE_KLEIDIAI)
+    TARGET_LINK_LIBRARIES(packq-microkernel-tester PRIVATE kleidiai)
+  ENDIF()
 
   IF(XNNPACK_BUILD_LIBRARY)
     # ---[ Build size tests
@@ -3340,6 +3387,15 @@ IF(XNNPACK_BUILD_TESTS)
   TARGET_LINK_LIBRARIES(x32-packb-test PRIVATE hardware-config logging microkernels-all packing)
   ADD_TEST(NAME x32-packb-test COMMAND x32-packb-test)
 
+  ADD_EXECUTABLE(x8-packq-test test/x8-packq.cc)
+  TARGET_INCLUDE_DIRECTORIES(x8-packq-test PRIVATE include src test)
+  TARGET_LINK_LIBRARIES(x8-packq-test PRIVATE pthreadpool GTest::gtest GTest::gtest_main)
+  TARGET_LINK_LIBRARIES(x8-packq-test PRIVATE packq-microkernel-tester hardware-config logging microkernels-all packing)
+  IF(XNNPACK_ENABLE_KLEIDIAI)
+    TARGET_LINK_LIBRARIES(x8-packq-test PRIVATE kleidiai)
+  ENDIF()
+  ADD_TEST(NAME x8-packq-test COMMAND x8-packq-test)
+
   ADD_EXECUTABLE(x8-packw-test test/x8-packw.cc)
   TARGET_INCLUDE_DIRECTORIES(x8-packw-test PRIVATE include src test)
   TARGET_LINK_LIBRARIES(x8-packw-test PRIVATE pthreadpool GTest::gtest GTest::gtest_main)
@@ -3517,6 +3573,14 @@ IF(XNNPACK_BUILD_BENCHMARKS)
   TARGET_LINK_LIBRARIES(bench-utils PRIVATE hardware-config)
   IF(XNNPACK_BUILD_LIBRARY)
     TARGET_LINK_LIBRARIES(bench-utils PRIVATE logging memory)
+  ENDIF()
+
+  # Helper libraries
+  ADD_LIBRARY(packq-benchmark STATIC bench/packq-benchmark.cc)
+  TARGET_INCLUDE_DIRECTORIES(packq-benchmark PRIVATE . include src bench)
+  TARGET_LINK_LIBRARIES(packq-benchmark PRIVATE XNNPACK benchmark::benchmark bench-utils)
+  IF(XNNPACK_ENABLE_KLEIDIAI)
+    TARGET_LINK_LIBRARIES(packq-benchmark PRIVATE kleidiai)
   ENDIF()
 
   # ---[ Build accuracy microbenchmarks
@@ -4493,6 +4557,14 @@ IF(XNNPACK_BUILD_BENCHMARKS)
   TARGET_INCLUDE_DIRECTORIES(x24-transpose-bench PRIVATE . include src)
   TARGET_LINK_LIBRARIES(x24-transpose-bench PRIVATE benchmark::benchmark pthreadpool)
   TARGET_LINK_LIBRARIES(x24-transpose-bench PRIVATE bench-utils hardware-config logging microkernels-all microparams-init)
+
+  ADD_EXECUTABLE(x8-packq-bench bench/x8-packq.cc)
+  TARGET_INCLUDE_DIRECTORIES(x8-packq-bench PRIVATE . include src)
+  TARGET_LINK_LIBRARIES(x8-packq-bench PRIVATE benchmark::benchmark pthreadpool)
+  IF(XNNPACK_ENABLE_KLEIDIAI)
+    TARGET_LINK_LIBRARIES(x8-packq-bench PRIVATE kleidiai)
+  ENDIF()
+  TARGET_LINK_LIBRARIES(x8-packq-bench PRIVATE packq-benchmark bench-utils hardware-config logging microkernels-all packing)
 
   ADD_EXECUTABLE(x8-packw-bench bench/x8-packw.cc)
   TARGET_INCLUDE_DIRECTORIES(x8-packw-bench PRIVATE . include src)
