@@ -1154,12 +1154,21 @@ union xnn_f32_abs_params {
     XNN_ALIGN(16) float nonsign_mask[4];
   } sse;
   struct {
+    XNN_ALIGN(16) float nonsign_mask[4];
+  } sse2;
+  struct {
     XNN_ALIGN(32) float nonsign_mask[8];
     int32_t mask_table[14];
   } avx;
   struct {
+    XNN_ALIGN(32) float nonsign_mask[8];
+  } fma3;
+  struct {
     uint32_t nonsign_mask;
   } avx512;
+  struct {
+    float nonsign_mask[1];
+  } avx512f;
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 #if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
   struct {
@@ -2492,12 +2501,21 @@ union xnn_f32_neg_params {
     XNN_ALIGN(16) float sign_mask[4];
   } sse;
   struct {
+    XNN_ALIGN(16) float sign_mask[4];
+  } sse2;
+  struct {
     XNN_ALIGN(32) float sign_mask[8];
     int32_t mask_table[14];
   } avx;
   struct {
+    XNN_ALIGN(32) float sign_mask[8];
+  } fma3;
+  struct {
     uint32_t sign_mask;
   } avx512;
+  struct {
+    float sign_mask[1];
+  } avx512f;
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 #if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
   struct {
@@ -2880,6 +2898,20 @@ union xnn_f32_tanh_params {
     float minus_two;
     float one;
   } scalar_expm1minus_rr1_lut8_p4h3;
+  struct {
+    float max_x[1];
+    float min_x[1];
+    float alpha_1[1];
+    float alpha_3[1];
+    float alpha_5[1];
+    float alpha_7[1];
+    float alpha_9[1];
+    float beta_0[1];
+    float beta_2[1];
+    float beta_4[1];
+    float beta_6[1];
+    float two[1];
+  } scalar_rational_9_6;
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
   struct {
     XNN_ALIGN(16) float max_x[4];
@@ -2894,48 +2926,49 @@ union xnn_f32_tanh_params {
     XNN_ALIGN(16) float beta_4[4];
     XNN_ALIGN(16) float beta_6[4];
     XNN_ALIGN(16) float two[4];
-  } sse_rational_9_6;
+  } sse2_rational_9_6;
   struct {
-    float max_abs_x;
-    float alpha_1;
-    float alpha_3;
-    float alpha_5;
-    float alpha_7;
-    float alpha_9;
-    float beta_0;
-    float beta_2;
-    float beta_4;
-    float beta_6;
-    float two;
-    int32_t mask_table[14];
+    float max_x[1];
+    float min_x[1];
+    float alpha_1[1];
+    float alpha_3[1];
+    float alpha_5[1];
+    float alpha_7[1];
+    float alpha_9[1];
+    float beta_0[1];
+    float beta_2[1];
+    float beta_4[1];
+    float beta_6[1];
+    float two[1];
   } avx_rational_9_6;
   struct {
-    float max_abs_x;
-    float alpha_1;
-    float alpha_3;
-    float alpha_5;
-    float alpha_7;
-    float alpha_9;
-    float beta_0;
-    float beta_2;
-    float beta_4;
-    float beta_6;
-    float two;
-    int32_t mask_table[14];
+    float max_x[1];
+    float min_x[1];
+    float alpha_1[1];
+    float alpha_3[1];
+    float alpha_5[1];
+    float alpha_7[1];
+    float alpha_9[1];
+    float beta_0[1];
+    float beta_2[1];
+    float beta_4[1];
+    float beta_6[1];
+    float two[1];
   } fma3_rational_9_6;
   struct {
-    float max_abs_x;
-    float alpha_1;
-    float alpha_3;
-    float alpha_5;
-    float alpha_7;
-    float alpha_9;
-    float beta_0;
-    float beta_2;
-    float beta_4;
-    float beta_6;
-    float two;
-  } avx512_rational_9_6;
+    float max_x[1];
+    float min_x[1];
+    float alpha_1[1];
+    float alpha_3[1];
+    float alpha_5[1];
+    float alpha_7[1];
+    float alpha_9[1];
+    float beta_0[1];
+    float beta_2[1];
+    float beta_4[1];
+    float beta_6[1];
+    float two[1];
+  } avx512f_rational_9_6;
   struct {
     XNN_ALIGN(16) float sign_mask[4];
     XNN_ALIGN(16) float sat_cutoff[4];
@@ -3143,6 +3176,20 @@ union xnn_f32_tanh_params {
     XNN_ALIGN(8) float two[2];
     XNN_ALIGN(8) float one[2];
   } wasmsimd_expm1minus_rr1_lut8_p4h3_nabs;
+  struct {
+    XNN_ALIGN(16) float max_x[4];
+    XNN_ALIGN(16) float min_x[4];
+    XNN_ALIGN(16) float alpha_1[4];
+    XNN_ALIGN(16) float alpha_3[4];
+    XNN_ALIGN(16) float alpha_5[4];
+    XNN_ALIGN(16) float alpha_7[4];
+    XNN_ALIGN(16) float alpha_9[4];
+    XNN_ALIGN(16) float beta_0[4];
+    XNN_ALIGN(16) float beta_2[4];
+    XNN_ALIGN(16) float beta_4[4];
+    XNN_ALIGN(16) float beta_6[4];
+    XNN_ALIGN(16) float two[4];
+  } wasmsimd_rational_9_6;
 #endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
 #if XNN_ARCH_ARM || XNN_ARCH_ARM64
   struct {
@@ -3165,6 +3212,20 @@ union xnn_f32_tanh_params {
     float c3;
     float c2;
   } neon_expm1minus_rr1_lut8_p4h3;
+  struct {
+    XNN_ALIGN(16) float max_x[4];
+    XNN_ALIGN(16) float min_x[4];
+    XNN_ALIGN(16) float alpha_1[4];
+    XNN_ALIGN(16) float alpha_3[4];
+    XNN_ALIGN(16) float alpha_5[4];
+    XNN_ALIGN(16) float alpha_7[4];
+    XNN_ALIGN(16) float alpha_9[4];
+    XNN_ALIGN(16) float beta_0[4];
+    XNN_ALIGN(16) float beta_2[4];
+    XNN_ALIGN(16) float beta_4[4];
+    XNN_ALIGN(16) float beta_6[4];
+    XNN_ALIGN(16) float two[4];
+  } neon_rational_9_6;
 #endif  // XNN_ARCH_ARM || XNN_ARCH_ARM64
 };
 

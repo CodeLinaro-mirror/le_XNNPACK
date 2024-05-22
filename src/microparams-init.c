@@ -3374,86 +3374,9 @@ size_t xnn_init_f32_tanh_avx_expm1minus_rr1_p6h5_params(
   }
   return sizeof(params->avx_expm1minus_rr1_p6h5);
 }
+#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
-size_t xnn_init_f32_tanh_sse_rational_9_6_params(
-    union xnn_f32_tanh_params params[XNN_MIN_ELEMENTS(1)]) {
-  for (uint32_t i = 0; i < 4; i++) {
-    params->sse_rational_9_6.max_x[i] = 7.623543739319f;
-    params->sse_rational_9_6.min_x[i] = -7.623543739319f;
-    params->sse_rational_9_6.alpha_1[i] = -9.022999554873e-03f;
-    params->sse_rational_9_6.alpha_3[i] = -1.146968104877e-03f;
-    params->sse_rational_9_6.alpha_5[i] = -2.432360815874e-05f;
-    params->sse_rational_9_6.alpha_7[i] = -6.458659385089e-08f;
-    params->sse_rational_9_6.alpha_9[i] = 5.535878699892e-11f;
-    params->sse_rational_9_6.beta_0[i] = -9.023001417518e-03f;
-    params->sse_rational_9_6.beta_2[i] = -4.154618829489e-03f;
-    params->sse_rational_9_6.beta_4[i] = -2.061512641376e-04f;
-    params->sse_rational_9_6.beta_6[i] = -1.774490101525e-06f;
-    params->sse_rational_9_6.two[i] = 2.0f;
-  }
-  return sizeof(params->sse_rational_9_6);
-}
-
-size_t xnn_init_f32_tanh_avx_rational_9_6_params(
-    union xnn_f32_tanh_params params[XNN_MIN_ELEMENTS(1)]) {
-  params->avx_rational_9_6.max_abs_x = 7.623543739319f;
-  params->avx_rational_9_6.alpha_1 = -9.022999554873e-03f;
-  params->avx_rational_9_6.alpha_3 = -1.146968104877e-03f;
-  params->avx_rational_9_6.alpha_5 = -2.432360815874e-05f;
-  params->avx_rational_9_6.alpha_7 = -6.458659385089e-08f;
-  params->avx_rational_9_6.alpha_9 = 5.535878699892e-11f;
-  params->avx_rational_9_6.beta_0 = -9.023001417518e-03f;
-  params->avx_rational_9_6.beta_2 = -4.154618829489e-03f;
-  params->avx_rational_9_6.beta_4 = -2.061512641376e-04f;
-  params->avx_rational_9_6.beta_6 = -1.774490101525e-06f;
-  params->avx_rational_9_6.two = 2.0f;
-  for (uint32_t i = 0; i < 7; i++) {
-    params->avx_rational_9_6.mask_table[i] = -1;
-  }
-  for (uint32_t i = 7; i < 14; i++) {
-    params->avx_rational_9_6.mask_table[i] = 0;
-  }
-  return sizeof(params->avx_rational_9_6);
-}
-
-size_t xnn_init_f32_tanh_fma3_rational_9_6_params(
-    union xnn_f32_tanh_params params[XNN_MIN_ELEMENTS(1)]) {
-  params->fma3_rational_9_6.max_abs_x = 7.646893501282f;
-  params->fma3_rational_9_6.alpha_1 = -9.022999554873e-03f;
-  params->fma3_rational_9_6.alpha_3 = -1.146968104877e-03f;
-  params->fma3_rational_9_6.alpha_5 = -2.432360815874e-05f;
-  params->fma3_rational_9_6.alpha_7 = -6.458659385089e-08f;
-  params->fma3_rational_9_6.alpha_9 = 5.535878699892e-11f;
-  params->fma3_rational_9_6.beta_0 = -9.023001417518e-03f;
-  params->fma3_rational_9_6.beta_2 = -4.154618829489e-03f;
-  params->fma3_rational_9_6.beta_4 = -2.061512641376e-04f;
-  params->fma3_rational_9_6.beta_6 = -1.774490101525e-06f;
-  params->fma3_rational_9_6.two = 2.0f;
-  for (uint32_t i = 0; i < 7; i++) {
-    params->fma3_rational_9_6.mask_table[i] = -1;
-  }
-  for (uint32_t i = 7; i < 14; i++) {
-    params->fma3_rational_9_6.mask_table[i] = 0;
-  }
-  return sizeof(params->fma3_rational_9_6);
-}
-
-size_t xnn_init_f32_tanh_avx512_rational_9_6_params(
-    union xnn_f32_tanh_params params[XNN_MIN_ELEMENTS(1)]) {
-  params->avx512_rational_9_6.max_abs_x = 7.646893501282f;
-  params->avx512_rational_9_6.alpha_1 = -9.022999554873e-03f;
-  params->avx512_rational_9_6.alpha_3 = -1.146968104877e-03f;
-  params->avx512_rational_9_6.alpha_5 = -2.432360815874e-05f;
-  params->avx512_rational_9_6.alpha_7 = -6.458659385089e-08f;
-  params->avx512_rational_9_6.alpha_9 = 5.535878699892e-11f;
-  params->avx512_rational_9_6.beta_0 = -9.023001417518e-03f;
-  params->avx512_rational_9_6.beta_2 = -4.154618829489e-03f;
-  params->avx512_rational_9_6.beta_4 = -2.061512641376e-04f;
-  params->avx512_rational_9_6.beta_6 = -1.774490101525e-06f;
-  params->avx512_rational_9_6.two = 2.0f;
-  return sizeof(params->avx512_rational_9_6);
-}
-
+#if XNN_ARCH_X86 || XNN_ARCH_X86_64
 size_t xnn_init_f32_tanh_avx512_expm1minus_rr1_lut4_p4h3_perm_params(
   union xnn_f32_tanh_params params[XNN_MIN_ELEMENTS(1)])
 {
@@ -3696,6 +3619,15 @@ size_t xnn_init_f32_abs_sse_params(
   return sizeof(params->sse);
 }
 
+size_t xnn_init_f32_abs_sse2_params(
+  union xnn_f32_abs_params params[XNN_MIN_ELEMENTS(1)])
+{
+  for (uint32_t i = 0; i < 4; i++) {
+    params->sse2.nonsign_mask[i] = math_nonsign_mask_f32();
+  }
+  return sizeof(params->sse);
+}
+
 size_t xnn_init_f32_abs_avx_params(
   union xnn_f32_abs_params params[XNN_MIN_ELEMENTS(1)])
 {
@@ -3711,11 +3643,27 @@ size_t xnn_init_f32_abs_avx_params(
   return sizeof(params->avx);
 }
 
+size_t xnn_init_f32_abs_fma3_params(
+  union xnn_f32_abs_params params[XNN_MIN_ELEMENTS(1)])
+{
+  for (uint32_t i = 0; i < 8; i++) {
+    params->fma3.nonsign_mask[i] = math_nonsign_mask_f32();
+  }
+  return sizeof(params->fma3);
+}
+
 size_t xnn_init_f32_abs_avx512_params(
   union xnn_f32_abs_params params[XNN_MIN_ELEMENTS(1)])
 {
   params->avx512.nonsign_mask = UINT32_C(0x7FFFFFFF);
   return sizeof(params->avx512);
+}
+
+size_t xnn_init_f32_abs_avx512f_params(
+  union xnn_f32_abs_params params[XNN_MIN_ELEMENTS(1)])
+{
+  params->avx512f.nonsign_mask[0] = math_nonsign_mask_f32();
+  return sizeof(params->avx512f);
 }
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
@@ -3750,6 +3698,15 @@ size_t xnn_init_f32_neg_sse_params(
   return sizeof(params->sse);
 }
 
+size_t xnn_init_f32_neg_sse2_params(
+  union xnn_f32_neg_params params[XNN_MIN_ELEMENTS(1)])
+{
+  for (uint32_t i = 0; i < 4; i++) {
+    params->sse2.sign_mask[i] = -0.0f;
+  }
+  return sizeof(params->sse);
+}
+
 size_t xnn_init_f32_neg_avx_params(
   union xnn_f32_neg_params params[XNN_MIN_ELEMENTS(1)])
 {
@@ -3765,11 +3722,27 @@ size_t xnn_init_f32_neg_avx_params(
   return sizeof(params->avx);
 }
 
+size_t xnn_init_f32_neg_fma3_params(
+  union xnn_f32_neg_params params[XNN_MIN_ELEMENTS(1)])
+{
+  for (uint32_t i = 0; i < 8; i++) {
+    params->fma3.sign_mask[i] = -0.0f;
+  }
+  return sizeof(params->fma3);
+}
+
 size_t xnn_init_f32_neg_avx512_params(
   union xnn_f32_neg_params params[XNN_MIN_ELEMENTS(1)])
 {
   params->avx512.sign_mask = UINT32_C(0x80000000);
   return sizeof(params->avx512);
+}
+
+size_t xnn_init_f32_neg_avx512f_params(
+  union xnn_f32_neg_params params[XNN_MIN_ELEMENTS(1)])
+{
+  params->avx512f.sign_mask[0] = -0.0f;
+  return sizeof(params->avx512f);
 }
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
