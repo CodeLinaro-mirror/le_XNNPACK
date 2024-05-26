@@ -15,7 +15,7 @@
 #include <xnnpack/math.h>
 #include <xnnpack/reduce.h>
 
-void xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc2(
+void xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u128_acc4(
     size_t batch,
     const int8_t* input,
     int8_t* output,
@@ -30,32 +30,50 @@ void xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc2(
   const __m256i vone_16 = _mm256_set1_epi16(INT16_C(1));
   __m256i vacc0 = _mm256_setzero_si256();
   __m256i vacc1 = _mm256_setzero_si256();
+  __m256i vacc2 = _mm256_setzero_si256();
+  __m256i vacc3 = _mm256_setzero_si256();
 
-  for (; batch >= 256; batch -= 256) {
+  for (; batch >= 512; batch -= 512) {
     __m256i vacc16_0 = _mm256_setzero_si256();
     __m256i vacc16_1 = _mm256_setzero_si256();
-    for (size_t current_batch = 256; current_batch > 0; current_batch -= 64) {
+    __m256i vacc16_2 = _mm256_setzero_si256();
+    __m256i vacc16_3 = _mm256_setzero_si256();
+    for (size_t current_batch = 512; current_batch > 0; current_batch -= 128) {
       const __m256i vt0 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
       const __m256i vt1 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
+      const __m256i vt2 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
+      const __m256i vt3 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
 
       vacc16_0 = _mm256_add_epi16(vacc16_0, vt0);
       vacc16_1 = _mm256_add_epi16(vacc16_1, vt1);
+      vacc16_2 = _mm256_add_epi16(vacc16_2, vt2);
+      vacc16_3 = _mm256_add_epi16(vacc16_3, vt3);
     }
     vacc0 = _mm256_add_epi32(vacc0, _mm256_madd_epi16(vone_16, vacc16_0));
     vacc1 = _mm256_add_epi32(vacc1, _mm256_madd_epi16(vone_16, vacc16_1));
+    vacc2 = _mm256_add_epi32(vacc2, _mm256_madd_epi16(vone_16, vacc16_2));
+    vacc3 = _mm256_add_epi32(vacc3, _mm256_madd_epi16(vone_16, vacc16_3));
   }
 
   if (XNN_UNLIKELY(batch != 0)) {
     __m256i vacc16_0 = _mm256_setzero_si256();
     __m256i vacc16_1 = _mm256_setzero_si256();
-    for (; batch >= 64; batch -= 64) {
+    __m256i vacc16_2 = _mm256_setzero_si256();
+    __m256i vacc16_3 = _mm256_setzero_si256();
+    for (; batch >= 128; batch -= 128) {
       const __m256i vt0 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
       const __m256i vt1 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
+      const __m256i vt2 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
+      const __m256i vt3 = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
 
       vacc16_0 = _mm256_add_epi16(vacc16_0, vt0);
       vacc16_1 = _mm256_add_epi16(vacc16_1, vt1);
+      vacc16_2 = _mm256_add_epi16(vacc16_2, vt2);
+      vacc16_3 = _mm256_add_epi16(vacc16_3, vt3);
     }
     vacc16_0 = _mm256_add_epi16(vacc16_0, vacc16_1);
+    vacc16_2 = _mm256_add_epi16(vacc16_2, vacc16_3);
+    vacc16_0 = _mm256_add_epi16(vacc16_0, vacc16_2);
 
     for (; batch >= 32; batch -= 32) {
       const __m256i vt = _mm256_maddubs_epi16(vone, _mm256_loadu_si256((const __m256i*) input)); input += 32;
@@ -72,6 +90,8 @@ void xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc2(
   }
 
   vacc0 = _mm256_add_epi32(vacc0, vacc1);
+  vacc2 = _mm256_add_epi32(vacc2, vacc3);
+  vacc0 = _mm256_add_epi32(vacc0, vacc2);
 
   __m128i vacc_lo = _mm_add_epi32(_mm256_castsi256_si128(vacc0), _mm256_extractf128_si256(vacc0, 1));
   vacc_lo = _mm_hadd_epi32(vacc_lo, vacc_lo);

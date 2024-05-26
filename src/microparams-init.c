@@ -1141,6 +1141,7 @@ size_t xnn_init_qs8_avgpool_minmax_fp32_sse4_params(
   return sizeof(params->fp32_sse4);
 }
 
+// Same as NEON but 62 byte mask.  Used for rsum avx2
 size_t xnn_init_qs8_avgpool_minmax_fp32_avx2_params(
   union xnn_qs8_avgpool_minmax_params params[XNN_MIN_ELEMENTS(1)],
   int32_t init_bias,
@@ -1152,20 +1153,16 @@ size_t xnn_init_qs8_avgpool_minmax_fp32_avx2_params(
   assert(scale >= 0x1.0p-32f);
   assert(scale < 256.0f);
 
-  for (uint32_t i = 0; i < 8; i++) {
-    params->fp32_avx2.init_bias[i] = init_bias;
-    params->fp32_avx2.scale[i] = scale;
-    params->fp32_avx2.magic_bias[i] = 12582912.0f;
-    params->fp32_avx2.magic_bias_less_output_zero_point[i] = INT32_C(0x4B400000) - (int32_t) output_zero_point;
+  params->fp32_avx2.init_bias = init_bias;
+  params->fp32_avx2.scale = scale;
+  params->fp32_avx2.magic_bias = 12582912.0f;
+  params->fp32_avx2.magic_bias_less_output_zero_point = INT32_C(0x4B400000) - (int32_t) output_zero_point;
+  params->fp32_avx2.output_min = output_min;
+  params->fp32_avx2.output_max = output_max;
+  for (uint32_t i = 0; i < 31; i++) {
+    params->fp32_avx2.mask_table[i] = 1;
   }
-  for (uint32_t i = 0; i < 32; i++) {
-    params->fp32_avx2.output_min[i] = output_min;
-    params->fp32_avx2.output_max[i] = output_max;
-  }
-  for (uint32_t i = 0; i < 15; i++) {
-    params->fp32_avx2.mask_table[i] = -1;
-  }
-  for (uint32_t i = 15; i < 30; i++) {
+  for (uint32_t i = 31; i < 62; i++) {
     params->fp32_avx2.mask_table[i] = 0;
   }
   return sizeof(params->fp32_avx2);

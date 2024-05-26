@@ -343,12 +343,9 @@ DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__wasmsimd_u16_acc4)
       int8_t* output,                              \
       const union xnn_qs8_avgpool_minmax_params params[XNN_RESTRICT XNN_MIN_ELEMENTS(1)]);
 
-DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u16)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u32)
-DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u32_acc2)
-DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc2)
-DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc4)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u128_acc4)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx512skx_u32)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx512skx_u64)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_minmax_fp32_ukernel__avx512skx_u64_acc2)

@@ -63,15 +63,16 @@ void xnn_qs8_rsum_minmax_fp32_ukernel__avx512skx_u32(
   __m128i vacc_lo = _mm_add_epi32(_mm256_castsi256_si128(vsomething), _mm256_extractf128_si256(vsomething, 1));
   vacc_lo = _mm_hadd_epi32(vacc_lo, vacc_lo);
   vacc_lo = _mm_hadd_epi32(vacc_lo, vacc_lo);
+  const int32_t vacc = _mm_cvtsi128_si32(vacc_lo);
 
-  const int32_t vinit_bias = params->fp32_avx2.init_bias[0];
-  const float vscale = params->fp32_avx2.scale[0];
-  const int32_t output_min = params->fp32_avx2.output_min[0];
-  const int32_t output_max = params->fp32_avx2.output_max[0];
-  const float vmagic_bias = params->fp32_avx2.magic_bias[0];
-  const int32_t vmagic_bias_less_output_zero_point = params->fp32_avx2.magic_bias_less_output_zero_point[0];
+  const int32_t vinit_bias = params->fp32_avx2.init_bias;
+  const float vscale = params->fp32_avx2.scale;
+  const int32_t output_min = params->fp32_avx2.output_min;
+  const int32_t output_max = params->fp32_avx2.output_max;
+  const float vmagic_bias = params->fp32_avx2.magic_bias;
+  const int32_t vmagic_bias_less_output_zero_point = params->fp32_avx2.magic_bias_less_output_zero_point;
 
-  float vfpacc = (float) (_mm_cvtsi128_si32(vacc_lo) + vinit_bias) * vscale;
+  float vfpacc = (float) (vacc + vinit_bias) * vscale;
   vfpacc += vmagic_bias;
   int32_t vout = (int32_t) float_as_uint32(vfpacc);
   vout -= vmagic_bias_less_output_zero_point;

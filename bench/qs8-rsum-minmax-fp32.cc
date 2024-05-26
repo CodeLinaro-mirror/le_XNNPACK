@@ -238,38 +238,8 @@ BENCHMARK_CAPTURE(qs8_rsum, scalar_imagic_u4,
 
 
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  BENCHMARK_CAPTURE(qs8_rsum, avx2_u16,
-                    xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u16,
-                    xnn_init_qs8_avgpool_minmax_fp32_avx2_params,
-                    benchmark::utils::CheckAVX2)
-    ->Apply(BenchmarkRSUM)
-    ->UseRealTime();
-#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
-
-
-#if XNN_ARCH_X86 || XNN_ARCH_X86_64
   BENCHMARK_CAPTURE(qs8_rsum, avx2_u32,
                     xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u32,
-                    xnn_init_qs8_avgpool_minmax_fp32_avx2_params,
-                    benchmark::utils::CheckAVX2)
-    ->Apply(BenchmarkRSUM)
-    ->UseRealTime();
-#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
-
-
-#if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  BENCHMARK_CAPTURE(qs8_rsum, avx2_u32_acc2,
-                    xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u32_acc2,
-                    xnn_init_qs8_avgpool_minmax_fp32_avx2_params,
-                    benchmark::utils::CheckAVX2)
-    ->Apply(BenchmarkRSUM)
-    ->UseRealTime();
-#endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
-
-
-#if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  BENCHMARK_CAPTURE(qs8_rsum, avx2_u64,
-                    xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64,
                     xnn_init_qs8_avgpool_minmax_fp32_avx2_params,
                     benchmark::utils::CheckAVX2)
     ->Apply(BenchmarkRSUM)
@@ -288,8 +258,8 @@ BENCHMARK_CAPTURE(qs8_rsum, scalar_imagic_u4,
 
 
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  BENCHMARK_CAPTURE(qs8_rsum, avx2_u64_acc4,
-                    xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u64_acc4,
+  BENCHMARK_CAPTURE(qs8_rsum, avx2_u128_acc4,
+                    xnn_qs8_rsum_minmax_fp32_ukernel__avx2_u128_acc4,
                     xnn_init_qs8_avgpool_minmax_fp32_avx2_params,
                     benchmark::utils::CheckAVX2)
     ->Apply(BenchmarkRSUM)
