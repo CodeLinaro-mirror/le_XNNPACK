@@ -236,20 +236,30 @@ enum xnn_datatype {
   xnn_datatype_fp32 = 1,
   /// IEEE754 half-precision floating-point.
   xnn_datatype_fp16 = 2,
-  /// Quantized 8-bit signed integer with shared per-Value quantization parameters.
+  /// Quantized 8-bit signed integer with shared per-Value quantization
+  /// parameters.
   xnn_datatype_qint8 = 3,
-  /// Quantized 8-bit unsigned integer with shared per-Value quantization parameters.
+  /// Quantized 8-bit unsigned integer with shared per-Value quantization
+  /// parameters.
   xnn_datatype_quint8 = 4,
-  /// Quantized 32-bit signed integer with shared per-Value quantization parameters.
+  /// Quantized 32-bit signed integer with shared per-Value quantization
+  /// parameters.
   xnn_datatype_qint32 = 5,
-  /// Quantized 8-bit signed integer with shared per-channel quantization parameters.
+  /// Quantized 8-bit signed integer with shared per-channel quantization
+  /// parameters.
   xnn_datatype_qcint8 = 6,
-  /// Quantized 32-bit signed integer with shared per-channel quantization parameters.
+  /// Quantized 32-bit signed integer with shared per-channel quantization
+  /// parameters.
   xnn_datatype_qcint32 = 7,
-  /// Quantized 4-bit signed integer with shared per-channel quantization parameters.
+  /// Quantized 4-bit signed integer with shared per-channel quantization
+  /// parameters.
   xnn_datatype_qcint4 = 8,
-  /// Dynamically quantized 8-bit signed integer with per-batch quantization parameters.
+  /// Dynamically quantized 8-bit signed integer with per-batch quantization
+  /// parameters.
   xnn_datatype_qdint8 = 9,
+  /// Dynamically quantized 8-bit signed integers packed with their per-row
+  /// quantization parameters.
+  xnn_datatype_qpint8 = 10,
 };
 
 /// Define a tensor-type Value and add it to a Subgraph.
@@ -2845,6 +2855,17 @@ enum xnn_status xnn_setup_convert_nc_f32_qd8(
   const float* input,
   int8_t* output,
   struct xnn_dynamic_quantization_params* quantization_params);
+
+enum xnn_status xnn_create_convert_nc_f32_qp8(uint32_t flags,
+                                              xnn_operator_t* convert_op_out);
+
+enum xnn_status xnn_reshape_convert_nc_f32_qp8(
+    xnn_operator_t convert_op, size_t batch_size, size_t channels,
+    size_t input_stride, pthreadpool_t threadpool);
+
+enum xnn_status xnn_setup_convert_nc_f32_qp8(xnn_operator_t convert_op,
+                                             const float* input,
+                                             int8_t* output);
 
 enum xnn_status xnn_create_convert_nc_f32_f16(
   uint32_t flags,
