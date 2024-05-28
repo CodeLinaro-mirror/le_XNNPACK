@@ -182,6 +182,13 @@ enum xnn_status xnn_initialize(const struct xnn_allocator* allocator);
 /// @retval xnn_status_success - deinitialization call succeeded.
 enum xnn_status xnn_deinitialize(void);
 
+/// Get a build identifier for XNNPack.
+///
+/// That identifier allows to check that saved packed weights are compatible.
+///
+/// @returns An integer that identifies the XNNPack build.
+size_t xnn_get_build_identifier();
+
 /// Subgraph is an abstract representation of a neural network model.
 /// Subgraph objects are used to define Values (tensors) and Nodes (operators) comprising the model.
 typedef struct xnn_subgraph* xnn_subgraph_t;
