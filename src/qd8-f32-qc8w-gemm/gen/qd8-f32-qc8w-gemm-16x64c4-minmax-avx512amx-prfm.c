@@ -8,6 +8,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stdio.h>
 
 #include <immintrin.h>
 
@@ -152,10 +153,10 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_16x64c4__avx512amx_prfm(
   const __m512 voutput_max = _mm512_set1_ps(params->scalar.max);
 
   do {
-    const __m512i vksum0123456789ABCDEF = _mm512_load_epi32((const int32_t*) w + 0);
-    const __m512i vksumGHIJKLMNOPQRSTUV = _mm512_load_epi32((const int32_t*) w + 16);
-    const __m512i vksumWXYZabcdefghijkl = _mm512_load_epi32((const int32_t*) w + 32);
-    const __m512i vksummnopqrstuvwxyz01 = _mm512_load_epi32((const int32_t*) w + 48);
+    const __m512i vksum0123456789ABCDEF = _mm512_loadu_epi32((const int32_t*) w + 0);
+    const __m512i vksumGHIJKLMNOPQRSTUV = _mm512_loadu_epi32((const int32_t*) w + 16);
+    const __m512i vksumWXYZabcdefghijkl = _mm512_loadu_epi32((const int32_t*) w + 32);
+    const __m512i vksummnopqrstuvwxyz01 = _mm512_loadu_epi32((const int32_t*) w + 48);
     w = (const int32_t*) w + 64;
 
     // Zero tile accumulator
@@ -170,6 +171,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_16x64c4__avx512amx_prfm(
     while (k >= 64 * sizeof(int8_t)) {
       _tile_loadd(4, a, a_stride);
       a += 64;
+
       _tile_loadd(5, (const int8_t*) w + 0, 256);
       _tile_dpbssd(0, 4, 5);
       _tile_loadd(5, (const int8_t*) w + 64, 256);
@@ -544,15 +546,15 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_16x64c4__avx512amx_prfm(
     vscaled15xWXYZabcdefghijkl = _mm512_mul_ps(vscaled15xWXYZabcdefghijkl, _mm512_set1_ps(quantization_params[15].inv_scale));
     vscaled15xmnopqrstuvwxyz01 = _mm512_mul_ps(vscaled15xmnopqrstuvwxyz01, _mm512_set1_ps(quantization_params[15].inv_scale));
 
-    const __m512 vfilter_output_scale0123456789ABCDEF = _mm512_load_ps((const float*) w + 0);
-    const __m512 vfilter_output_scaleGHIJKLMNOPQRSTUV = _mm512_load_ps((const float*) w + 16);
-    const __m512 vfilter_output_scaleWXYZabcdefghijkl = _mm512_load_ps((const float*) w + 32);
-    const __m512 vfilter_output_scalemnopqrstuvwxyz01 = _mm512_load_ps((const float*) w + 48);
+    const __m512 vfilter_output_scale0123456789ABCDEF = _mm512_loadu_ps((const float*) w + 0);
+    const __m512 vfilter_output_scaleGHIJKLMNOPQRSTUV = _mm512_loadu_ps((const float*) w + 16);
+    const __m512 vfilter_output_scaleWXYZabcdefghijkl = _mm512_loadu_ps((const float*) w + 32);
+    const __m512 vfilter_output_scalemnopqrstuvwxyz01 = _mm512_loadu_ps((const float*) w + 48);
     w = (const int32_t*) w + 64;
-    const __m512 vbias0123456789ABCDEF = _mm512_load_ps((const float*) w + 0);
-    const __m512 vbiasGHIJKLMNOPQRSTUV = _mm512_load_ps((const float*) w + 16);
-    const __m512 vbiasWXYZabcdefghijkl = _mm512_load_ps((const float*) w + 32);
-    const __m512 vbiasmnopqrstuvwxyz01 = _mm512_load_ps((const float*) w + 48);
+    const __m512 vbias0123456789ABCDEF = _mm512_loadu_ps((const float*) w + 0);
+    const __m512 vbiasGHIJKLMNOPQRSTUV = _mm512_loadu_ps((const float*) w + 16);
+    const __m512 vbiasWXYZabcdefghijkl = _mm512_loadu_ps((const float*) w + 32);
+    const __m512 vbiasmnopqrstuvwxyz01 = _mm512_loadu_ps((const float*) w + 48);
     w = (const int32_t*) w + 64;
 
     vscaled0x0123456789ABCDEF = _mm512_fmadd_ps(vscaled0x0123456789ABCDEF, vfilter_output_scale0123456789ABCDEF, vbias0123456789ABCDEF);

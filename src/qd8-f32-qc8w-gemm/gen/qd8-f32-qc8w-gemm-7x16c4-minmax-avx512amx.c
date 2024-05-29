@@ -8,6 +8,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stdio.h>
 
 #include <immintrin.h>
 
@@ -112,7 +113,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_7x16c4__avx512amx(
   const __m512 voutput_max = _mm512_set1_ps(params->scalar.max);
 
   do {
-    const __m512i vksum0123456789ABCDEF = _mm512_load_epi32((const int32_t*) w + 0);
+    const __m512i vksum0123456789ABCDEF = _mm512_loadu_epi32((const int32_t*) w + 0);
     w = (const int32_t*) w + 16;
 
     // Zero tile accumulator
@@ -124,6 +125,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_7x16c4__avx512amx(
     while (k >= 64 * sizeof(int8_t)) {
       _tile_loadd(4, a, a_stride);
       a += 64;
+
       _tile_loadd(5, (const int8_t*) w + 0, 64);
       _tile_dpbssd(0, 4, 5);
 
@@ -175,9 +177,9 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_7x16c4__avx512amx(
     vscaled5x0123456789ABCDEF = _mm512_mul_ps(vscaled5x0123456789ABCDEF, _mm512_set1_ps(quantization_params[5].inv_scale));
     vscaled6x0123456789ABCDEF = _mm512_mul_ps(vscaled6x0123456789ABCDEF, _mm512_set1_ps(quantization_params[6].inv_scale));
 
-    const __m512 vfilter_output_scale0123456789ABCDEF = _mm512_load_ps((const float*) w + 0);
+    const __m512 vfilter_output_scale0123456789ABCDEF = _mm512_loadu_ps((const float*) w + 0);
     w = (const int32_t*) w + 16;
-    const __m512 vbias0123456789ABCDEF = _mm512_load_ps((const float*) w + 0);
+    const __m512 vbias0123456789ABCDEF = _mm512_loadu_ps((const float*) w + 0);
     w = (const int32_t*) w + 16;
 
     vscaled0x0123456789ABCDEF = _mm512_fmadd_ps(vscaled0x0123456789ABCDEF, vfilter_output_scale0123456789ABCDEF, vbias0123456789ABCDEF);

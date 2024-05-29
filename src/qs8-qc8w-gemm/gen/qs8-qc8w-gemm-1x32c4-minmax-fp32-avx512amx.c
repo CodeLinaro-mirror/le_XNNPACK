@@ -8,6 +8,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stdio.h>
 
 #include <immintrin.h>
 
@@ -89,8 +90,8 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x32c4__avx512amx(
   const __m128i voutput_min = _mm_load_si128((const __m128i*) params->fp32_avx512.output_min);
 
   do {
-    const __m512i vksum0123456789ABCDEF = _mm512_load_epi32((const int32_t*) w + 0);
-    const __m512i vksumGHIJKLMNOPQRSTUV = _mm512_load_epi32((const int32_t*) w + 16);
+    const __m512i vksum0123456789ABCDEF = _mm512_loadu_epi32((const int32_t*) w + 0);
+    const __m512i vksumGHIJKLMNOPQRSTUV = _mm512_loadu_epi32((const int32_t*) w + 16);
     w = (const int32_t*) w + 32;
 
     // Zero tile accumulator
@@ -103,6 +104,7 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x32c4__avx512amx(
     while (k >= 64 * sizeof(int8_t)) {
       _tile_loadd(4, a, a_stride);
       a += 64;
+
       _tile_loadd(5, (const int8_t*) w + 0, 128);
       _tile_dpbssd(0, 4, 5);
       _tile_loadd(5, (const int8_t*) w + 64, 128);
@@ -134,8 +136,8 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_1x32c4__avx512amx(
     __m512 vscaled0x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc0x0123456789ABCDEF);
     __m512 vscaled0xGHIJKLMNOPQRSTUV = _mm512_cvtepi32_ps(vacc0xGHIJKLMNOPQRSTUV);
 
-    const __m512 vscale0123456789ABCDEF = _mm512_load_ps((const float*) w + 0);
-    const __m512 vscaleGHIJKLMNOPQRSTUV = _mm512_load_ps((const float*) w + 16);
+    const __m512 vscale0123456789ABCDEF = _mm512_loadu_ps((const float*) w + 0);
+    const __m512 vscaleGHIJKLMNOPQRSTUV = _mm512_loadu_ps((const float*) w + 16);
     w = (const int32_t*) w + 32;
 
     vscaled0x0123456789ABCDEF = _mm512_mul_ps(vscaled0x0123456789ABCDEF, vscale0123456789ABCDEF);

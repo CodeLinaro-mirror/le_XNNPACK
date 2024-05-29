@@ -18,7 +18,7 @@
 #include <xnnpack/unaligned.h>
 
 
-void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
+void xnn_qd8_f32_qc4w_gemm_minmax_ukernel_1x16c4__avx512amx(
     size_t mr,
     size_t nc,
     size_t kc,
@@ -28,7 +28,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
     float* restrict c,
     size_t cm_stride,
     size_t cn_stride,
-    const union xnn_f32_minmax_params params[restrict XNN_MIN_ELEMENTS(1)],
+    const union xnn_f32_qc4w_minmax_params params[restrict XNN_MIN_ELEMENTS(1)],
     const struct xnn_qd8_quantization_params quantization_params[restrict XNN_MIN_ELEMENTS(1)])
 {
   assert(mr != 0);
@@ -44,6 +44,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
 // Update if amxintrin changes
 #if defined(__x86_64__)
   __attribute__((aligned(64))) int32_t res0[1 * 16];
+  __attribute__((aligned(64))) int8_t weight_buffer[16 * 64];
 
   kc = round_up_po2(kc, 4 * sizeof(int8_t));
   const size_t kremainder = (kc & 63) ? (kc & 63) : 64;
@@ -85,8 +86,10 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
 
   float* c0 = c;
 
-  const __m512 voutput_min = _mm512_set1_ps(params->scalar.min);
-  const __m512 voutput_max = _mm512_set1_ps(params->scalar.max);
+  const __m512 voutput_min = _mm512_set1_ps(params->avx512vnni.min);
+  const __m512 voutput_max = _mm512_set1_ps(params->avx512vnni.max);
+  const __m512i vmask = _mm512_set1_epi8(params->avx512vnni.mask);  // 0xF0
+  const __m512i vshl4 = _mm512_set1_epi64(params->avx512vnni.gfni_shl4);  // 0x01020408
 
   do {
     const __m512i vksum0123456789ABCDEF = _mm512_loadu_epi32((const int32_t*) w + 0);
@@ -102,20 +105,67 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
       _tile_loadd(4, a, a_stride);
       a += 64;
 
-      _tile_loadd(5, (const int8_t*) w + 0, 64);
+      const __m512i vb0x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 0);
+      const __m512i vb1x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 64);
+      const __m512i vb2x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 128);
+      const __m512i vb3x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 192);
+      const __m512i vb4x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 256);
+      const __m512i vb5x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 320);
+      const __m512i vb6x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 384);
+      const __m512i vb7x0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 448);
+      const __m512i vl0x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb0x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh0x0123456789ABCDEF = _mm512_and_si512(vb0x0123456789ABCDEF, vmask);
+      const __m512i vl1x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb1x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh1x0123456789ABCDEF = _mm512_and_si512(vb1x0123456789ABCDEF, vmask);
+      const __m512i vl2x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb2x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh2x0123456789ABCDEF = _mm512_and_si512(vb2x0123456789ABCDEF, vmask);
+      const __m512i vl3x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb3x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh3x0123456789ABCDEF = _mm512_and_si512(vb3x0123456789ABCDEF, vmask);
+      const __m512i vl4x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb4x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh4x0123456789ABCDEF = _mm512_and_si512(vb4x0123456789ABCDEF, vmask);
+      const __m512i vl5x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb5x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh5x0123456789ABCDEF = _mm512_and_si512(vb5x0123456789ABCDEF, vmask);
+      const __m512i vl6x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb6x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh6x0123456789ABCDEF = _mm512_and_si512(vb6x0123456789ABCDEF, vmask);
+      const __m512i vl7x0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb7x0123456789ABCDEF, vshl4, 0);
+      const __m512i vh7x0123456789ABCDEF = _mm512_and_si512(vb7x0123456789ABCDEF, vmask);
+      _mm512_store_epi32(weight_buffer + 0, vl0x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 64, vh0x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 128, vl1x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 192, vh1x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 256, vl2x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 320, vh2x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 384, vl3x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 448, vh3x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 512, vl4x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 576, vh4x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 640, vl5x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 704, vh5x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 768, vl6x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 832, vh6x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 896, vl7x0123456789ABCDEF);
+      _mm512_store_epi32(weight_buffer + 960, vh7x0123456789ABCDEF);
+      _tile_loadd(5, weight_buffer, 64);
       _tile_dpbssd(0, 4, 5);
 
-      w = (const int8_t*) w + 1024;
+      w = (const int8_t*) w + 512;
       k -= 64 * sizeof(int8_t);
     }
 
     if XNN_UNLIKELY(k != 0) {
       _tile_loadd(6, a, a_stride);
       a += kremainder;
-      _tile_loadd(7, (const int8_t*) w + 0, 64);
+      for (size_t k = 0; k < ((kremainder + 7) >> 3); ++k) {
+        const __m512i vb0123456789ABCDEF = _mm512_loadu_epi32((const int8_t*) w + 64 * k);
+        const __m512i vl0123456789ABCDEF = _mm512_gf2p8affine_epi64_epi8(vb0123456789ABCDEF, vshl4, 0);
+        const __m512i vh0123456789ABCDEF = _mm512_and_si512(vb0123456789ABCDEF, vmask);
+        _mm512_store_epi32(weight_buffer + 128 * k, vl0123456789ABCDEF);
+        _mm512_store_epi32(weight_buffer + 128 * k + 64, vh0123456789ABCDEF);
+      }
+      _tile_loadd(7, weight_buffer, 64);
       _tile_dpbssd(0, 6, 7);
 
-      w = (const int8_t*) w + kremainder * 16;
+      w = (const int8_t*) w + ((kremainder + 1) / 2) * 16;
       k -= kremainder * sizeof(int8_t);
     }
 
@@ -125,6 +175,7 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x16c4__avx512amx(
     __m512i vacc0x0123456789ABCDEF = _mm512_mullo_epi32(vksum0123456789ABCDEF, _mm512_set1_epi32((int) quantization_params[0].zero_point));
     vacc0x0123456789ABCDEF = _mm512_add_epi32(vacc0x0123456789ABCDEF, _mm512_load_epi32(res0 + 0));
 
+    vacc0x0123456789ABCDEF = _mm512_srai_epi32(vacc0x0123456789ABCDEF, 4);
     __m512 vscaled0x0123456789ABCDEF = _mm512_cvtepi32_ps(vacc0x0123456789ABCDEF);
 
     vscaled0x0123456789ABCDEF = _mm512_mul_ps(vscaled0x0123456789ABCDEF, _mm512_set1_ps(quantization_params[0].inv_scale));
