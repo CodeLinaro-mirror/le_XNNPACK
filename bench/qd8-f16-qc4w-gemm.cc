@@ -396,16 +396,16 @@
 
 
 #if XNN_ENABLE_AVX512VNNIGFNI && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
-  static void qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni(benchmark::State& state, const char* net) {
+  static void qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni(benchmark::State& state, const char* net) {
     GEMMBenchmark(state,
-      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni,
+      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni,
       xnn_init_f16_qc4w_minmax_avxvnni_params,
       xnn_pack_qs8_qc4w_gemm_goi_w,
-      /*mr=*/8, /*nr=*/8, /*kr=*/8, /*sr=*/1,
+      /*mr=*/14, /*nr=*/8, /*kr=*/8, /*sr=*/1,
       benchmark::utils::CheckAVX512VNNIGFNI);
   }
 
-  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni)
+  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni)
 #endif  // XNN_ENABLE_AVX512VNNIGFNI && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
 
 
@@ -452,16 +452,16 @@
 
 
 #if XNN_ENABLE_AVX512VNNIGFNI && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
-  static void qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni_prfm(benchmark::State& state, const char* net) {
+  static void qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni_prfm(benchmark::State& state, const char* net) {
     GEMMBenchmark(state,
-      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni_prfm,
+      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni_prfm,
       xnn_init_f16_qc4w_minmax_avxvnni_params,
       xnn_pack_qs8_qc4w_gemm_goi_w,
-      /*mr=*/8, /*nr=*/8, /*kr=*/8, /*sr=*/1,
+      /*mr=*/14, /*nr=*/8, /*kr=*/8, /*sr=*/1,
       benchmark::utils::CheckAVX512VNNIGFNI);
   }
 
-  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnnigfni_prfm)
+  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnnigfni_prfm)
 #endif  // XNN_ENABLE_AVX512VNNIGFNI && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
 
 
@@ -508,16 +508,16 @@
 
 
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  static void qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni(benchmark::State& state, const char* net) {
+  static void qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni(benchmark::State& state, const char* net) {
     GEMMBenchmark(state,
-      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni,
+      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni,
       xnn_init_f16_qc4w_minmax_avxvnni_params,
       xnn_pack_qs8_qc4w_gemm_goi_w,
-      /*mr=*/8, /*nr=*/8, /*kr=*/8, /*sr=*/1,
+      /*mr=*/14, /*nr=*/8, /*kr=*/8, /*sr=*/1,
       benchmark::utils::CheckAVX512VNNI);
   }
 
-  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni)
+  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni)
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
 
@@ -564,16 +564,16 @@
 
 
 #if XNN_ARCH_X86 || XNN_ARCH_X86_64
-  static void qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni_prfm(benchmark::State& state, const char* net) {
+  static void qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni_prfm(benchmark::State& state, const char* net) {
     GEMMBenchmark(state,
-      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni_prfm,
+      xnn_qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni_prfm,
       xnn_init_f16_qc4w_minmax_avxvnni_params,
       xnn_pack_qs8_qc4w_gemm_goi_w,
-      /*mr=*/8, /*nr=*/8, /*kr=*/8, /*sr=*/1,
+      /*mr=*/14, /*nr=*/8, /*kr=*/8, /*sr=*/1,
       benchmark::utils::CheckAVX512VNNI);
   }
 
-  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_8x8c8__avx512vnni_prfm)
+  BENCHMARK_GEMM(qd8_f16_qc4w_gemm_minmax_ukernel_14x8c8__avx512vnni_prfm)
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
 
