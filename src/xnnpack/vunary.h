@@ -86,6 +86,10 @@ DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__wasmsimd_u4)
 DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__wasmsimd_u8)
 DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__wasmsimd_u12)
 
+DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__hvx_u32)
+DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__hvx_u64)
+DECLARE_F32_VABS_UKERNEL_FUNCTION(xnn_f32_vabs_ukernel__hvx_u128)
+
 #define DECLARE_F16_VCLAMP_UKERNEL_FUNCTION(fn_name) \
   DECLARE_F16_UKERNEL_FUNCTION(fn_name, xnn_f16_minmax_params);
 
@@ -951,6 +955,10 @@ DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__neon_u12)
 DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__wasmsimd_u4)
 DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__wasmsimd_u8)
 DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__wasmsimd_u12)
+
+DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__hvx_u32)
+DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__hvx_u64)
+DECLARE_F32_VSQR_UKERNEL_FUNCTION(xnn_f32_vsqr_ukernel__hvx_u128)
 
 #define DECLARE_F16_VSQRT_UKERNEL_FUNCTION(fn_name) \
   DECLARE_F16_UKERNEL_FUNCTION(fn_name, xnn_f16_sqrt_params);
