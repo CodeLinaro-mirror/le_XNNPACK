@@ -130,6 +130,7 @@ tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f1
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vadd-minmax.yaml --output test/f32-vadd-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vadd-relu.yaml   --output test/f32-vadd-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vadd.yaml        --output test/f32-vadd.cc &
+tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vcopysign.yaml   --output test/f32-vcopysign.cc &
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vdiv-minmax.yaml --output test/f32-vdiv-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vdiv-relu.yaml   --output test/f32-vdiv-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f32-vdiv.yaml        --output test/f32-vdiv.cc &
@@ -146,6 +147,7 @@ tools/generate-vbinary-test.py --tester VBinaryMicrokernelTester  --spec test/f3
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vaddc-minmax.yaml  --output test/f32-vaddc-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vaddc-relu.yaml    --output test/f32-vaddc-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vaddc.yaml         --output test/f32-vaddc.cc &
+tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vcopysignc.yaml    --output test/f32-vcopysignc.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vdivc-minmax.yaml  --output test/f32-vdivc-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vdivc-relu.yaml    --output test/f32-vdivc-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vdivc.yaml         --output test/f32-vdivc.cc &
@@ -154,6 +156,7 @@ tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f3
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vmulc-minmax.yaml  --output test/f32-vmulc-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vmulc-relu.yaml    --output test/f32-vmulc-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vmulc.yaml         --output test/f32-vmulc.cc &
+tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vrcopysignc.yaml   --output test/f32-vrcopysignc.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vrdivc-minmax.yaml --output test/f32-vrdivc-minmax.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vrdivc-relu.yaml   --output test/f32-vrdivc-relu.cc &
 tools/generate-vbinary-test.py --tester VBinaryCMicrokernelTester --spec test/f32-vrdivc.yaml        --output test/f32-vrdivc.cc &
@@ -204,6 +207,7 @@ tools/generate-vunary-test.py --spec test/f16-vtanh.yaml --output test/f16-vtanh
 tools/generate-vunary-test.py --spec test/f32-vabs.yaml --output test/f32-vabs.cc &
 tools/generate-vunary-test.py --spec test/f32-vclamp.yaml --output test/f32-vclamp.cc &
 tools/generate-vunary-test.py --spec test/f32-velu.yaml --output test/f32-velu.cc &
+tools/generate-vunary-test.py --spec test/f32-vlog.yaml --output test/f32-vlog.cc &
 tools/generate-vunary-test.py --spec test/f32-vneg.yaml --output test/f32-vneg.cc &
 tools/generate-vunary-test.py --spec test/f32-vrelu.yaml --output test/f32-vrelu.cc &
 tools/generate-vunary-test.py --spec test/f32-vrndd.yaml  --output test/f32-vrndd.cc &

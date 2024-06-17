@@ -442,6 +442,9 @@ SET(ALL_SCALAR_MICROKERNEL_SRCS
   src/f32-vcmul/gen/f32-vcmul-scalar-u2.c
   src/f32-vcmul/gen/f32-vcmul-scalar-u4.c
   src/f32-vcmul/gen/f32-vcmul-scalar-u8.c
+  src/f32-vcopysign/gen/f32-vcopysign-scalar.c
+  src/f32-vcopysign/gen/f32-vcopysignc-scalar.c
+  src/f32-vcopysign/gen/f32-vrcopysignc-scalar.c
   src/f32-velu/gen/f32-velu-scalar-rr2-lut16-p3-u1.c
   src/f32-velu/gen/f32-velu-scalar-rr2-lut16-p3-u2.c
   src/f32-velu/gen/f32-velu-scalar-rr2-lut16-p3-u3.c
@@ -457,6 +460,7 @@ SET(ALL_SCALAR_MICROKERNEL_SRCS
   src/f32-vhswish/gen/f32-vhswish-scalar-u1.c
   src/f32-vhswish/gen/f32-vhswish-scalar-u2.c
   src/f32-vhswish/gen/f32-vhswish-scalar-u4.c
+  src/f32-vlog/gen/f32-vlog-scalar-log.c
   src/f32-vlrelu/gen/f32-vlrelu-scalar-u1.c
   src/f32-vlrelu/gen/f32-vlrelu-scalar-u2.c
   src/f32-vlrelu/gen/f32-vlrelu-scalar-u4.c

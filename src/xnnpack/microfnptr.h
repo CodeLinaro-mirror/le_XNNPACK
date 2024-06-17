@@ -1760,6 +1760,15 @@ typedef void (*xnn_u8_vclamp_ukernel_fn)(
     uint8_t* output,
     const union xnn_u8_minmax_params params[XNN_RESTRICT XNN_MIN_ELEMENTS(1)]);
 
+// VCOPYSIGN: Vector Copysign elementwise
+
+typedef void (*xnn_f32_vcopysign_ukernel_fn)(
+    size_t batch,
+    const float* input_a,
+    const float* input_b,
+    float* output,
+    const union xnn_f32_default_params params[XNN_RESTRICT XNN_MIN_ELEMENTS(1)]);
+
 // VCVT: Vector ConVerT elementwise
 
 typedef void (*xnn_f16_f32_vcvt_ukernel_fn)(
@@ -2009,6 +2018,14 @@ typedef void (*xnn_f32_vtanh_ukernel_fn)(
     const float* input,
     float* output,
     const union xnn_f32_tanh_params params[XNN_RESTRICT XNN_MIN_ELEMENTS(1)]);
+
+// VLOG: Vector Log elementwise
+
+typedef void (*xnn_f32_vlog_ukernel_fn)(
+    size_t batch,
+    const float* input,
+    float* output,
+    const union xnn_f32_default_params params[XNN_RESTRICT XNN_MIN_ELEMENTS(1)]);
 
 // LUT: vector LookUp Table elementwise
 
@@ -2632,6 +2649,9 @@ typedef size_t (*xnn_init_f16_lrelu_params_fn)(
 typedef size_t (*xnn_init_f32_lrelu_params_fn)(
   union xnn_f32_lrelu_params params[XNN_MIN_ELEMENTS(1)],
   float slope);
+
+typedef size_t (*xnn_init_f32_log_params_fn)(
+  union xnn_f32_default_params params[XNN_MIN_ELEMENTS(1)]);
 
 typedef size_t (*xnn_init_f32_relu_params_fn)(
   union xnn_f32_relu_params params[XNN_MIN_ELEMENTS(1)]);
