@@ -94,9 +94,25 @@ static XNN_INLINE xnn_simd_f32_t xnn_xor_f32(xnn_simd_f32_t a, xnn_simd_f32_t b)
   return *(const xnn_simd_f32_t *)&res;
 }
 
+static XNN_INLINE xnn_simd_f32_t xnn_shiftl_f32(xnn_simd_f32_t a,
+                                                uint8_t bits) {
+  const uint32_t res = *(uint32_t *)&a << bits;
+  return *(const xnn_simd_f32_t *)&res;
+}
+
+static XNN_INLINE xnn_simd_f32_t xnn_shiftr_f32(xnn_simd_f32_t a,
+                                                uint8_t bits) {
+  const uint32_t res = *(uint32_t *)&a >> bits;
+  return *(const xnn_simd_f32_t *)&res;
+}
+
 // Special functions.
 #define XNN_SIMD_HAVE_RCP_F32 0
 #define XNN_SIMD_HAVE_RSQRT_F32 0
+
+static XNN_INLINE xnn_simd_f32_t xnn_getexp_f32(xnn_simd_f32_t a) {
+  return logbf(a);
+}
 
 // Load/store operations.
 static XNN_INLINE xnn_simd_f32_t xnn_loadu_f32(const float *ptr) { return *ptr; }
