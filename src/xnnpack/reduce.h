@@ -335,6 +335,7 @@ DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__wasmsimd_u8_acc2)
 DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__wasmsimd_u12_acc3)
 DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__wasmsimd_u16_acc2)
 DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__wasmsimd_u16_acc4)
+DECLARE_F32_RSUM_UKERNEL_FUNCTION(xnn_f32_rsum_ukernel__hvx_u32)
 
 #define DECLARE_QS8_RSUM_UKERNEL_FUNCTION(fn_name) \
   XNN_INTERNAL void fn_name(                       \

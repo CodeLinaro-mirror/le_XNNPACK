@@ -22,6 +22,7 @@ ALL_HVX_MICROKERNEL_SRCS = [
     "src/f32-igemm/gen/f32-igemm-7x64-minmax-hvx-broadcast.c",
     "src/f32-igemm/gen/f32-igemm-8x32-minmax-hvx-broadcast.c",
     "src/f32-igemm/gen/f32-igemm-16x32-minmax-hvx-broadcast.c",
+    "src/f32-rsum/gen/f32-rsum-hvx-u32.c",
     "src/f32-vbinary/gen/f32-vadd-minmax-hvx-u32.c",
     "src/f32-vbinary/gen/f32-vadd-minmax-hvx-u64.c",
     "src/f32-vbinary/gen/f32-vadd-minmax-hvx-u128.c",

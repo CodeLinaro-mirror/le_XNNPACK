@@ -39,6 +39,9 @@ tools/xngen src/f32-rsum/wasmsimd.c.in -D BATCH_TILE=12 -D ACCUMULATORS=3 -o src
 tools/xngen src/f32-rsum/wasmsimd.c.in -D BATCH_TILE=16 -D ACCUMULATORS=2 -o src/f32-rsum/gen/f32-rsum-wasmsimd-u16-acc2.c &
 tools/xngen src/f32-rsum/wasmsimd.c.in -D BATCH_TILE=16 -D ACCUMULATORS=4 -o src/f32-rsum/gen/f32-rsum-wasmsimd-u16-acc4.c &
 
+################################## Hexagon HVX ################################
+tools/xngen src/f32-rsum/hvx.c.in -D BATCH_TILE=32 -D ACCUMULATORS=1 -o src/f32-rsum/gen/f32-rsum-hvx-u32.c &
+
 #################################### Scalar ###################################
 tools/xngen src/f32-rsum/scalar.c.in -D BATCH_TILE=1 -D ACCUMULATORS=1 -o src/f32-rsum/gen/f32-rsum-scalar-u1.c &
 tools/xngen src/f32-rsum/scalar.c.in -D BATCH_TILE=2 -D ACCUMULATORS=2 -o src/f32-rsum/gen/f32-rsum-scalar-u2-acc2.c &
