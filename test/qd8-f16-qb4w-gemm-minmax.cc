@@ -10,6 +10,11 @@
 //   Specification: test/qd8-f16-qb4w-gemm-minmax.yaml
 //   Generator: tools/generate-gemm-test.py
 
+#include <cstddef>
+#include <functional>
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 #include "xnnpack/allocator.h"
 #include "xnnpack/common.h"
@@ -21,11 +26,6 @@
 #include "xnnpack/packw.h"
 #include "xnnpack/ppmm.h"
 #include "xnnpack/requantization.h"
-#include <cstddef>
-#include <functional>
-#include <string>
-#include <vector>
-
 #include "gemm-microkernel-tester.h"
 
 namespace {
