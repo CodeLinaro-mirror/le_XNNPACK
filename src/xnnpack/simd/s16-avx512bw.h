@@ -29,7 +29,11 @@ typedef __m512i xnn_simd_s16_t;
 // Load/store operations.
 
 static XNN_INLINE xnn_simd_s16_t xnn_loadu_s16(const int16_t* ptr) {
+#if (defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && __GNUC__ < 10)
+  return _mm512_set1_epi16((int) unaligned_load_s16(ptr));
+#else
   return _mm512_loadu_epi16(ptr);
+#endif
 }
 
 static XNN_INLINE xnn_simd_s16_t xnn_load_s16(const int16_t* ptr) {
@@ -37,7 +41,11 @@ static XNN_INLINE xnn_simd_s16_t xnn_load_s16(const int16_t* ptr) {
 }
 
 static XNN_INLINE void xnn_storeu_s16(int16_t* ptr, xnn_simd_s16_t v) {
+#if (defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER) && __GNUC__ < 10)
+  _mm512_storeu_si512(ptr, v);
+#else
   _mm512_storeu_epi16(ptr, v);
+#endif
 }
 
 static XNN_INLINE void xnn_store_s16(int16_t* ptr, xnn_simd_s16_t v) {
@@ -62,7 +70,7 @@ static XNN_INLINE xnn_simd_s16_t
 xnn_load_tail_s16_t(const int16_t* input, size_t num_elements) XNN_OOB_READS {
   assert(num_elements > 0);
   assert(num_elements < xnn_simd_size_s16);
-  return _mm512_loadu_epi16(input);
+  return xnn_loadu_s16(input);
 }
 
 static XNN_INLINE void xnn_store_tail_s16(int16_t* output, xnn_simd_s16_t v,
