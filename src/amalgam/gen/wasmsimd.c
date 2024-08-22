@@ -1919,8 +1919,8 @@ void xnn_f32_conv_hwc2chw_ukernel_3x3s2p1c3x4__wasmsimd_2x2(
     i0 = zero;
   }
 
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
 
   for (size_t output_y = output_y_start; output_y < output_y_end; output_y += 2) {
     const size_t input_y2 = output_y * 2 + 2 - input_padding_top;
@@ -2536,8 +2536,8 @@ void xnn_f32_dwconv_minmax_ukernel_25p4c__wasmsimd_arm(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -3402,8 +3402,8 @@ void xnn_f32_dwconv_minmax_ukernel_3f3m3l4c4s4r__wasmsimd_arm(
   assert(output_width != 0);
   assert(kernel_size > 3);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -3844,8 +3844,8 @@ void xnn_f32_dwconv_minmax_ukernel_3f3m3l8c4s4r__wasmsimd_x86(
   assert(output_width != 0);
   assert(kernel_size > 3);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -4538,8 +4538,8 @@ void xnn_f32_dwconv_minmax_ukernel_3p4c__wasmsimd_arm(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -4741,8 +4741,8 @@ void xnn_f32_dwconv_minmax_ukernel_3p8c__wasmsimd_x86(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -5028,8 +5028,8 @@ void xnn_f32_dwconv_minmax_ukernel_4p4c__wasmsimd_arm(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -5261,8 +5261,8 @@ void xnn_f32_dwconv_minmax_ukernel_4p8c__wasmsimd_x86(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -5599,8 +5599,8 @@ void xnn_f32_dwconv_minmax_ukernel_5f5m5l4c4s4r__wasmsimd_arm(
   assert(output_width != 0);
   assert(kernel_size > 5);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -6190,8 +6190,8 @@ void xnn_f32_dwconv_minmax_ukernel_9p4c__wasmsimd_arm(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -6573,8 +6573,8 @@ void xnn_f32_dwconv_minmax_ukernel_9p8c__wasmsimd_x86(
   assert(channels != 0);
   assert(output_width != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -18015,8 +18015,8 @@ void xnn_f32_maxpool_minmax_ukernel_9p8x__wasmsimd_arm_c4(
   assert(kernel_elements != 0);
   assert(channels != 0);
 
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
   do {
     float* o = output;
     {
@@ -18264,8 +18264,8 @@ void xnn_f32_maxpool_minmax_ukernel_9p8x__wasmsimd_x86_c4(
   assert(kernel_elements != 0);
   assert(channels != 0);
 
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
   do {
     float* o = output;
     {
@@ -18528,8 +18528,8 @@ void xnn_f32_pavgpool_minmax_ukernel_9p8x__wasmsimd_arm_c4(
   assert(kernel_elements > 9);
   assert(channels != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
 
   do {
     {
@@ -18855,8 +18855,8 @@ void xnn_f32_pavgpool_minmax_ukernel_9p8x__wasmsimd_x86_c4(
   assert(kernel_elements > 9);
   assert(channels != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
 
   do {
     {
@@ -19182,8 +19182,8 @@ void xnn_f32_pavgpool_minmax_ukernel_9x__wasmsimd_arm_c4(
   assert(kernel_elements <= 9);
   assert(channels != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
 
   do {
     const float* i0 = input[0];
@@ -19355,8 +19355,8 @@ void xnn_f32_pavgpool_minmax_ukernel_9x__wasmsimd_x86_c4(
   assert(kernel_elements <= 9);
   assert(channels != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
 
   do {
     const float* i0 = input[0];
@@ -22930,8 +22930,8 @@ void xnn_f32_spmm_minmax_ukernel_32x1__wasmsimd_arm(
   assert(mc % sizeof(float) == 0);
   assert(nc != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   size_t output_decrement = output_stride * nc - 32 * sizeof(float);
@@ -23181,8 +23181,8 @@ void xnn_f32_spmm_minmax_ukernel_32x1__wasmsimd_x86(
   assert(mc % sizeof(float) == 0);
   assert(nc != 0);
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   size_t output_decrement = output_stride * nc - 32 * sizeof(float);
@@ -23430,8 +23430,8 @@ void xnn_f32_vadd_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -23518,8 +23518,8 @@ void xnn_f32_vadd_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -23677,8 +23677,8 @@ void xnn_f32_vaddc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -23756,8 +23756,8 @@ void xnn_f32_vaddc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -23897,8 +23897,8 @@ void xnn_f32_vdiv_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -23985,8 +23985,8 @@ void xnn_f32_vdiv_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -24144,8 +24144,8 @@ void xnn_f32_vdivc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -24223,8 +24223,8 @@ void xnn_f32_vdivc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -24896,8 +24896,8 @@ void xnn_f32_vmul_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -24984,8 +24984,8 @@ void xnn_f32_vmul_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -25143,8 +25143,8 @@ void xnn_f32_vmulc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25222,8 +25222,8 @@ void xnn_f32_vmulc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25363,8 +25363,8 @@ void xnn_f32_vrdivc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25442,8 +25442,8 @@ void xnn_f32_vrdivc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25583,8 +25583,8 @@ void xnn_f32_vrsubc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25662,8 +25662,8 @@ void xnn_f32_vrsubc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -25948,8 +25948,8 @@ void xnn_f32_vsub_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -26036,8 +26036,8 @@ void xnn_f32_vsub_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
 
@@ -26195,8 +26195,8 @@ void xnn_f32_vsubc_minmax_ukernel__wasmsimd_arm_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -26274,8 +26274,8 @@ void xnn_f32_vsubc_minmax_ukernel__wasmsimd_x86_u16(
   assert(input_b != NULL);
   assert(output != NULL);
 
-  const v128_t voutput_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t voutput_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t voutput_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t voutput_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(voutput_min);
   XNN_FORCE_REALIZATION(voutput_max);
   const v128_t vb = wasm_v128_load32_splat(input_b);
@@ -26413,8 +26413,8 @@ void xnn_f32_vclamp_ukernel__wasmsimd_arm_u8(
   assert(input != NULL);
   assert(output != NULL);
 
-  const v128_t vy_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vy_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vy_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vy_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vy_min);
   XNN_FORCE_REALIZATION(vy_max);
 
@@ -26471,8 +26471,8 @@ void xnn_f32_vclamp_ukernel__wasmsimd_x86_u8(
   assert(input != NULL);
   assert(output != NULL);
 
-  const v128_t vy_min = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vy_max = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vy_min = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vy_max = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vy_min);
   XNN_FORCE_REALIZATION(vy_max);
 
@@ -27302,8 +27302,8 @@ void xnn_f32_vmulcaddc_minmax_ukernel_c4__wasmsimd_arm_2x(
   const size_t input_increment = input_stride * 2 - channels;
   const size_t output_increment = output_stride * 2 - channels;
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
@@ -27406,8 +27406,8 @@ void xnn_f32_vmulcaddc_minmax_ukernel_c4__wasmsimd_x86_2x(
   const size_t input_increment = input_stride * 2 - channels;
   const size_t output_increment = output_stride * 2 - channels;
 
-  const v128_t vmin = wasm_v128_load32_splat(&params->wasmsimd.min);
-  const v128_t vmax = wasm_v128_load32_splat(&params->wasmsimd.max);
+  const v128_t vmin = wasm_v128_load32_splat(&params->scalar.min);
+  const v128_t vmax = wasm_v128_load32_splat(&params->scalar.max);
   XNN_FORCE_REALIZATION(vmin);
   XNN_FORCE_REALIZATION(vmax);
   do {
