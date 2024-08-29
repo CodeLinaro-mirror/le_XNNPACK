@@ -15,7 +15,7 @@
 #include "xnnpack/vbinary.h"
 
 
-void xnn_f32_vcmul_ukernel__avx512skx_u32(
+void xnn_f32_vcmul_ukernel__avx2_u8(
     size_t batch,
     const float* input_a,
     const float* input_b,
@@ -34,36 +34,26 @@ void xnn_f32_vcmul_ukernel__avx512skx_u32(
   const float* bi = (const float*) ((uintptr_t) input_b + batch);
   float* or = output;
   float* oi = (float*) ((uintptr_t) output + batch);
-  for (; batch >= 32 * sizeof(float); batch -= 32 * sizeof(float)) {
-    const __m512 va0r = _mm512_loadu_ps(ar);
-    const __m512 va0i = _mm512_loadu_ps(ai);
-    const __m512 vb0r = _mm512_loadu_ps(br);
-    const __m512 vb0i = _mm512_loadu_ps(bi);
-    const __m512 va1r = _mm512_loadu_ps(ar + 32);
-    const __m512 va1i = _mm512_loadu_ps(ai + 32);
-    const __m512 vb1r = _mm512_loadu_ps(br + 32);
-    const __m512 vb1i = _mm512_loadu_ps(bi + 32);
-    ar += 32;
-    ai += 32;
-    br += 32;
-    bi += 32;
+  for (; batch >= 8 * sizeof(float); batch -= 8 * sizeof(float)) {
+    const __m256 va0r = _mm256_loadu_ps(ar);
+    const __m256 va0i = _mm256_loadu_ps(ai);
+    const __m256 vb0r = _mm256_loadu_ps(br);
+    const __m256 vb0i = _mm256_loadu_ps(bi);
+    ar += 8;
+    ai += 8;
+    br += 8;
+    bi += 8;
 
-    __m512 vacc0r = _mm512_mul_ps(va0r, vb0r);
-    __m512 vacc0i = _mm512_mul_ps(va0r, vb0i);
-    __m512 vacc1r = _mm512_mul_ps(va1r, vb1r);
-    __m512 vacc1i = _mm512_mul_ps(va1r, vb1i);
+    __m256 vacc0r = _mm256_mul_ps(va0r, vb0r);
+    __m256 vacc0i = _mm256_mul_ps(va0r, vb0i);
 
-    vacc0r = _mm512_sub_ps(vacc0r, _mm512_mul_ps(va0i, vb0i));
-    vacc0i = _mm512_add_ps(vacc0i, _mm512_mul_ps(va0i, vb0r));
-    vacc1r = _mm512_sub_ps(vacc1r, _mm512_mul_ps(va1i, vb1i));
-    vacc1i = _mm512_add_ps(vacc1i, _mm512_mul_ps(va1i, vb1r));
+    vacc0r = _mm256_sub_ps(vacc0r, _mm256_mul_ps(va0i, vb0i));
+    vacc0i = _mm256_add_ps(vacc0i, _mm256_mul_ps(va0i, vb0r));
 
-    _mm512_storeu_ps(or, vacc0r);
-    _mm512_storeu_ps(oi, vacc0i);
-    _mm512_storeu_ps(or + 32, vacc1r);
-    _mm512_storeu_ps(oi + 32, vacc1i);
-    or += 32;
-    oi += 32;
+    _mm256_storeu_ps(or, vacc0r);
+    _mm256_storeu_ps(oi, vacc0i);
+    or += 8;
+    oi += 8;
   }
   for (; batch >= 4 * sizeof(float); batch -= 4 * sizeof(float)) {
     const __m128 var = _mm_loadu_ps(ar);

@@ -39,10 +39,10 @@ void xnn_f32_vcmul_ukernel__sse_u8(
     const __m128 va0i = _mm_loadu_ps(ai);
     const __m128 vb0r = _mm_loadu_ps(br);
     const __m128 vb0i = _mm_loadu_ps(bi);
-    const __m128 va1r = _mm_loadu_ps(ar + 4);
-    const __m128 va1i = _mm_loadu_ps(ai + 4);
-    const __m128 vb1r = _mm_loadu_ps(br + 4);
-    const __m128 vb1i = _mm_loadu_ps(bi + 4);
+    const __m128 va1r = _mm_loadu_ps(ar + 8);
+    const __m128 va1i = _mm_loadu_ps(ai + 8);
+    const __m128 vb1r = _mm_loadu_ps(br + 8);
+    const __m128 vb1i = _mm_loadu_ps(bi + 8);
     ar += 8;
     ai += 8;
     br += 8;
@@ -60,8 +60,8 @@ void xnn_f32_vcmul_ukernel__sse_u8(
 
     _mm_storeu_ps(or, vacc0r);
     _mm_storeu_ps(oi, vacc0i);
-    _mm_storeu_ps(or + 4, vacc1r);
-    _mm_storeu_ps(oi + 4, vacc1i);
+    _mm_storeu_ps(or + 8, vacc1r);
+    _mm_storeu_ps(oi + 8, vacc1i);
     or += 8;
     oi += 8;
   }
