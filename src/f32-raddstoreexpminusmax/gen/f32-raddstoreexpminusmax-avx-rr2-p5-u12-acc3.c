@@ -1,12 +1,12 @@
+// Auto-generated file. Do not edit!
+//   Template: src/f32-raddstoreexpminusmax/sse2-rr2-p5.c.in
+//   Generator: tools/xngen
+//
 // Copyright 2019 Google LLC
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-$assert BATCH_TILE % 4 == 0
-$assert BATCH_TILE >= 4
-$SIMD_TILE = BATCH_TILE // 4
-$ABC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #include <assert.h>
 
 #include <emmintrin.h>
@@ -15,8 +15,7 @@ $ABC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #include "xnnpack/raddstoreexpminusmax.h"
 
 
-$ISA = {0: "sse2", 2: "avx"}[AVX]
-void xnn_f32_raddstoreexpminusmax_ukernel__${ISA}_rr2_p5_u${BATCH_TILE}${"" if ACCUMULATORS == 1 else "_acc%d" % ACCUMULATORS}(
+void xnn_f32_raddstoreexpminusmax_ukernel__avx_rr2_p5_u12_acc3(
     size_t batch,
     const float* input,
     const float* max,
@@ -55,86 +54,96 @@ void xnn_f32_raddstoreexpminusmax_ukernel__${ISA}_rr2_p5_u${BATCH_TILE}${"" if A
 
   const __m128 vi_max = _mm_load1_ps(max);
 
-  $for K in range(ACCUMULATORS):
-    __m128 vacc${K} = _mm_setzero_ps();
-  for (; batch >= ${BATCH_TILE} * sizeof(float); batch -= ${BATCH_TILE} * sizeof(float)) {
-    // Load ${BATCH_TILE} (${SIMD_TILE}x4) inputs at a time.
-    const __m128 vi${ABC[0:4]} = _mm_loadu_ps(input);
-    $for N in range(4, BATCH_TILE, 4):
-      const __m128 vi${ABC[N:N+4]} = _mm_loadu_ps(input + ${N});
-    input += ${BATCH_TILE};
+  __m128 vacc0 = _mm_setzero_ps();
+  __m128 vacc1 = _mm_setzero_ps();
+  __m128 vacc2 = _mm_setzero_ps();
+  for (; batch >= 12 * sizeof(float); batch -= 12 * sizeof(float)) {
+    // Load 12 (3x4) inputs at a time.
+    const __m128 vi0123 = _mm_loadu_ps(input);
+    const __m128 vi4567 = _mm_loadu_ps(input + 4);
+    const __m128 vi89AB = _mm_loadu_ps(input + 8);
+    input += 12;
 
     // Subtract maximum input x := i - i_max. This implies x <= 0.
-    $for N in range(0, BATCH_TILE, 4):
-      const __m128 vx${ABC[N:N+4]} = _mm_sub_ps(vi${ABC[N:N+4]}, vi_max);
+    const __m128 vx0123 = _mm_sub_ps(vi0123, vi_max);
+    const __m128 vx4567 = _mm_sub_ps(vi4567, vi_max);
+    const __m128 vx89AB = _mm_sub_ps(vi89AB, vi_max);
 
     // Compute reduced argument batch := round(x / log(2)).
-    $for N in range(0, BATCH_TILE, 4):
-      __m128 vn${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vx${ABC[N:N+4]}, vlog2e), vmagic_bias);
+    __m128 vn0123 = _mm_add_ps(_mm_mul_ps(vx0123, vlog2e), vmagic_bias);
+    __m128 vn4567 = _mm_add_ps(_mm_mul_ps(vx4567, vlog2e), vmagic_bias);
+    __m128 vn89AB = _mm_add_ps(_mm_mul_ps(vx89AB, vlog2e), vmagic_bias);
 
     // Create a floating-point number s (scale) such that s == 2**batch for inputs which don't cause underflow, i.e.
     // -87.33642 <= x <= 0.0, and -126 <= batch <= 0 accordingly.
-    $for N in range(0, BATCH_TILE, 4):
-      const __m128 vs${ABC[N:N+4]} = _mm_castsi128_ps(_mm_slli_epi32(_mm_castps_si128(vn${ABC[N:N+4]}), 23));
+    const __m128 vs0123 = _mm_castsi128_ps(_mm_slli_epi32(_mm_castps_si128(vn0123), 23));
+    const __m128 vs4567 = _mm_castsi128_ps(_mm_slli_epi32(_mm_castps_si128(vn4567), 23));
+    const __m128 vs89AB = _mm_castsi128_ps(_mm_slli_epi32(_mm_castps_si128(vn89AB), 23));
 
     // Subtract the large number back to get final batch := round(x / log(2)).
-    $for N in range(0, BATCH_TILE, 4):
-      vn${ABC[N:N+4]} = _mm_sub_ps(vn${ABC[N:N+4]}, vmagic_bias);
+    vn0123 = _mm_sub_ps(vn0123, vmagic_bias);
+    vn4567 = _mm_sub_ps(vn4567, vmagic_bias);
+    vn89AB = _mm_sub_ps(vn89AB, vmagic_bias);
 
     // Compute reduced argument t := x - batch * log(2).
     // Use Cody-Waite range reduction method (note two constants to represent log(2)) to improve accuracy.
-    $for N in range(0, BATCH_TILE, 4):
-      __m128 vt${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vn${ABC[N:N+4]}, vminus_ln2_hi), vx${ABC[N:N+4]});
+    __m128 vt0123 = _mm_add_ps(_mm_mul_ps(vn0123, vminus_ln2_hi), vx0123);
+    __m128 vt4567 = _mm_add_ps(_mm_mul_ps(vn4567, vminus_ln2_hi), vx4567);
+    __m128 vt89AB = _mm_add_ps(_mm_mul_ps(vn89AB, vminus_ln2_hi), vx89AB);
 
-    $for N in range(0, BATCH_TILE, 4):
-      vt${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vn${ABC[N:N+4]}, vminus_ln2_lo), vt${ABC[N:N+4]});
+    vt0123 = _mm_add_ps(_mm_mul_ps(vn0123, vminus_ln2_lo), vt0123);
+    vt4567 = _mm_add_ps(_mm_mul_ps(vn4567, vminus_ln2_lo), vt4567);
+    vt89AB = _mm_add_ps(_mm_mul_ps(vn89AB, vminus_ln2_lo), vt89AB);
 
     // Compute degree-5 polynomial approximation for exp(t) on [-log(2)/2, log(2)/2].
-    $for N in range(0, BATCH_TILE, 4):
-      __m128 vp${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vc5, vt${ABC[N:N+4]}), vc4);
+    __m128 vp0123 = _mm_add_ps(_mm_mul_ps(vc5, vt0123), vc4);
+    __m128 vp4567 = _mm_add_ps(_mm_mul_ps(vc5, vt4567), vc4);
+    __m128 vp89AB = _mm_add_ps(_mm_mul_ps(vc5, vt89AB), vc4);
 
-    $for N in range(0, BATCH_TILE, 4):
-      vp${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vp${ABC[N:N+4]}, vt${ABC[N:N+4]}), vc3);
+    vp0123 = _mm_add_ps(_mm_mul_ps(vp0123, vt0123), vc3);
+    vp4567 = _mm_add_ps(_mm_mul_ps(vp4567, vt4567), vc3);
+    vp89AB = _mm_add_ps(_mm_mul_ps(vp89AB, vt89AB), vc3);
 
-    $for N in range(0, BATCH_TILE, 4):
-      vp${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vp${ABC[N:N+4]}, vt${ABC[N:N+4]}), vc2);
+    vp0123 = _mm_add_ps(_mm_mul_ps(vp0123, vt0123), vc2);
+    vp4567 = _mm_add_ps(_mm_mul_ps(vp4567, vt4567), vc2);
+    vp89AB = _mm_add_ps(_mm_mul_ps(vp89AB, vt89AB), vc2);
 
-    $for N in range(0, BATCH_TILE, 4):
-      vp${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vp${ABC[N:N+4]}, vt${ABC[N:N+4]}), vc1);
+    vp0123 = _mm_add_ps(_mm_mul_ps(vp0123, vt0123), vc1);
+    vp4567 = _mm_add_ps(_mm_mul_ps(vp4567, vt4567), vc1);
+    vp89AB = _mm_add_ps(_mm_mul_ps(vp89AB, vt89AB), vc1);
 
     // Reconstruct the final f value:
     //   f = s * (1 + t * (c1 + t * (c2 + t * (c3 + t * (c4 + t * c5)))))
     //     = s + (t * s) * (c1 + t * (c2 + t * (c3 + t * (c4 + t * c5))))
     //     = s + (t * s) * p
-    $for N in range(0, BATCH_TILE, 4):
-      vt${ABC[N:N+4]} = _mm_mul_ps(vt${ABC[N:N+4]}, vs${ABC[N:N+4]});
+    vt0123 = _mm_mul_ps(vt0123, vs0123);
+    vt4567 = _mm_mul_ps(vt4567, vs4567);
+    vt89AB = _mm_mul_ps(vt89AB, vs89AB);
 
-    $for N in range(0, BATCH_TILE, 4):
-      __m128 vf${ABC[N:N+4]} = _mm_add_ps(_mm_mul_ps(vt${ABC[N:N+4]}, vp${ABC[N:N+4]}), vs${ABC[N:N+4]});
+    __m128 vf0123 = _mm_add_ps(_mm_mul_ps(vt0123, vp0123), vs0123);
+    __m128 vf4567 = _mm_add_ps(_mm_mul_ps(vt4567, vp4567), vs4567);
+    __m128 vf89AB = _mm_add_ps(_mm_mul_ps(vt89AB, vp89AB), vs89AB);
 
     // For inputs below zero cutoff, replace output with +0.0f.
     // Note that for NaN inputs, comparison result is false, and outputs are left unchanged.
-    $for N in range(0, BATCH_TILE, 4):
-      vf${ABC[N:N+4]} = _mm_andnot_ps(_mm_cmplt_ps(vx${ABC[N:N+4]}, vdenorm_cutoff), vf${ABC[N:N+4]});
+    vf0123 = _mm_andnot_ps(_mm_cmplt_ps(vx0123, vdenorm_cutoff), vf0123);
+    vf4567 = _mm_andnot_ps(_mm_cmplt_ps(vx4567, vdenorm_cutoff), vf4567);
+    vf89AB = _mm_andnot_ps(_mm_cmplt_ps(vx89AB, vdenorm_cutoff), vf89AB);
 
-    // Store ${BATCH_TILE} (${SIMD_TILE}x4) outputs at a time.
-    _mm_storeu_ps(output, vf${ABC[0:4]});
-    $for N in range(4, BATCH_TILE, 4):
-      _mm_storeu_ps(output + ${N}, vf${ABC[N:N+4]});
-    output += ${BATCH_TILE};
+    // Store 12 (3x4) outputs at a time.
+    _mm_storeu_ps(output, vf0123);
+    _mm_storeu_ps(output + 4, vf4567);
+    _mm_storeu_ps(output + 8, vf89AB);
+    output += 12;
 
     // Accumulate computed exponents.
-    $for N in range(0, BATCH_TILE, 4):
-      vacc${N % ACCUMULATORS} = _mm_add_ps(vacc${N % ACCUMULATORS}, vf${ABC[N:N+4]});
+    vacc0 = _mm_add_ps(vacc0, vf0123);
+    vacc1 = _mm_add_ps(vacc1, vf4567);
+    vacc2 = _mm_add_ps(vacc2, vf89AB);
   }
-  $if ACCUMULATORS > 1:
-    // Add up all accumulators to vacc0
-    $ACC_SLICE = 1
-    $while ACC_SLICE < ACCUMULATORS:
-      $for A in range(0, ACCUMULATORS, ACC_SLICE * 2):
-        $if A + ACC_SLICE < ACCUMULATORS:
-          vacc${A} = _mm_add_ps(vacc${A}, vacc${A + ACC_SLICE});
-      $ACC_SLICE *= 2
+  // Add up all accumulators to vacc0
+  vacc0 = _mm_add_ps(vacc0, vacc1);
+  vacc0 = _mm_add_ps(vacc0, vacc2);
 
   __m128 vacc = vacc0;
   for (; batch >= 4 * sizeof(float); batch -= 4 * sizeof(float)) {
