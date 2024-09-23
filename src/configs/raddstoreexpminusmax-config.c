@@ -62,18 +62,18 @@ static void init_f32_raddstoreexpminusmax_config(void) {
       (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__neonfma_rr1_lut64_p2_u16_acc2;
     f32_raddstoreexpminusmax_config.element_tile = 16;
   #elif XNN_ARCH_X86 || XNN_ARCH_X86_64
-    const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
-    assert(hardware_config != NULL);
-    if (hardware_config->use_x86_avx512f) {
-      f32_raddstoreexpminusmax_config.ukernel = (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__avx512f_rr2_p5_u64_acc2;
-      f32_raddstoreexpminusmax_config.element_tile = 64;
-    } else if (hardware_config->use_x86_avx2) {
-      f32_raddstoreexpminusmax_config.ukernel = (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__avx2_rr2_p5_u32_acc2;
-      f32_raddstoreexpminusmax_config.element_tile = 32;
-    } else {
+    //const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
+    //assert(hardware_config != NULL);
+    //if (hardware_config->use_x86_avx512f) {
+    //  f32_raddstoreexpminusmax_config.ukernel = (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__avx512f_rr2_p5_u64_acc2;
+    //  f32_raddstoreexpminusmax_config.element_tile = 64;
+    //} else if (hardware_config->use_x86_avx2) {
+    //  f32_raddstoreexpminusmax_config.ukernel = (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__avx2_rr2_p5_u32_acc2;
+    //  f32_raddstoreexpminusmax_config.element_tile = 32;
+    //} else {
       f32_raddstoreexpminusmax_config.ukernel = (xnn_raddstoreexpminusmax_ukernel_fn) xnn_f32_raddstoreexpminusmax_ukernel__sse2_rr2_p5_u16_acc2;
       f32_raddstoreexpminusmax_config.element_tile = 16;
-    }
+    //}
   #elif XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
     #if XNN_ARCH_WASMRELAXEDSIMD
       f32_raddstoreexpminusmax_config.ukernel =

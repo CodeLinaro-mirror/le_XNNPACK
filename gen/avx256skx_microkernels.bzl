@@ -26,6 +26,10 @@ PROD_AVX256SKX_MICROKERNEL_SRCS = [
 ]
 
 NON_PROD_AVX256SKX_MICROKERNEL_SRCS = [
+    "src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx256skx-rr2-p5-u8.c",
+    "src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx256skx-rr2-p5-u16-acc2.c",
+    "src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx256skx-rr2-p5-u32-acc2.c",
+    "src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-avx256skx-rr2-p5-u32-acc4.c",
     "src/qd8-f16-qc4w-gemm/gen/qd8-f16-qc4w-gemm-1x8c8-minmax-avx256skx-madd.c",
     "src/qd8-f16-qc4w-gemm/gen/qd8-f16-qc4w-gemm-1x8c8-minmax-avx256skx.c",
     "src/qd8-f16-qc4w-gemm/gen/qd8-f16-qc4w-gemm-2x8c8-minmax-avx256skx.c",

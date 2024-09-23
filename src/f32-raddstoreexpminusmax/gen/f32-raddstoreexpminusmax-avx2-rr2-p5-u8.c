@@ -14,7 +14,6 @@
 #include "xnnpack/intrinsics-polyfill.h"
 #include "xnnpack/raddstoreexpminusmax.h"
 
-
 void xnn_f32_raddstoreexpminusmax_ukernel__avx2_rr2_p5_u8(
     size_t batch,
     const float* input,
@@ -102,6 +101,7 @@ void xnn_f32_raddstoreexpminusmax_ukernel__avx2_rr2_p5_u8(
     // Note that for NaN inputs, comparison result is false, and outputs are left unchanged.
     vf0 = _mm256_andnot_ps(_mm256_cmp_ps(vx0, vdenorm_cutoff, _CMP_LT_OS), vf0);
 
+
     // Store 8 (1x8) outputs at a time.
     _mm256_storeu_ps(output, vf0);
     output += 8;
@@ -161,6 +161,7 @@ void xnn_f32_raddstoreexpminusmax_ukernel__avx2_rr2_p5_u8(
   if (batch != 0) {
     assert(batch >= 1 * sizeof(float));
     assert(batch <= 7 * sizeof(float));
+
     const __m256i vmask = _mm256_loadu_si256((const __m256i*) ((uintptr_t) &mask_table[8] - batch));
 
     const __m256 vi = _mm256_maskload_ps(input, vmask);
