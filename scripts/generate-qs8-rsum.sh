@@ -41,7 +41,7 @@ tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -D AVX=
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avx2-u128-acc2.c &
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=4 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avx2-u128-acc4.c &
 
-################################### x86 AVX256SKX ##################################
+################################### x86 AVX256SKX #############################
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=32  -D ACCUMULATORS=1 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256skx-u32.c &
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=1 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256skx-u64.c &
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=2 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256skx-u64-acc2.c &
@@ -49,7 +49,7 @@ tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -D AVX=
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256skx-u128-acc2.c &
 tools/xngen src/qs8-rsum/avx2.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=4 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256skx-u128-acc4.c &
 
-################################### x86 AVX512SKX ##############################
+################################### x86 AVX512SKX #############################
 tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=1 -o src/qs8-rsum/gen/qs8-rsum-avx512skx-u64.c &
 tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -o src/qs8-rsum/gen/qs8-rsum-avx512skx-u128.c &
 tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -o src/qs8-rsum/gen/qs8-rsum-avx512skx-u128-acc2.c &
@@ -57,7 +57,7 @@ tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=1 -o
 tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=2 -o src/qs8-rsum/gen/qs8-rsum-avx512skx-u256-acc2.c &
 tools/xngen src/qs8-rsum/avx512skx.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=4 -o src/qs8-rsum/gen/qs8-rsum-avx512skx-u256-acc4.c &
 
-################################### x86 AVX512VNNI #############################
+################################### x86 AVX512VNNI ############################
 tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=1 -o src/qs8-rsum/gen/qs8-rsum-avx512vnni-u64.c &
 tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -o src/qs8-rsum/gen/qs8-rsum-avx512vnni-u128.c &
 tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -o src/qs8-rsum/gen/qs8-rsum-avx512vnni-u128-acc2.c &
@@ -65,7 +65,7 @@ tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=1 -
 tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=2 -o src/qs8-rsum/gen/qs8-rsum-avx512vnni-u256-acc2.c &
 tools/xngen src/qs8-rsum/avx512vnni.c.in -D CHANNEL_TILE=256 -D ACCUMULATORS=4 -o src/qs8-rsum/gen/qs8-rsum-avx512vnni-u256-acc4.c &
 
-################################### x86 AVXVNNI #############################
+################################### x86 AVXVNNI ###############################
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=32  -D ACCUMULATORS=1 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avxvnni-u32.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=1 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avxvnni-u64.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=2 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avxvnni-u64-acc2.c &
@@ -73,12 +73,19 @@ tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -D A
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avxvnni-u128-acc2.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=4 -D AVX=2 -o src/qs8-rsum/gen/qs8-rsum-avxvnni-u128-acc4.c &
 
-################################### x86 AVX256VNNI #############################
+################################### x86 AVX256VNNI ############################
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=32  -D ACCUMULATORS=1 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u32.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=1 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u64.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=64  -D ACCUMULATORS=2 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u64-acc2.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=1 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u128.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=2 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u128-acc2.c &
 tools/xngen src/qs8-rsum/avxvnni.c.in -D CHANNEL_TILE=128 -D ACCUMULATORS=4 -D AVX=10 -o src/qs8-rsum/gen/qs8-rsum-avx256vnni-u128-acc4.c &
+
+################################### Wasm SIMD #################################
+tools/xngen src/qs8-rsum/wasmsimd.c.in -D CHANNEL_TILE=8  -D ACCUMULATORS=1 -D DATATYPE=QS8 -o src/qs8-rsum/gen/qs8-rsum-wasmsimd-u8.c &
+tools/xngen src/qs8-rsum/wasmsimd.c.in -D CHANNEL_TILE=16 -D ACCUMULATORS=2 -D DATATYPE=QS8 -o src/qs8-rsum/gen/qs8-rsum-wasmsimd-u16-acc2.c &
+tools/xngen src/qs8-rsum/wasmsimd.c.in -D CHANNEL_TILE=24 -D ACCUMULATORS=3 -D DATATYPE=QS8 -o src/qs8-rsum/gen/qs8-rsum-wasmsimd-u24-acc3.c &
+tools/xngen src/qs8-rsum/wasmsimd.c.in -D CHANNEL_TILE=32 -D ACCUMULATORS=2 -D DATATYPE=QS8 -o src/qs8-rsum/gen/qs8-rsum-wasmsimd-u32-acc2.c &
+tools/xngen src/qs8-rsum/wasmsimd.c.in -D CHANNEL_TILE=32 -D ACCUMULATORS=4 -D DATATYPE=QS8 -o src/qs8-rsum/gen/qs8-rsum-wasmsimd-u32-acc4.c &
 
 wait

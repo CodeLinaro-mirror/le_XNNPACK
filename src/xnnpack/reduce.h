@@ -405,6 +405,11 @@ DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__ssse3_u32_acc2)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__ssse3_u64)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__ssse3_u64_acc2)
 DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__ssse3_u64_acc4)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__wasmsimd_u8)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__wasmsimd_u16_acc2)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__wasmsimd_u24_acc3)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__wasmsimd_u32_acc2)
+DECLARE_QS8_RSUM_UKERNEL_FUNCTION(xnn_qs8_rsum_ukernel__wasmsimd_u32_acc4)
 
 #define DECLARE_QU8_RSUM_UKERNEL_FUNCTION(fn_name) \
   XNN_INTERNAL void fn_name(                       \

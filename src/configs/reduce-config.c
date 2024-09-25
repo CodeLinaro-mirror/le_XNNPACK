@@ -117,6 +117,11 @@ static void init_qs8_rsum_config(void) {
         .element_tile = 32,
       };
     }
+  #elif XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+    qs8_rsum_config = (struct xnn_reduce_config) {
+      .ukernel = (xnn_reduce_ukernel_fn) xnn_qs8_rsum_ukernel__wasmsimd_u32_acc4,
+      .element_tile = 32,
+    };
   #else
     qs8_rsum_config = (struct xnn_reduce_config) {
       .ukernel = (xnn_reduce_ukernel_fn) xnn_qs8_rsum_ukernel__scalar_u4,

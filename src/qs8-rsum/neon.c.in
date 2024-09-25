@@ -54,12 +54,12 @@ void xnn_${DATATYPE_SPEC}_rsum_ukernel__neon_u${CHANNEL_TILE}${ACC_SUFFIX}(
     ${XINT32}x4_t vacc${A} = ${VMOVQ_N_X32}(0);
 
   // 256 ${XINT8}s may be summed into an ${XINT16} before overflowing.
-  // Each register has 8 lanes and there are ${ACCUMULATORS} accumulators so batch size is ${ACCUMULATORS*256*8}
+  // Each register has 16 lanes and there are ${ACCUMULATORS} accumulators so batch size is ${ACCUMULATORS*256*16}
 
-  for (; batch >= ${ACCUMULATORS*256*8}; batch -= ${ACCUMULATORS*256*8}) {
+  for (; batch >= ${ACCUMULATORS*256*16}; batch -= ${ACCUMULATORS*256*16}) {
     $for A in range(ACCUMULATORS):
       ${XINT16}x8_t vacc16_${A} = ${VMOVQ_N_X16}(0);
-    for (size_t current_batch = ${ACCUMULATORS*256*8}; current_batch > 0; current_batch -= ${CHANNEL_TILE}) {
+    for (size_t current_batch = ${ACCUMULATORS*256*16}; current_batch > 0; current_batch -= ${CHANNEL_TILE}) {
       $for N in range(SIMD_TILE):
         const ${XINT8}x16_t vt${N} = ${VLD1Q_X8}(input); input += 16;
       $for N in range(SIMD_TILE):
@@ -71,7 +71,7 @@ void xnn_${DATATYPE_SPEC}_rsum_ukernel__neon_u${CHANNEL_TILE}${ACC_SUFFIX}(
 
   $if CHANNEL_TILE > 16:
     if (XNN_LIKELY(batch >= ${CHANNEL_TILE})) {
-      assert(batch >= 1 && batch < ${ACCUMULATORS*256*8});
+      assert(batch >= 1 && batch < ${ACCUMULATORS*256*16});
       $for A in range(ACCUMULATORS):
         ${XINT16}x8_t vacc16_${A} = ${VMOVQ_N_X16}(0);
       for (; batch >= ${CHANNEL_TILE}; batch -= ${CHANNEL_TILE}) {
@@ -84,7 +84,7 @@ void xnn_${DATATYPE_SPEC}_rsum_ukernel__neon_u${CHANNEL_TILE}${ACC_SUFFIX}(
         vacc${A} = ${VPADALQ_X16}(vacc${A}, vacc16_${A});
     }
   if (XNN_UNLIKELY(batch != 0)) {
-    assert(batch >= 1 && batch < ${256*8});
+    assert(batch >= 1 && batch < ${256*16});
     ${XINT16}x8_t vacc16 = ${VMOVQ_N_X16}(0);
     for (; batch >= 16; batch -= 16) {
       const ${XINT8}x16_t vt = ${VLD1Q_X8}(input); input += 16;

@@ -79,3 +79,10 @@
 - name: xnn_qs8_rsum_ukernel__avx512vnni_u256
 - name: xnn_qs8_rsum_ukernel__avx512vnni_u256_acc2
 - name: xnn_qs8_rsum_ukernel__avx512vnni_u256_acc4
+
+# WASMSIMD
+- name: xnn_qs8_rsum_ukernel__wasmsimd_u8
+- name: xnn_qs8_rsum_ukernel__wasmsimd_u16_acc2
+- name: xnn_qs8_rsum_ukernel__wasmsimd_u24_acc3
+- name: xnn_qs8_rsum_ukernel__wasmsimd_u32_acc2
+- name: xnn_qs8_rsum_ukernel__wasmsimd_u32_acc4

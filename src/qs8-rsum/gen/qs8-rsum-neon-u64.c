@@ -34,11 +34,11 @@ void xnn_qs8_rsum_ukernel__neon_u64(
   int32x4_t vacc0 = vmovq_n_s32(0);
 
   // 256 int8s may be summed into an int16 before overflowing.
-  // Each register has 8 lanes and there are 1 accumulators so batch size is 2048
+  // Each register has 16 lanes and there are 1 accumulators so batch size is 4096
 
-  for (; batch >= 2048; batch -= 2048) {
+  for (; batch >= 4096; batch -= 4096) {
     int16x8_t vacc16_0 = vmovq_n_s16(0);
-    for (size_t current_batch = 2048; current_batch > 0; current_batch -= 64) {
+    for (size_t current_batch = 4096; current_batch > 0; current_batch -= 64) {
       const int8x16_t vt0 = vld1q_s8(input); input += 16;
       const int8x16_t vt1 = vld1q_s8(input); input += 16;
       const int8x16_t vt2 = vld1q_s8(input); input += 16;
@@ -52,7 +52,7 @@ void xnn_qs8_rsum_ukernel__neon_u64(
   }
 
   if (XNN_LIKELY(batch >= 64)) {
-    assert(batch >= 1 && batch < 2048);
+    assert(batch >= 1 && batch < 4096);
     int16x8_t vacc16_0 = vmovq_n_s16(0);
     for (; batch >= 64; batch -= 64) {
       const int8x16_t vt0 = vld1q_s8(input); input += 16;
@@ -67,7 +67,7 @@ void xnn_qs8_rsum_ukernel__neon_u64(
     vacc0 = vpadalq_s16(vacc0, vacc16_0);
   }
   if (XNN_UNLIKELY(batch != 0)) {
-    assert(batch >= 1 && batch < 2048);
+    assert(batch >= 1 && batch < 4096);
     int16x8_t vacc16 = vmovq_n_s16(0);
     for (; batch >= 16; batch -= 16) {
       const int8x16_t vt = vld1q_s8(input); input += 16;

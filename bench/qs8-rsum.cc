@@ -577,6 +577,51 @@ BENCHMARK_CAPTURE(qs8_rsum, scalar_u4,
 #endif  // XNN_ARCH_X86 || XNN_ARCH_X86_64
 
 
+#if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  BENCHMARK_CAPTURE(qs8_rsum, wasmsimd_u8,
+                    xnn_qs8_rsum_ukernel__wasmsimd_u8,
+                    /*init_params=*/nullptr)
+    ->Apply(BenchmarkRSUM)
+    ->UseRealTime();
+#endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+
+
+#if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  BENCHMARK_CAPTURE(qs8_rsum, wasmsimd_u16_acc2,
+                    xnn_qs8_rsum_ukernel__wasmsimd_u16_acc2,
+                    /*init_params=*/nullptr)
+    ->Apply(BenchmarkRSUM)
+    ->UseRealTime();
+#endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+
+
+#if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  BENCHMARK_CAPTURE(qs8_rsum, wasmsimd_u24_acc3,
+                    xnn_qs8_rsum_ukernel__wasmsimd_u24_acc3,
+                    /*init_params=*/nullptr)
+    ->Apply(BenchmarkRSUM)
+    ->UseRealTime();
+#endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+
+
+#if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  BENCHMARK_CAPTURE(qs8_rsum, wasmsimd_u32_acc2,
+                    xnn_qs8_rsum_ukernel__wasmsimd_u32_acc2,
+                    /*init_params=*/nullptr)
+    ->Apply(BenchmarkRSUM)
+    ->UseRealTime();
+#endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+
+
+#if XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  BENCHMARK_CAPTURE(qs8_rsum, wasmsimd_u32_acc4,
+                    xnn_qs8_rsum_ukernel__wasmsimd_u32_acc4,
+                    /*init_params=*/nullptr)
+    ->Apply(BenchmarkRSUM)
+    ->UseRealTime();
+#endif  // XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+
+
 #ifndef XNNPACK_BENCHMARK_NO_MAIN
 BENCHMARK_MAIN();
 #endif
