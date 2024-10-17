@@ -487,6 +487,7 @@ xnnpack_cc_library(
         ":logging",
         ":math",
         ":microparams",
+        ":requantization",
         ":unaligned",
         ":xnnpack_h",
     ],
