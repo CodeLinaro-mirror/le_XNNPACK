@@ -985,12 +985,20 @@ xnnpack_cc_library(
 )
 
 xnnpack_cc_library(
+    name = "subgraph_h",
+    hdrs = [
+        "src/xnnpack/subgraph.h",
+    ],
+    compatible_with = [],
+    defines = xnnpack_configurable_defines(),
+)
+
+xnnpack_cc_library(
     name = "subgraph",
-    srcs = SUBGRAPH_SRCS + xnnpack_slinky_srcs(),
+    srcs = SUBGRAPH_SRCS,
     hdrs = [
         "src/xnnpack/memory-planner.h",
         "src/xnnpack/reshape-helpers.h",
-        "src/xnnpack/subgraph.h",
         "src/xnnpack/subgraph-validation.h",
     ],
     defines = xnnpack_configurable_defines(),
@@ -1014,8 +1022,30 @@ xnnpack_cc_library(
         ":operators",
         ":params",
         ":requantization",
+        ":subgraph_h",
+        ":subgraph_slinky",
         ":xnnpack_h",
         "@pthreadpool",
+    ],
+)
+
+xnnpack_cc_library(
+    name = "subgraph_slinky",
+    srcs = xnnpack_slinky_srcs(),
+    compatible_with = [],
+    defines = xnnpack_configurable_defines(),
+    gcc_copts = [],
+    deps = [
+        "subgraph_h",
+        ":allocator",
+        ":config_hdrs",
+        ":logging",
+        ":math",
+        ":node_type",
+        ":operator_h",
+        ":operator_utils",
+        ":params",
+        ":xnnpack_h",
     ] + xnnpack_slinky_deps(),
 )
 
