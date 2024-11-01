@@ -1445,6 +1445,15 @@ enum xnn_status xnn_define_static_reduce(
   uint32_t output_id,
   uint32_t flags);
 
+enum xnn_status xnn_define_static_reduce_v2(
+  xnn_subgraph_t subgraph,
+  enum xnn_reduce_operator reduce_operator_type,
+  size_t num_reduction_axes,
+  const int64_t* reduction_axes,
+  uint32_t input_id,
+  uint32_t output_id,
+  uint32_t flags);
+
 /// Define a 2-Input Concatenate Node and add it to a Subgraph.
 ///
 /// The 2-Input Concatenate Node concatenates two tensors along a specified axis.
@@ -4186,7 +4195,7 @@ enum xnn_status xnn_reshape_reduce_nd(
   xnn_operator_t reduce_op,
   enum xnn_datatype type,
   size_t num_reduction_axes,
-  const size_t* reduction_axes,
+  const int64_t* reduction_axes,
   size_t num_input_dims,
   const size_t* input_shape,
   size_t* workspace_size,
