@@ -19,7 +19,7 @@
 #include "xnnpack/prefetch.h"
 
 
-void xnn_x32_packw_gemm_gio_ukernel_x32__avx_prfm(
+void xnn_x32_packw_gemm_gio_ukernel_x32__avx_u1_prfm(
   size_t g,
   size_t nc,
   size_t kc,
@@ -82,9 +82,11 @@ void xnn_x32_packw_gemm_gio_ukernel_x32__avx_prfm(
       }
       packed_w += 32;
 
-      // KC main loop
-      // todo: KBLOCK rows at a time
-      for (size_t k = kc; k > 0; --k) {
+      // KC main loop 1x32
+      size_t k = kc;
+
+      // KC remainder loop
+      for (; k > 0; --k) {
         const __m256 v0 = _mm256_loadu_ps(w + 0);
         const __m256 v8 = _mm256_loadu_ps(w + 8);
         const __m256 v16 = _mm256_loadu_ps(w + 16);

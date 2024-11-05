@@ -18,7 +18,7 @@
 #include "xnnpack/packw.h"
 
 
-void xnn_x32_packw_gemm_gio_ukernel_x8__avx(
+void xnn_x32_packw_gemm_gio_ukernel_x8__avx_u8(
   size_t g,
   size_t nc,
   size_t kc,
@@ -66,9 +66,31 @@ void xnn_x32_packw_gemm_gio_ukernel_x8__avx(
       }
       packed_w += 8;
 
-      // KC main loop
-      // todo: KBLOCK rows at a time
-      for (size_t k = kc; k > 0; --k) {
+      // KC main loop 8x8
+      size_t k = kc;
+      for (; k >= 8; k -= 8) {
+        const __m256 v0_0 = _mm256_loadu_ps(w + 0 + 0 * k_stride);
+        const __m256 v0_1 = _mm256_loadu_ps(w + 0 + 1 * k_stride);
+        const __m256 v0_2 = _mm256_loadu_ps(w + 0 + 2 * k_stride);
+        const __m256 v0_3 = _mm256_loadu_ps(w + 0 + 3 * k_stride);
+        const __m256 v0_4 = _mm256_loadu_ps(w + 0 + 4 * k_stride);
+        const __m256 v0_5 = _mm256_loadu_ps(w + 0 + 5 * k_stride);
+        const __m256 v0_6 = _mm256_loadu_ps(w + 0 + 6 * k_stride);
+        const __m256 v0_7 = _mm256_loadu_ps(w + 0 + 7 * k_stride);
+        _mm256_store_ps(packed_w + 0, v0_0);
+        _mm256_store_ps(packed_w + 8, v0_1);
+        _mm256_store_ps(packed_w + 16, v0_2);
+        _mm256_store_ps(packed_w + 24, v0_3);
+        _mm256_store_ps(packed_w + 32, v0_4);
+        _mm256_store_ps(packed_w + 40, v0_5);
+        _mm256_store_ps(packed_w + 48, v0_6);
+        _mm256_store_ps(packed_w + 56, v0_7);
+        w += k_stride * 8;
+        packed_w += 64;
+      }
+
+      // KC remainder loop
+      for (; k > 0; --k) {
         const __m256 v0 = _mm256_loadu_ps(w + 0);
         _mm256_store_ps(packed_w + 0, v0);
         w += k_stride;

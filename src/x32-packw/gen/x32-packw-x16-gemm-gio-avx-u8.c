@@ -16,10 +16,9 @@
 
 #include "xnnpack/intrinsics-polyfill.h"
 #include "xnnpack/packw.h"
-#include "xnnpack/prefetch.h"
 
 
-void xnn_x32_packw_gemm_gio_ukernel_x16__avx_prfm(
+void xnn_x32_packw_gemm_gio_ukernel_x16__avx_u8(
   size_t g,
   size_t nc,
   size_t kc,
@@ -72,12 +71,49 @@ void xnn_x32_packw_gemm_gio_ukernel_x16__avx_prfm(
       }
       packed_w += 16;
 
-      // KC main loop
-      // todo: KBLOCK rows at a time
-      for (size_t k = kc; k > 0; --k) {
+      // KC main loop 8x16
+      size_t k = kc;
+      for (; k >= 8; k -= 8) {
+        const __m256 v0_0 = _mm256_loadu_ps(w + 0 + 0 * k_stride);
+        const __m256 v8_0 = _mm256_loadu_ps(w + 8 + 0 * k_stride);
+        const __m256 v0_1 = _mm256_loadu_ps(w + 0 + 1 * k_stride);
+        const __m256 v8_1 = _mm256_loadu_ps(w + 8 + 1 * k_stride);
+        const __m256 v0_2 = _mm256_loadu_ps(w + 0 + 2 * k_stride);
+        const __m256 v8_2 = _mm256_loadu_ps(w + 8 + 2 * k_stride);
+        const __m256 v0_3 = _mm256_loadu_ps(w + 0 + 3 * k_stride);
+        const __m256 v8_3 = _mm256_loadu_ps(w + 8 + 3 * k_stride);
+        const __m256 v0_4 = _mm256_loadu_ps(w + 0 + 4 * k_stride);
+        const __m256 v8_4 = _mm256_loadu_ps(w + 8 + 4 * k_stride);
+        const __m256 v0_5 = _mm256_loadu_ps(w + 0 + 5 * k_stride);
+        const __m256 v8_5 = _mm256_loadu_ps(w + 8 + 5 * k_stride);
+        const __m256 v0_6 = _mm256_loadu_ps(w + 0 + 6 * k_stride);
+        const __m256 v8_6 = _mm256_loadu_ps(w + 8 + 6 * k_stride);
+        const __m256 v0_7 = _mm256_loadu_ps(w + 0 + 7 * k_stride);
+        const __m256 v8_7 = _mm256_loadu_ps(w + 8 + 7 * k_stride);
+        _mm256_store_ps(packed_w + 0, v0_0);
+        _mm256_store_ps(packed_w + 8, v8_0);
+        _mm256_store_ps(packed_w + 16, v0_1);
+        _mm256_store_ps(packed_w + 24, v8_1);
+        _mm256_store_ps(packed_w + 32, v0_2);
+        _mm256_store_ps(packed_w + 40, v8_2);
+        _mm256_store_ps(packed_w + 48, v0_3);
+        _mm256_store_ps(packed_w + 56, v8_3);
+        _mm256_store_ps(packed_w + 64, v0_4);
+        _mm256_store_ps(packed_w + 72, v8_4);
+        _mm256_store_ps(packed_w + 80, v0_5);
+        _mm256_store_ps(packed_w + 88, v8_5);
+        _mm256_store_ps(packed_w + 96, v0_6);
+        _mm256_store_ps(packed_w + 104, v8_6);
+        _mm256_store_ps(packed_w + 112, v0_7);
+        _mm256_store_ps(packed_w + 120, v8_7);
+        w += k_stride * 8;
+        packed_w += 128;
+      }
+
+      // KC remainder loop
+      for (; k > 0; --k) {
         const __m256 v0 = _mm256_loadu_ps(w + 0);
         const __m256 v8 = _mm256_loadu_ps(w + 8);
-        xnn_prefetch_to_l1((const int8_t*) w + 960);
         _mm256_store_ps(packed_w + 0, v0);
         _mm256_store_ps(packed_w + 8, v8);
         w += k_stride;
