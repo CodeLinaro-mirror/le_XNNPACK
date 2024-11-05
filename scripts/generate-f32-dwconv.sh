@@ -434,29 +434,29 @@ tools/xngen src/f32-dwconv/multipass-avx.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_T
 tools/xngen src/f32-dwconv/multipass-avx.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_TILE=7 -D MIDDLE_PASS_TILE=6 -D LAST_PASS_TILE=6 -D FMA=3 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-7f6m6l32c8s4r-minmax-fma3-acc2.c &
 
 ################################# x86 AVX-512 #################################
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=3 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-3p16c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=3 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-3p16c-minmax-avx512f-acc2.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=3 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-3p32c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=3 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-3p32c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=3 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-3p16c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=3 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-3p16c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=3 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-3p32c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=3 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-3p32c-minmax-avx512f-acc2.c &
 
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=4 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-4p16c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=4 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-4p16c-minmax-avx512f-acc2.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=4 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-4p32c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=4 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-4p32c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=4 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-4p16c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=4 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-4p16c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=4 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-4p32c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=4 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-4p32c-minmax-avx512f-acc2.c &
 
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=9 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-9p16c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=9 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-9p16c-minmax-avx512f-acc2.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=9 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-9p32c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=9 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-9p32c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=9 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-9p16c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=9 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-9p16c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=9 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-9p32c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=9 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-9p32c-minmax-avx512f-acc2.c &
 
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=25 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-25p16c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=25 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-25p16c-minmax-avx512f-acc2.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=25 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-25p32c-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/unipass-avx512.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=25 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-25p32c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=25 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-25p16c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=16 -D KERNEL_TILE=25 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-25p16c-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=25 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-25p32c-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/unipass-avx512f.c.in -D CHANNEL_TILE=32 -D KERNEL_TILE=25 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-25p32c-minmax-avx512f-acc2.c &
 
-tools/xngen src/f32-dwconv/multipass-avx512.c.in -D CHANNEL_TILE=16 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l16c16s1r-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/multipass-avx512.c.in -D CHANNEL_TILE=16 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l16c16s1r-minmax-avx512f-acc2.c &
-tools/xngen src/f32-dwconv/multipass-avx512.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l32c16s1r-minmax-avx512f.c &
-tools/xngen src/f32-dwconv/multipass-avx512.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l32c16s1r-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/multipass-avx512f.c.in -D CHANNEL_TILE=16 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l16c16s1r-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/multipass-avx512f.c.in -D CHANNEL_TILE=16 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l16c16s1r-minmax-avx512f-acc2.c &
+tools/xngen src/f32-dwconv/multipass-avx512f.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=1 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l32c16s1r-minmax-avx512f.c &
+tools/xngen src/f32-dwconv/multipass-avx512f.c.in -D CHANNEL_TILE=32 -D FIRST_PASS_TILE=5 -D MIDDLE_PASS_TILE=5 -D LAST_PASS_TILE=5 -D FMA=0 -D ACCUMULATORS=2 -o src/f32-dwconv/gen/f32-dwconv-5f5m5l32c16s1r-minmax-avx512f-acc2.c &
 
 wait

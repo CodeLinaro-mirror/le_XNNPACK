@@ -3,8 +3,8 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-$assert NR % 8 == 0
-$ABC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+$assert NR % 16 == 0
+$assert NR <= 64
 
 #include <assert.h>
 #include <stddef.h>
@@ -18,7 +18,7 @@ $if PREFETCH:
   #include "xnnpack/prefetch.h"
 
 
-void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx_u${KBLOCK}${"_prfm" if PREFETCH else ""}(
+void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx512f_u${KBLOCK}${"_prfm" if PREFETCH else ""}(
   size_t g,
   size_t nc,
   size_t kc,
@@ -43,14 +43,7 @@ void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx_u${KBLOCK}${"_prfm" if PREFETCH 
   assert(weights != NULL);
   assert(packed_weights != NULL);
 
-  const __m256 vzero = _mm256_setzero_ps();
-  static const int32_t mask_table[${NR*2}] = {
-    $for N in range(0,NR,8):
-      -1, -1, -1, -1, -1, -1, -1, -1,
-    $for N in range(0,NR,8):
-      0, 0, 0, 0, 0, 0, 0, 0,
-  };
-
+  const __m512 vzero = _mm512_setzero_ps();
   const float* b = (const float*) bias;
   float* packed_w = (float*) packed_weights;
   do {
@@ -60,14 +53,14 @@ void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx_u${KBLOCK}${"_prfm" if PREFETCH 
 
     for (; n >= ${NR}; n -= ${NR}) {
       if XNN_LIKELY(b != NULL) {
-        $for N in range(0,NR,8):
-          const __m256 vb${N} = _mm256_loadu_ps(b + ${N});
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, vb${N});
+        $for N in range(0,NR,16):
+          const __m512 vb${N} = _mm512_loadu_ps(b + ${N});
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, vb${N});
         b += ${NR};
       } else {
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, vzero);
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, vzero);
       }
       packed_w += ${NR};
 
@@ -76,28 +69,28 @@ void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx_u${KBLOCK}${"_prfm" if PREFETCH 
       $if KBLOCK > 1:
         for (; k >= ${KBLOCK}; k -= ${KBLOCK}) {
           $for K in range(KBLOCK):
-            $for N in range(0,NR,8):
-              const __m256 v${N}_${K} = _mm256_loadu_ps(w + ${N} + ${K} * k_stride);
+            $for N in range(0,NR,16):
+              const __m512 v${N}_${K} = _mm512_loadu_ps(w + ${N} + ${K} * k_stride);
           $if PREFETCH:
             $for K in range(KBLOCK):
               $for N in range(0,NR,16):
                 xnn_prefetch_to_l1((const int8_t*) w + ${N*4+960});
           $for K in range(KBLOCK):
-            $for N in range(0,NR,8):
-              _mm256_store_ps(packed_w + ${N+K*NR}, v${N}_${K});
+            $for N in range(0,NR,16):
+              _mm512_store_ps(packed_w + ${N+K*NR}, v${N}_${K});
           w += k_stride * ${KBLOCK};
           packed_w += ${NR*KBLOCK};
         }
 
       // KC remainder loop
       for (; k > 0; --k) {
-        $for N in range(0,NR,8):
-          const __m256 v${N} = _mm256_loadu_ps(w + ${N});
+        $for N in range(0,NR,16):
+          const __m512 v${N} = _mm512_loadu_ps(w + ${N});
         $if PREFETCH:
           $for N in range(0,NR,16):
             xnn_prefetch_to_l1((const int8_t*) w + ${N*4+960});
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, v${N});
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, v${N});
         w += k_stride;
         packed_w += ${NR};
       }
@@ -108,27 +101,29 @@ void xnn_x32_packw_gemm_gio_ukernel_x${NR}__avx_u${KBLOCK}${"_prfm" if PREFETCH 
     if XNN_UNLIKELY(n != 0) {
       assert(n >= 1);
       assert(n <= ${NR-1});
-      $for N in range(0,NR,8):
-        const __m256i vmask${N} = _mm256_loadu_si256((const __m256i*) &mask_table[${NR} - n]);
+
+      // Prepare mask for valid 32-bit elements (depends on nc).
+      $for N in range(0,NR,16):
+        const __mmask16 vmask${N//16} = _cvtu32_mask16((uint32_t) (((UINT64_C(1) << n) - 1) >> ${N}));
 
       if XNN_LIKELY(b != NULL) {
-        $for N in range(0,NR,8):
-          const __m256 vb${N} = _mm256_maskload_ps(b + ${N}, vmask${N});
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, vb${N});
+        $for N in range(0,NR,16):
+          const __m512 vb${N} = _mm512_maskz_loadu_ps(vmask${N//16}, b + ${N});
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, vb${N});
         b += n;
       } else {
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, vzero);
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, vzero);
       }
       packed_w += ${NR};
 
       // KC main loop
       for (size_t k = kc; k > 0; --k) {
-        $for N in range(0,NR,8):
-          const __m256 v${N} = _mm256_maskload_ps(w + ${N}, vmask${N});
-        $for N in range(0,NR,8):
-          _mm256_store_ps(packed_w + ${N}, v${N});
+        $for N in range(0,NR,16):
+          const __m512 v${N} = _mm512_maskz_loadu_ps(vmask${N//16}, w + ${N});
+        $for N in range(0,NR,16):
+          _mm512_store_ps(packed_w + ${N}, v${N});
         w += k_stride;
         packed_w += ${NR};
       }

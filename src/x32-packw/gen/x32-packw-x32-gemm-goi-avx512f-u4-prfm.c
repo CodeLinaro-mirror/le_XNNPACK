@@ -1,5 +1,5 @@
 // Auto-generated file. Do not edit!
-//   Template: src/x32-packw/avx512.c.in
+//   Template: src/x32-packw/avx512f.c.in
 //   Generator: tools/xngen
 //
 // Copyright 2023 Google LLC
