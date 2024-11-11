@@ -9,6 +9,21 @@
 #include "xnnpack/math.h"
 #include "xnnpack/microkernel-utils.h"
 
+size_t xnn_gemm_best_nc(size_t num_groups, size_t m, size_t n, size_t mr,
+                        size_t nr, size_t num_threads) {
+  size_t nc = n;
+  if (num_threads > 1) {
+    const size_t num_tile_rows = divide_round_up(m, mr) * num_groups;
+    const size_t target_tiles_per_thread = 5;
+    const size_t max_nc = divide_round_up(
+        n * num_tile_rows, num_threads * target_tiles_per_thread);
+    if (max_nc < nc) {
+      nc = min(nc, divide_round_up(nc, divide_round_up(nc, max_nc) * nr) * nr);
+    }
+  }
+  return nc;
+}
+
 static size_t dwconv_num_middle_pass(
   size_t kernel_size,
   size_t first_pass_tile,
