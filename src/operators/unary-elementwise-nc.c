@@ -724,9 +724,15 @@ enum xnn_status xnn_create_convert_nc_f16_qd8(
   }
 
   struct xnn_f16_default_params params;
+  const struct xnn_unary_elementwise_config* config = xnn_init_f16_to_qs8_cvt_config();
+  //const struct xnn_unary_elementwise_config* f16_qu8_config = xnn_init_f16_to_qu8_cvt_config();
+  //const struct xnn_gemm_config* gemm_config = xnn_init_qd8_f16_qc8w_gemm_config();
+  //if (gemm_config->unsigned_convert) {
+  //  config = f16_qu8_config;
+  //}
 
   enum xnn_status status = create_unary_elementwise_nc(
-    flags, xnn_init_f16_to_qs8_cvt_config(),
+    flags, config,
     &params, sizeof(params),
     xnn_operator_type_convert_nc_f16_qd8, convert_op_out);
   if (status == xnn_status_success) {
@@ -749,8 +755,15 @@ enum xnn_status xnn_create_convert_nc_f32_qd8(
 
   struct xnn_f32_default_params params;
 
+  const struct xnn_unary_elementwise_config* config = xnn_init_f32_to_qs8_cvt_config();
+  const struct xnn_unary_elementwise_config* f32_qu8_config = xnn_init_f32_to_qu8_cvt_config();
+  const struct xnn_gemm_config* gemm_config = xnn_init_qd8_f32_qc8w_gemm_config();
+  if (gemm_config->unsigned_convert) {
+    config = f32_qu8_config;
+  }
+
   enum xnn_status status = create_unary_elementwise_nc(
-    flags, xnn_init_f32_to_qs8_cvt_config(),
+    flags, config,
     &params, sizeof(params),
     xnn_operator_type_convert_nc_f32_qd8, convert_op_out);
   if (status == xnn_status_success) {
@@ -1039,6 +1052,10 @@ enum xnn_status xnn_setup_convert_nc_f16_qd8(
       break;
   }
 
+  const struct xnn_gemm_config* gemm_config = xnn_init_qd8_f16_qc8w_gemm_config();
+  if (gemm_config->unsigned_convert) {
+    //convert_op->context.f16_qd8_convert.zp_offset = 128;
+  }
   convert_op->context.f16_qd8_convert.x = input;
   convert_op->context.f16_qd8_convert.y = output;
   convert_op->context.f16_qd8_convert.quantization_params = (struct xnn_qd8_quantization_params*) quantization_params;
@@ -1078,6 +1095,11 @@ enum xnn_status xnn_setup_convert_nc_f32_qd8(
   convert_op->context.f32_qd8_convert.x = input;
   convert_op->context.f32_qd8_convert.y = output;
   convert_op->context.f32_qd8_convert.quantization_params = (struct xnn_qd8_quantization_params*) quantization_params;
+
+  const struct xnn_gemm_config* gemm_config = xnn_init_qd8_f32_qc8w_gemm_config();
+  if (gemm_config->unsigned_convert) {
+    convert_op->context.f32_qd8_convert.zp_offset = 128;
+  }
   convert_op->state = xnn_run_state_ready;
 
   return xnn_status_success;

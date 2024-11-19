@@ -1425,6 +1425,7 @@ struct f32_qd8_convert_context {
   size_t y_stride;
   size_t batch_size;
   struct xnn_qd8_quantization_params* quantization_params;
+  int32_t zp_offset;
   xnn_reduce_ukernel_fn rminmax_ukernel;
   xnn_vunary_ukernel_fn convert_ukernel;
   xnn_init_unary_uparams_fn init_params;

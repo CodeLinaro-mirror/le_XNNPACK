@@ -35,6 +35,7 @@ std::vector<GemmTestParams> CreateTests1(
     size_t k_block, size_t adj_k_block,
     size_t mr, size_t nr, size_t kr, size_t sr,
     bool is_igemm,
+    bool unsigned_inputs,
     std::function<void(GemmMicrokernelTester& tester)> test_func,
     std::function<void()> isa_check = nullptr) {
   std::string kbs = std::to_string(k_block);
@@ -42,9 +43,10 @@ std::vector<GemmTestParams> CreateTests1(
   std::string akbs = std::to_string(adj_k_block);
   std::string nrs = std::to_string(nr);
 
-  const GemmMicrokernelTester tester = GemmMicrokernelTester()
+  GemmMicrokernelTester tester = GemmMicrokernelTester()
       .mr(mr).nr(nr).kr(kr).sr(sr);
 
+  tester.unsigned_inputs(unsigned_inputs);
   std::vector<GemmTestParams> gemm_tests;
   gemm_tests.reserve(42);
 
@@ -313,6 +315,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/1, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_1x8c8__neoni8mm,
                         xnn_init_f16_minmax_scalar_params,
@@ -332,6 +335,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/2, /*nr=*/16, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_2x16c8__neoni8mm,
                         xnn_init_f16_minmax_scalar_params,
@@ -351,6 +355,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/4, /*nr=*/16, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_4x16c8__neoni8mm,
                         xnn_init_f16_minmax_scalar_params,
@@ -370,6 +375,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/8, /*nr=*/16, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_8x16c8__neoni8mm,
                         xnn_init_f16_minmax_scalar_params,
@@ -392,6 +398,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/4,
           /*mr=*/1, /*nr=*/8, /*kr=*/4, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_1x8c4__neondotfp16arith,
                         xnn_init_f16_minmax_scalar_params,
@@ -411,6 +418,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/4,
           /*mr=*/8, /*nr=*/16, /*kr=*/4, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_8x16c4__neondotfp16arith,
                         xnn_init_f16_minmax_scalar_params,
@@ -433,6 +441,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/8,
           /*mr=*/1, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_1x8c8__avx2,
                         xnn_init_f16_minmax_scalar_params,
@@ -455,6 +464,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/9, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_9x8c8__avx256vnni,
                         xnn_init_f16_minmax_scalar_params,
@@ -474,6 +484,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/12, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_12x8c8__avx256vnni,
                         xnn_init_f16_minmax_scalar_params,
@@ -493,6 +504,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/14, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_14x8c8__avx256vnni,
                         xnn_init_f16_minmax_scalar_params,
@@ -515,6 +527,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/2, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_2x8c8__avxvnni,
                         xnn_init_f16_minmax_scalar_params,
@@ -534,6 +547,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/5, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_5x8c8__avxvnni,
                         xnn_init_f16_minmax_scalar_params,
@@ -553,6 +567,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/4, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_4x8c8__avxvnni_prfm,
                         xnn_init_f16_minmax_scalar_params,
@@ -572,6 +587,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/16,
           /*mr=*/5, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/true,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_5x8c8__avxvnni_prfm,
                         xnn_init_f16_minmax_scalar_params,
@@ -594,6 +610,7 @@ std::vector<GemmTestParams> CreateTests1(
           /*adj_k_block=*/8,
           /*mr=*/8, /*nr=*/8, /*kr=*/8, /*sr=*/1,
           /*is_igemm=*/true,
+          /*unsigned_inputs=*/false,
           [](GemmMicrokernelTester& tester) {
             tester.Test(xnn_qd8_f16_qc8w_igemm_minmax_ukernel_8x8c8__avx256skx,
                         xnn_init_f16_minmax_scalar_params,

@@ -35,6 +35,7 @@ std::vector<GemmTestParams> CreateTests1(
     size_t k_block, size_t adj_k_block,
     size_t mr, size_t nr, size_t kr, size_t sr,
     bool is_igemm,
+    bool unsigned_inputs,
     std::function<void(GemmMicrokernelTester& tester)> test_func,
     std::function<void()> isa_check = nullptr) {
   std::string kbs = std::to_string(k_block);
@@ -42,9 +43,10 @@ std::vector<GemmTestParams> CreateTests1(
   std::string akbs = std::to_string(adj_k_block);
   std::string nrs = std::to_string(nr);
 
-  const GemmMicrokernelTester tester = GemmMicrokernelTester()
+  GemmMicrokernelTester tester = GemmMicrokernelTester()
       .mr(mr).nr(nr).kr(kr).sr(sr);
 
+  tester.unsigned_inputs(unsigned_inputs);
   std::vector<GemmTestParams> gemm_tests;
   gemm_tests.reserve(42);
 

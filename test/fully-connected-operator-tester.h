@@ -361,6 +361,19 @@ class FullyConnectedOperatorTester {
           batch_size(),
           /*threadpool=*/nullptr));
 
+      const struct xnn_gemm_config* gemm_config =
+          xnn_init_qd8_f16_qc4w_gemm_config();
+      if (gemm_config->unsigned_convert) {
+        // Some architectures require that the input be unsigned.
+        // Adjust the zero point and flip the sign of the input to mimic adding
+        // 128 to the input with correct overflow behaviour.
+        for (int i = 0; i < quantization_params.size(); ++i) {
+          quantization_params[i].zero_point += 128;
+        }
+        for (int i = 0; i < input.size(); ++i) {
+          input[i] ^= 0x80;
+        }
+      }
       ASSERT_EQ(xnn_status_success,
         xnn_setup_fully_connected_nc_qd8_f16_qc4w(
           fully_connected_op,
@@ -699,6 +712,19 @@ class FullyConnectedOperatorTester {
       }
 
       // Create, setup, run, and destroy Fully Connected operator.
+      const struct xnn_gemm_config* gemm_config =
+          xnn_init_qd8_f32_qc4w_gemm_config();
+      if (gemm_config->unsigned_convert) {
+        // Some architectures require that the input be unsigned.
+        // Adjust the zero point and flip the sign of the input to mimic adding
+        // 128 to the input with correct overflow behaviour.
+        for (int i = 0; i < quantization_params.size(); ++i) {
+          quantization_params[i].zero_point += 128;
+        }
+        for (int i = 0; i < input.size(); ++i) {
+          input[i] ^= 0x80;
+        }
+      }
       ASSERT_EQ(xnn_status_success, xnn_initialize(/*allocator=*/nullptr));
       xnn_operator_t fully_connected_op = nullptr;
 
@@ -929,6 +955,19 @@ class FullyConnectedOperatorTester {
           batch_size(),
           /*threadpool=*/nullptr));
 
+      const struct xnn_gemm_config* gemm_config =
+          xnn_init_qd8_f32_qb4w_gemm_config();
+      if (gemm_config->unsigned_convert) {
+        // Some architectures require that the input be unsigned.
+        // Adjust the zero point and flip the sign of the input to mimic adding
+        // 128 to the input with correct overflow behaviour.
+        for (int i = 0; i < quantization_params.size(); ++i) {
+          quantization_params[i].zero_point += 128;
+        }
+        for (int i = 0; i < input.size(); ++i) {
+          input[i] ^= 0x80;
+        }
+      }
       ASSERT_EQ(xnn_status_success,
         xnn_setup_fully_connected_nc_qd8_f32_qb4w(
           fully_connected_op,
@@ -1614,6 +1653,7 @@ class FullyConnectedOperatorTester {
     std::uniform_real_distribution<float> f32idist(0.5f, 2.0f);
     std::uniform_int_distribution<int32_t> w8dist(std::numeric_limits<int8_t>::min(), std::numeric_limits<int8_t>::max());
 
+    // Need to adjust input and quantization_parmams
     xnnpack::Buffer<int8_t> input(XNN_EXTRA_BYTES / sizeof(int8_t) +
       (batch_size() - 1) * input_stride() + input_channels());
     xnnpack::Buffer<int8_t> kernel(output_channels() * input_channels());
@@ -1724,6 +1764,19 @@ class FullyConnectedOperatorTester {
           batch_size(),
           /*threadpool=*/nullptr));
 
+      const struct xnn_gemm_config* gemm_config =
+          xnn_init_qd8_f32_qc8w_gemm_config();
+      if (gemm_config->unsigned_convert) {
+        // Some architectures require that the input be unsigned.
+        // Adjust the zero point and flip the sign of the input to mimic adding
+        // 128 to the input with correct overflow behaviour.
+        for (int i = 0; i < quantization_params.size(); ++i) {
+          quantization_params[i].zero_point += 128;
+        }
+        for (int i = 0; i < input.size(); ++i) {
+          input[i] ^= 0x80;
+        }
+      }
       ASSERT_EQ(xnn_status_success,
         xnn_setup_fully_connected_nc_qd8_f32_qc8w(
           fully_connected_op,

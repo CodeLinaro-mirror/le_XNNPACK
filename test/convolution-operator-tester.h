@@ -25,6 +25,7 @@
 #include "xnnpack/buffer.h"
 #include "xnnpack/cache.h"
 #include "xnnpack/common.h"
+#include "xnnpack/config.h"
 #include "xnnpack/math.h"
 #include "xnnpack/microparams.h"
 #include "convolution-test-helpers.h"
@@ -1135,6 +1136,19 @@ class ConvolutionOperatorTester {
       // Clamp reference results.
       for (float& value : output_ref) {
         value = std::max(std::min(value, output_max), output_min);
+      }
+      const struct xnn_gemm_config* gemm_config =
+          xnn_init_qd8_f32_qc8w_gemm_config();
+      if (gemm_config->unsigned_convert) {
+        // Some architectures require that the input be unsigned.
+        // Adjust the zero point and flip the sign of the input to mimic adding
+        // 128 to the input with correct overflow behaviour.
+        for (int i = 0; i < quantization_params.size(); ++i) {
+          quantization_params[i].zero_point += 128;
+        }
+        for (int i = 0; i < input.size(); ++i) {
+          input[i] ^= 0x80;
+        }
       }
       // Create, setup, run, and destroy Convolution operator.
       ASSERT_EQ(xnn_status_success, xnn_initialize(nullptr /* allocator */));

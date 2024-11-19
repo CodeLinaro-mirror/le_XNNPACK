@@ -2248,7 +2248,7 @@ void xnn_compute_f32_qd8_convert(
 
   struct xnn_f32_qs8_cvt_params params;
   params.scalar.scale = 1.0f / context->quantization_params[batch_index].inv_scale;
-  params.scalar.output_zero_point = context->quantization_params[batch_index].zero_point;
+  params.scalar.output_zero_point = context->quantization_params[batch_index].zero_point + context->zp_offset;
   context->convert_ukernel(n, input, output, (union xnn_unary_uparams*) &params);
 }
 
