@@ -70,10 +70,13 @@ template <class InputType, class KernelType = InputType, class BiasType = InputT
     input = xnnpack::Buffer<InputType>(XNN_EXTRA_BYTES / sizeof(InputType) +
                                    batch_size * input_height * input_width *
                                        groups * group_input_channels);
+    std::fill(input.begin(), input.end(), 0);
     filter =
         xnnpack::Buffer<KernelType>(groups * group_output_channels * kernel_height *
                                 kernel_width * group_input_channels);
+    std::fill(filter.begin(), filter.end(), 0);
     bias = xnnpack::Buffer<BiasType>(groups * group_output_channels);
+    std::fill(bias.begin(), bias.end(), 0);
     operator_output =
         xnnpack::Buffer<OutputType>(batch_size * output_height * output_width *
                                 groups * group_output_channels);
