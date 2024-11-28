@@ -45,6 +45,14 @@ void xnn_qd8_f32_qc8w_gemm_minmax_ukernel_1x32c4__avx512amx(
 #if defined(__x86_64__)
   __attribute__((aligned(64))) int32_t res0[1 * 16];
   __attribute__((aligned(64))) int32_t res1[1 * 16];
+  #if defined(__has_feature)
+  #if __has_feature(memory_sanitizer)
+    // Rows from mr to 1 are uninitialized.
+    // AVX512 stores are done in reverse order so only value rows are saved.
+    memset(res0, 0, sizeof(res0));
+    memset(res1, 0, sizeof(res1));
+  #endif
+  #endif
 
   kc = round_up_po2(kc, 4 * sizeof(int8_t));
   const size_t kremainder = (kc & 63) ? (kc & 63) : 64;

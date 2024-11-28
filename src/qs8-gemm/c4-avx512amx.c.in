@@ -61,6 +61,14 @@ void xnn_${DATATYPE_SPEC}_gemm_minmax${REQUANTIZATION_SPEC}_ukernel_${MR}x${NR}c
     __attribute__((aligned(64))) int32_t res${N // 16}[${MR} * 16];
   $if DATATYPE in ["QC4_F32", "QC4_F16"]:
     __attribute__((aligned(64))) int8_t weight_buffer[16 * 64];
+  #if defined(__has_feature)
+  #if __has_feature(memory_sanitizer)
+    // Rows from mr to ${MR} are uninitialized.
+    // AVX512 stores are done in reverse order so only value rows are saved.
+    $for N in range(0, NR, 16):
+      memset(res${N // 16}, 0, sizeof(res${N // 16}));
+  #endif
+  #endif
 
   kc = round_up_po2(kc, 4 * sizeof(int8_t));
   const size_t kremainder = (kc & 63) ? (kc & 63) : 64;
