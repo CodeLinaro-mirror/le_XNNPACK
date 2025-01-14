@@ -157,15 +157,25 @@ TEST_F(BatchMatrixMultiplyTestF16, define)
     xnn_status_success,
     xnn_define_batch_matrix_multiply(subgraph, input1_id, input2_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_batch_matrix_multiply);
-  ASSERT_EQ(node->num_inputs, 2);
-  ASSERT_EQ(node->inputs[0], input1_id);
-  ASSERT_EQ(node->inputs[1], input2_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* bmm_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    bmm_node = &subgraph->nodes[0];
+    ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    bmm_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input1_id);
+    ASSERT_EQ(bmm_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(bmm_node->type, xnn_node_type_batch_matrix_multiply);
+  ASSERT_EQ(bmm_node->num_inputs, 2);
+  ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  ASSERT_EQ(bmm_node->inputs[1], input2_id);
+  ASSERT_EQ(bmm_node->num_outputs, 1);
+  ASSERT_EQ(bmm_node->outputs[0], output_id);
+  ASSERT_EQ(bmm_node->flags, 0);
 }
 
 TEST_F(BatchMatrixMultiplyTestF32, define)
@@ -202,15 +212,25 @@ TEST_F(BatchMatrixMultiplyTestF32, define)
     xnn_status_success,
     xnn_define_batch_matrix_multiply(subgraph, input1_id, input2_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_batch_matrix_multiply);
-  ASSERT_EQ(node->num_inputs, 2);
-  ASSERT_EQ(node->inputs[0], input1_id);
-  ASSERT_EQ(node->inputs[1], input2_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* bmm_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    bmm_node = &subgraph->nodes[0];
+    ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    bmm_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input1_id);
+    ASSERT_EQ(bmm_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(bmm_node->type, xnn_node_type_batch_matrix_multiply);
+  ASSERT_EQ(bmm_node->num_inputs, 2);
+  ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  ASSERT_EQ(bmm_node->inputs[1], input2_id);
+  ASSERT_EQ(bmm_node->num_outputs, 1);
+  ASSERT_EQ(bmm_node->outputs[0], output_id);
+  ASSERT_EQ(bmm_node->flags, 0);
 }
 
 TEST_F(BatchMatrixMultiplyTestF32, define_transposed)
@@ -247,15 +267,25 @@ TEST_F(BatchMatrixMultiplyTestF32, define_transposed)
     xnn_status_success,
     xnn_define_batch_matrix_multiply(subgraph, input1_id, input2_id, output_id, /*flags=*/XNN_FLAG_TRANSPOSE_B));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_batch_matrix_multiply);
-  ASSERT_EQ(node->num_inputs, 2);
-  ASSERT_EQ(node->inputs[0], input1_id);
-  ASSERT_EQ(node->inputs[1], input2_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, XNN_FLAG_TRANSPOSE_B);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* bmm_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    bmm_node = &subgraph->nodes[0];
+    ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    bmm_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input1_id);
+    ASSERT_EQ(bmm_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(bmm_node->type, xnn_node_type_batch_matrix_multiply);
+  ASSERT_EQ(bmm_node->num_inputs, 2);
+  ASSERT_EQ(bmm_node->inputs[0], input1_id);
+  ASSERT_EQ(bmm_node->inputs[1], input2_id);
+  ASSERT_EQ(bmm_node->num_outputs, 1);
+  ASSERT_EQ(bmm_node->outputs[0], output_id);
+  ASSERT_EQ(bmm_node->flags, XNN_FLAG_TRANSPOSE_B);
 }
 
 TEST_F(BatchMatrixMultiplyTestF16, matches_operator_api)

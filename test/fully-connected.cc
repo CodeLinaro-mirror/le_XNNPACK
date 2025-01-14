@@ -198,18 +198,27 @@ TEST_F(FullyConnectedTestQC8, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestQS8, define) {
@@ -255,18 +264,27 @@ TEST_F(FullyConnectedTestQS8, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestQU8, define) {
@@ -312,18 +330,27 @@ TEST_F(FullyConnectedTestQU8, define) {
                                        input_id, kernel_id, bias_id, output_id,
                                        /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_P(FullyConnectedTestF16, define) {
@@ -372,18 +399,27 @@ TEST_P(FullyConnectedTestF16, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, use_bias ? 3 : 2);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, use_bias ? 3 : 2);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestF32, define) {
@@ -429,18 +465,27 @@ TEST_F(FullyConnectedTestF32, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestF32QC4W, define) {
@@ -489,18 +534,27 @@ TEST_F(FullyConnectedTestF32QC4W, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestF32QC4W, define_without_bias) {
@@ -542,18 +596,27 @@ TEST_F(FullyConnectedTestF32QC4W, define_without_bias) {
                 subgraph, output_min, output_max, input_id, kernel_id,
                 XNN_INVALID_VALUE_ID, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 2);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], XNN_INVALID_VALUE_ID);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 2);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], XNN_INVALID_VALUE_ID);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestF32QC8W, define) {
@@ -600,18 +663,27 @@ TEST_F(FullyConnectedTestF32QC8W, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestF32QC8W, define_without_bias) {
@@ -651,18 +723,27 @@ TEST_F(FullyConnectedTestF32QC8W, define_without_bias) {
                 subgraph, output_min, output_max, input_id, kernel_id,
                 XNN_INVALID_VALUE_ID, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 2);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], XNN_INVALID_VALUE_ID);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 2);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], XNN_INVALID_VALUE_ID);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(DynamicFullyConnectedTestF32, define) {
@@ -707,18 +788,27 @@ TEST_F(DynamicFullyConnectedTestF32, define) {
       xnn_define_fully_connected(subgraph, output_min, output_max, input_id,
                                  kernel_id, bias_id, output_id, /*flags=*/0));
 
-  ASSERT_EQ(subgraph->num_nodes, 1);
-  const struct xnn_node* node = &subgraph->nodes[0];
-  ASSERT_EQ(node->type, xnn_node_type_fully_connected);
-  ASSERT_EQ(node->activation.output_min, output_min);
-  ASSERT_EQ(node->activation.output_max, output_max);
-  ASSERT_EQ(node->num_inputs, 3);
-  ASSERT_EQ(node->inputs[0], input_id);
-  ASSERT_EQ(node->inputs[1], kernel_id);
-  ASSERT_EQ(node->inputs[2], bias_id);
-  ASSERT_EQ(node->num_outputs, 1);
-  ASSERT_EQ(node->outputs[0], output_id);
-  ASSERT_EQ(node->flags, 0);
+  ASSERT_LE(subgraph->num_nodes, 2);
+  const struct xnn_node* fc_node = nullptr;
+  if (subgraph->num_nodes == 1) {
+    fc_node = &subgraph->nodes[0];
+    ASSERT_EQ(fc_node->inputs[0], input_id);
+  } else {
+    const struct xnn_node* pack_lh_node = &subgraph->nodes[0];
+    fc_node = &subgraph->nodes[1];
+    ASSERT_EQ(pack_lh_node->type, xnn_node_type_pack_lh);
+    ASSERT_EQ(pack_lh_node->inputs[0], input_id);
+    ASSERT_EQ(fc_node->inputs[0], pack_lh_node->outputs[0]);
+  }
+  ASSERT_EQ(fc_node->type, xnn_node_type_fully_connected);
+  ASSERT_EQ(fc_node->activation.output_min, output_min);
+  ASSERT_EQ(fc_node->activation.output_max, output_max);
+  ASSERT_EQ(fc_node->num_inputs, 3);
+  ASSERT_EQ(fc_node->inputs[1], kernel_id);
+  ASSERT_EQ(fc_node->inputs[2], bias_id);
+  ASSERT_EQ(fc_node->num_outputs, 1);
+  ASSERT_EQ(fc_node->outputs[0], output_id);
+  ASSERT_EQ(fc_node->flags, 0);
 }
 
 TEST_F(FullyConnectedTestQC8, matches_operator_api) {
