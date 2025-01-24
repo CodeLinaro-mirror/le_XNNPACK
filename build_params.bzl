@@ -209,6 +209,17 @@ def xnnpack_cc_library_for_arch(arch, name, deps = None, **kwargs):
         else:
             kwargs[key] = val
 
+    # Add extra copts.
+    copts = select({
+        "//build_config:x86_clang": ["-mstack-alignment=64", "-fomit-frame-pointer", "-mstackrealign"],
+        "//build_config:x86_gcc": ["-mpreferred-stack-boundary=6", "-fomit-frame-pointer", "-mstackrealign", "-mincoming-stack-boundary=4"],
+        "//conditions:default": [],
+    })
+    if "copts" in kwargs:
+        kwargs["copts"] += copts
+    else:
+        kwargs["copts"] = copts
+
     xnnpack_cc_library(
         name = name,
         target_compatible_with = xnnpack_select_if(
