@@ -1004,7 +1004,6 @@ struct average_pooling_context {
   union {
     struct xnn_f16_scaleminmax_params f16;
     struct xnn_f32_scaleminmax_params f32;
-    struct xnn_qu8_avgpool_minmax_params qu8;
   } params;
   union {
     xnn_avgpool_unipass_ukernel_fn unipass_ukernel;
