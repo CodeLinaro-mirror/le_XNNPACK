@@ -22,8 +22,7 @@
 
 void* xnn_get_pointer_to_write_weights(
   xnn_operator_t op,
-  size_t aligned_weights_size,
-  int padding_byte)
+  size_t aligned_weights_size)
 {
   assert(aligned_weights_size % XNN_ALLOCATION_ALIGNMENT == 0);
   void* weights_ptr = NULL;
@@ -39,7 +38,6 @@ void* xnn_get_pointer_to_write_weights(
     }
     weights_ptr = op->packed_weights.pointer;
   }
-  memset(weights_ptr, padding_byte, aligned_weights_size);
   return weights_ptr;
 }
 
