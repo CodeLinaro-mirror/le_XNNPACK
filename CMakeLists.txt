@@ -1898,8 +1898,6 @@ IF(XNNPACK_BUILD_BENCHMARKS)
     TARGET_LINK_LIBRARIES(gemm-benchmark PUBLIC kleidiai)
   ENDIF()
 
-  ADD_LIBRARY(im2col STATIC src/im2col.c)
-
   IF(XNNPACK_BUILD_LIBRARY)
     # ---[ Build end-to-end microbenchmarks
     ADD_LIBRARY(models STATIC
@@ -1975,7 +1973,6 @@ IF(XNNPACK_BUILD_BENCHMARKS)
       f32-gemm-goi-minmax
       f32-gemm-minmax
       f32-igemm
-      f32-im2col-gemm
       f32-qc4w-gemm
       f32-qc8w-gemm
       f32-raddexpminusmax
@@ -2033,7 +2030,6 @@ IF(XNNPACK_BUILD_BENCHMARKS)
       benchmark::benchmark
       gemm-benchmark
       hardware-config
-      im2col
       indirection
       logging
       microkernels-all
