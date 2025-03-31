@@ -46,6 +46,16 @@ SubgraphTester& SubgraphTester::AddInternalDynamicTensorF32(
   return *this;
 }
 
+SubgraphTester& SubgraphTester::AddInternalDynamicallyQuantizedTensor(
+    size_t rank, xnn_datatype datatype, size_t num_nonbatch_dims,
+    uint32_t* id_out, uint32_t flags) {
+  const xnn_status status = xnn_define_dynamically_quantized_tensor_value(
+      subgraph_.get(), xnn_datatype_qdint8, rank, num_nonbatch_dims, nullptr,
+      XNN_INVALID_VALUE_ID, flags, id_out);
+  EXPECT_EQ(status, xnn_status_success);
+  return *this;
+}
+
 SubgraphTester& SubgraphTester::AddDynamicTensor(
     const std::vector<size_t>& dims, uint32_t external_id,
     xnn_datatype datatype, xnn_quantization_params quantization,
@@ -396,8 +406,7 @@ SubgraphTester& SubgraphTester::AddConvolution2D(ConvolutionParams params,
       params.kernel.width, params.subsampling.height, params.subsampling.width,
       params.dilation.height, params.dilation.width, params.groups,
       params.group_input_channels, params.group_output_channels,
-      -std::numeric_limits<float>::infinity(),
-      std::numeric_limits<float>::infinity(), input_id, filter_id, bias_id,
+      params.output_min, params.output_max, input_id, filter_id, bias_id,
       output_id, /*flags=*/0);
   EXPECT_EQ(status, xnn_status_success);
 
@@ -511,9 +520,8 @@ SubgraphTester& SubgraphTester::AddDeconvolution2D(DeconvolutionParams params,
       params.adjustment.width, params.kernel.height, params.kernel.width,
       params.upsampling.height, params.upsampling.width, params.dilation.height,
       params.dilation.width, params.groups, params.group_input_channels,
-      params.group_output_channels, -std::numeric_limits<float>::infinity(),
-      std::numeric_limits<float>::infinity(), input_id, filter_id, bias_id,
-      output_id, /*flags=*/0);
+      params.group_output_channels, params.output_min, params.output_max,
+      input_id, filter_id, bias_id, output_id, /*flags=*/0);
   EXPECT_EQ(status, xnn_status_success);
 
   return *this;

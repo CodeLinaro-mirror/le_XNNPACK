@@ -77,8 +77,8 @@ class NumericLimits<xnn_bfloat16> {
   static xnn_bfloat16 max_identity() { return -infinity(); }
 };
 
-template <typename T>
-class NumericLimits<quantized<T>> {
+template <typename T, typename Tag>
+class NumericLimits<quantized<T, Tag>> {
  public:
   static quantized<T> min() { return {std::numeric_limits<T>::lowest()}; }
   static quantized<T> max() { return {std::numeric_limits<T>::max()}; }
@@ -359,7 +359,7 @@ class Tensor {
   }
   size_t size() const {
     assert(is_contiguous());
-    return data_->size();
+    return end_ - begin_;
   }
   T* begin() { return data(); }
   T* end() { return end_; }
@@ -429,14 +429,16 @@ class Tensor {
 
     Tensor<T, Alignment> result(*this);
     std::vector<size_t> offsets(rank());
+    std::vector<size_t> maxs(rank());
     for (size_t i = 0; i < rank(); ++i) {
       offsets[i] = begins[i] < 0 ? extents_[i] + begins[i] : begins[i];
       result.extents_[i] =
           (ends[i] <= 0 ? extents_[i] + ends[i] : ends[i]) - offsets[i];
+      maxs[i] = result.extents_[i] - 1;
     }
 
     result.begin_ = begin_ + flat_offset(offsets);
-    result.end_ = result.begin_ + result.flat_offset(result.extents_);
+    result.end_ = result.begin_ + result.flat_offset(maxs) + 1;
 
     return result;
   }
@@ -458,6 +460,53 @@ class Tensor {
 
   Tensor<T, Alignment> slice(size_t dim, int64_t at) const {
     return slice(dim, at, at + 1);
+  }
+
+  // Slice the leading dimensions at the indices of `at`.
+  Tensor<T, Alignment> slice_leading(std::vector<size_t> at) const {
+    std::vector<int64_t> begins(rank());
+    std::vector<int64_t> ends(rank());
+    std::copy(at.begin(), at.end(), begins.begin());
+    std::copy(at.begin(), at.end(), ends.begin());
+    for (size_t i = 0; i < at.size(); ++i) {
+      ends[i] += 1;
+    }
+    return slice(begins, ends);
+  }
+
+  // Split a dimension dim into 2 dimensions where the inner dimension has
+  // extent `inner_size`. `inner_size` must divide the extent of the dimension
+  // being split.
+  Tensor<T, Alignment> split(size_t dim, size_t inner_size) const {
+    assert(dim < rank());
+    Tensor<T, Alignment> result = expand_dims({dim + 1});
+    if (result.strides_[dim] == 0) {
+      result.strides_[dim + 1] = 0;
+      result.extents_[dim + 1] = inner_size;
+    } else {
+      assert(extent(dim) % inner_size == 0);
+      result.extents_[dim + 1] = inner_size;
+      result.strides_[dim + 1] = result.strides_[dim];
+      result.extents_[dim] /= inner_size;
+      result.strides_[dim] *= inner_size;
+    }
+    return result;
+  }
+
+  // Fuse two dimensions into one, where the new dimension's extent is the
+  // product of the extents of the two dimensions. The stride of the outer
+  // dimension must match the product of the stride and extent of the inner
+  // dimension.
+  Tensor<T, Alignment> fuse(size_t a, size_t b) const {
+    assert(a < rank());
+    assert(b < rank());
+    assert(stride(b) * extent(b) == stride(a));
+    Tensor<T, Alignment> result(*this);
+    result.extents_[a] *= result.extent(b);
+    result.strides_[a] = result.stride(b);
+    result.extents_.erase(result.extents_.begin() + b);
+    result.strides_.erase(result.strides_.begin() + b);
+    return result;
   }
 
   // Remove `pre` elements from the beginning of each dimension, and `post`
