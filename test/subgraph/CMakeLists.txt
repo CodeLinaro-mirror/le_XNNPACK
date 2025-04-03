@@ -49,7 +49,6 @@ IF(XNNPACK_BUILD_LIBRARY)
       even-split
       fully-connected
       max-pooling-2d
-      scaled-dot-product-attention
       softmax
       space-to-depth-2d
       split-fuse
