@@ -39,6 +39,7 @@
 #include "src/xnnpack/operator.h"
 #include "src/xnnpack/params.h"
 #include "src/xnnpack/subgraph.h"
+#include "src/subgraph/subgraph-utils.h"
 #include <pthreadpool.h>
 
 enum xnn_status xnn_reshape_external_value(
@@ -536,8 +537,10 @@ enum xnn_status xnn_create_runtime_v4(
     goto error;
   }
 
-  const uint32_t optimization_flags = XNN_FLAG_HINT_SPARSE_INFERENCE | XNN_FLAG_HINT_FP16_INFERENCE |
-    XNN_FLAG_FORCE_FP16_INFERENCE | XNN_FLAG_NO_OPERATOR_FUSION;
+  const uint32_t optimization_flags =
+      XNN_FLAG_HINT_SPARSE_INFERENCE | XNN_FLAG_HINT_FP16_INFERENCE |
+      XNN_FLAG_FORCE_FP16_INFERENCE | XNN_FLAG_NO_OPERATOR_FUSION |
+      XNN_FLAG_NO_INLINED_LHS_PACKING;
   status = xnn_subgraph_optimize(subgraph, flags & optimization_flags);
   if (status != xnn_status_success) {
     xnn_log_error("failed to optimize subgraph");
