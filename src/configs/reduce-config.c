@@ -1424,7 +1424,7 @@ static void init_f32_rdsum_config(void) {
       };
     } else {
       f32_rdsum_config = (struct xnn_reduce_config) {
-        .rd_ukernel = (xnn_reduce_discontiguous_ukernel_fn) xnn_f32_rdsum_ukernel_7p7x__sse_c16,
+        .rd_ukernel = (xnn_reduce_discontiguous_ukernel_fn) xnn_f32_rdsum_ukernel_7p7x__sse2_c16,
         .init.reduce = NULL,
         .update = xnn_update_f32_reduce_scalar_params,
       };
