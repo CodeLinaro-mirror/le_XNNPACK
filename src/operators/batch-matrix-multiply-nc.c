@@ -55,6 +55,14 @@ enum xnn_status create_batch_matrix_multiply_nc(
                   xnn_operator_type_to_string(operator_type));
     goto error;
   }
+  batch_matrix_multiply_op->compute = xnn_allocate_zero_memory(2 * sizeof(struct compute_parameters));
+  if (batch_matrix_multiply_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(operator_type));
+    goto error;
+  }
+
   batch_matrix_multiply_op->ukernel.gemm_ukernels = xnn_allocate_zero_simd_memory(sizeof(struct gemm_types));
   if (batch_matrix_multiply_op->ukernel.gemm_ukernels == NULL) {
     xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",

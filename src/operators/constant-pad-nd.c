@@ -30,7 +30,7 @@ static void init_constant_pad_nd(
     const struct xnn_xx_pad_config* pad_config,
     xnn_operator_t constant_pad_op)
 {
-  constant_pad_op->pad_value = padding_value;
+  constant_pad_op->padding.pad_value = padding_value;
 
   constant_pad_op->type = operator_type;
   constant_pad_op->flags = flags;
@@ -63,6 +63,13 @@ static enum xnn_status create_constant_pad_nd(
     xnn_log_error(
       "failed to allocate %zu bytes for %s operator descriptor",
       sizeof(struct xnn_operator), xnn_operator_type_to_string(operator_type));
+    goto error;
+  }
+  constant_pad_op->compute = xnn_allocate_zero_memory(sizeof(struct compute_parameters));
+  if (constant_pad_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(operator_type));
     goto error;
   }
 
@@ -201,7 +208,7 @@ static enum xnn_status reshape_constant_pad_nd(
   const struct xnn_xx_pad_config* xx_pad_config = constant_pad_op->pad_config;
 
   constant_pad_op->context.pad = (struct pad_context) {
-    .padding_value = constant_pad_op->pad_value,
+    .padding_value = constant_pad_op->padding.pad_value,
     .fill_ukernel = xx_fill_config->ukernel,
     .pad_ukernel = xx_pad_config->ukernel,
   };

@@ -242,6 +242,13 @@ enum xnn_status xnn_create_binary_elementwise_nd(
                   xnn_binary_operator_to_string(type));
     return xnn_status_out_of_memory;
   }
+  op->compute = xnn_allocate_zero_memory(sizeof(struct compute_parameters));
+  if (op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_binary_operator_to_string(type));
+    return xnn_status_out_of_memory;
+  }
 
   enum xnn_status status =
       init_binary_elementwise_nd(op, type, datatype, a_quantization,

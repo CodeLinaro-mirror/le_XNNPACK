@@ -48,6 +48,13 @@ enum xnn_status create_pack_lh(
       sizeof(struct xnn_operator), xnn_operator_type_to_string(expected_operator_type));
     return xnn_status_out_of_memory;
   }
+  pack_lh_op->compute = xnn_allocate_zero_memory(sizeof(struct compute_parameters));
+  if (pack_lh_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(expected_operator_type));
+    return xnn_status_out_of_memory;
+  }
 
   pack_lh_op->pack_lh_config = pack_lh_config;
   pack_lh_op->type = expected_operator_type;
@@ -104,8 +111,6 @@ enum xnn_status reshape_pack_lh(xnn_operator_t pack_lh_op, size_t num_groups,
     pack_lh_op->state = xnn_run_state_skip;
     return xnn_status_success;
   }
-
-  pack_lh_op->batch_size = batch_size;
 
   const uint32_t mr_packed = batch_size == 1          ? 1
                              : gemm_config->mr_packed ? gemm_config->mr_packed

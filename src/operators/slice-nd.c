@@ -69,6 +69,13 @@ static enum xnn_status create_slice_nd(
       sizeof(struct xnn_operator), xnn_operator_type_to_string(operator_type));
     goto error;
   }
+  slice_op->compute = xnn_allocate_zero_memory(sizeof(struct compute_parameters));
+  if (slice_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(operator_type));
+    goto error;
+  }
 
   init_slice_nd(flags, operator_type, copy_config, slice_op);
 

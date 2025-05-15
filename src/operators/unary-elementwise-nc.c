@@ -305,6 +305,14 @@ enum xnn_status xnn_create_unary_elementwise_nc(
       sizeof(struct xnn_operator), xnn_unary_operator_to_string(op_type));
     return xnn_status_out_of_memory;
   }
+  op->compute = xnn_allocate_zero_memory(2 * sizeof(struct compute_parameters));
+  if (op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_unary_operator_to_string(op_type));
+    return xnn_status_out_of_memory;
+  }
+
 
   enum xnn_status status = init_op(op, op_type, input_datatype, output_datatype, params, input_quantization, output_quantization,flags);
   if (status != xnn_status_success) {
@@ -575,6 +583,13 @@ static enum xnn_status create_unary_elementwise_nc(
     xnn_log_error(
       "failed to allocate %zu bytes for %s operator descriptor",
       sizeof(struct xnn_operator), xnn_operator_type_to_string(operator_type));
+    return xnn_status_out_of_memory;
+  }
+  unary_elementwise_op->compute = xnn_allocate_zero_memory(2 * sizeof(struct compute_parameters));
+  if (unary_elementwise_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(operator_type));
     return xnn_status_out_of_memory;
   }
 

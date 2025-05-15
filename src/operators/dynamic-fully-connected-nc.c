@@ -60,6 +60,14 @@ static enum xnn_status create_dynamic_fully_connected_nc(
       sizeof(struct xnn_operator), xnn_operator_type_to_string(operator_type));
     goto error;
   }
+  dynamic_fully_connected_op->compute = xnn_allocate_zero_memory(2 * sizeof(struct compute_parameters));
+  if (dynamic_fully_connected_op->compute == NULL) {
+    xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
+                  sizeof(struct compute_parameters),
+                  xnn_operator_type_to_string(operator_type));
+    goto error;
+  }
+
   dynamic_fully_connected_op->ukernel.gemm_ukernels = xnn_allocate_zero_simd_memory(sizeof(struct gemm_types));
   if (dynamic_fully_connected_op->ukernel.gemm_ukernels == NULL) {
     xnn_log_error("failed to allocate %zu bytes for %s operator descriptor",
