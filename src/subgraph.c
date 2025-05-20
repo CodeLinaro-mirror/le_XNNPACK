@@ -211,6 +211,34 @@ void xnn_value_copy(
   dst_value->gemm_config = src_value->gemm_config;
 }
 
+void xnn_runtime_value_copy(
+  struct xnn_runtime_value* dst_value,
+  const struct xnn_value* src_value)
+{
+  // Note: Value ID stays unchanged
+
+  dst_value->type = src_value->type;
+  dst_value->datatype = src_value->datatype;
+  dst_value->quantization = src_value->quantization;
+  dst_value->shape = src_value->shape;
+  dst_value->size = src_value->size;
+  dst_value->allocation_type = src_value->allocation_type;
+  dst_value->flags = src_value->flags;
+  if (src_value->num_consumers == 1) {
+    dst_value->flags |= XNN_VALUE_FLAG_ONE_CONSUMER;
+  }
+  if (src_value->fp16_compatible == 1) {
+    dst_value->flags |= XNN_VALUE_FLAG_FP16_COMPATIBLE;
+  }
+  if (src_value->layout == xnn_layout_type_nchw) {
+    dst_value->flags |= XNN_VALUE_FLAG_LAYOUT_NCHW;
+  }
+  dst_value->data = src_value->data;
+  dst_value->first_consumer = src_value->first_consumer;
+  dst_value->fp32_data = src_value->fp32_data;
+  dst_value->gemm_config = src_value->gemm_config;
+}
+
 struct xnn_node* xnn_subgraph_new_node(xnn_subgraph_t subgraph)
 {
   struct xnn_node* nodes = subgraph->nodes;
@@ -299,7 +327,7 @@ void xnn_subgraph_analyze_consumers_and_producers(xnn_subgraph_t subgraph)
       assert(output_id < subgraph->num_values);
 
       // Persistent values can be produced by multiple nodes, e.g. copy nodes writing to the same persistent value.
-      assert(xnn_value_is_persistent(&subgraph->values[output_id]) ||
+      assert(xnn_value_is_persistent(subgraph->values[output_id].flags, subgraph->values[output_id].allocation_type) ||
              subgraph->values[output_id].producer == XNN_INVALID_NODE_ID);
       subgraph->values[output_id].producer = n;
     }
@@ -309,7 +337,7 @@ void xnn_subgraph_analyze_consumers_and_producers(xnn_subgraph_t subgraph)
   // Remove unreferenced values.
   for (uint32_t i = 0; i < subgraph->num_values; i++) {
     struct xnn_value* value = &subgraph->values[i];
-    if (xnn_value_is_external_output(value)) {
+    if (xnn_value_is_external_output(value->flags)) {
       value->num_consumers += 1;
     }
   }
@@ -622,7 +650,7 @@ void xnn_subgraph_rewrite_for_nchw(xnn_subgraph_t subgraph)
           // during the initial NCHW compatibility check for the Node.
           continue;
         }
-        if (xnn_value_is_external(value)) {
+        if (xnn_value_is_external(value->flags)) {
           // External value, invalid cluster
           node->layout_flags |= XNN_LAYOUT_FLAG_INCOMPATIBLE_CLUSTER;
           continue;
@@ -671,7 +699,7 @@ void xnn_subgraph_rewrite_for_nchw(xnn_subgraph_t subgraph)
           // during the initial NCHW compatibility check for the Node.
           continue;
         }
-        if (xnn_value_is_external(value)) {
+        if (xnn_value_is_external(value->flags)) {
           // External value, invalid cluster
           node->layout_flags |= XNN_LAYOUT_FLAG_INCOMPATIBLE_CLUSTER;
           continue;
@@ -716,7 +744,7 @@ void xnn_subgraph_rewrite_for_nchw(xnn_subgraph_t subgraph)
         // Static data, skip this input value because it doesn't have a producer Node.
         continue;
       }
-      assert(!xnn_value_is_external(value));
+      assert(!xnn_value_is_external(value->flags));
       value->num_nchw_compatible_consumers += 1;
     }
   }
@@ -736,7 +764,7 @@ void xnn_subgraph_rewrite_for_nchw(xnn_subgraph_t subgraph)
         // Static data, skip this input value because it doesn't have a producer Node.
         continue;
       }
-      assert(!xnn_value_is_external(value));
+      assert(!xnn_value_is_external(value->flags));
       assert(value->num_nchw_compatible_consumers > 0);
       if (value->num_nchw_compatible_consumers != value->num_consumers) {
         subgraph->nodes[node->cluster_leader].layout_flags |= XNN_LAYOUT_FLAG_INCOMPATIBLE_CLUSTER;
@@ -811,7 +839,7 @@ void xnn_subgraph_rewrite_for_nchw(xnn_subgraph_t subgraph)
         // Static data, skip this input value because it doesn't have a producer Node.
         continue;
       }
-      assert(!xnn_value_is_external(value));
+      assert(!xnn_value_is_external(value->flags));
       assert(value->num_nchw_compatible_consumers > 0);
       assert(value->num_nchw_compatible_consumers == value->num_consumers);
       if (value->layout != xnn_layout_type_nchw) {
@@ -1039,7 +1067,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
     if (value->fp16_compatible) {
       assert(value->datatype == xnn_datatype_fp32 ||
              value->datatype == xnn_datatype_pfp32);
-      if (xnn_value_is_static(value)) {
+      if (xnn_value_is_static(value->allocation_type)) {
         assert(value->producer == XNN_INVALID_NODE_ID);
         const size_t fp16_size = xnn_tensor_get_size_by_id(subgraph, n) / 2 + XNN_EXTRA_BYTES;
         value->fp16_temp_data = xnn_allocate_zero_memory(fp16_size);
@@ -1047,7 +1075,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
           xnn_log_error("failed to allocate %zu bytes for fp16 tensor data", (size_t)fp16_size);
           goto error;
         }
-      } else if (xnn_value_is_external(value)) {
+      } else if (xnn_value_is_external(value->flags)) {
         struct xnn_value* fp16_value = xnn_subgraph_new_internal_value(subgraph);
         if (fp16_value == NULL) {
           xnn_log_error("FP16 rewrite aborted: failed to allocate value for external input/output");
@@ -1093,7 +1121,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
         assert(subgraph->values[value->fp16_id].datatype == xnn_datatype_fp16);
         // This value isn't always an external input, it could be an external output of the current subgraph (due to
         // partition), and be simultaneously consumed by the current node.
-        if (xnn_value_is_external_input(value)) {
+        if (xnn_value_is_external_input(value->flags)) {
           num_external_inputs += 1;
         }
       }
@@ -1103,7 +1131,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
       if (value->fp16_id != XNN_INVALID_VALUE_ID) {
         assert(value->datatype == xnn_datatype_fp32);
         assert(subgraph->values[value->fp16_id].datatype == xnn_datatype_fp16);
-        assert(xnn_value_is_external_output(value));
+        assert(xnn_value_is_external_output(value->flags));
         num_external_outputs += 1;
       }
     }
@@ -1127,7 +1155,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
   for (uint32_t n = 0; n < num_original_values; n++) {
     struct xnn_value* value = &subgraph->values[n];
     if (value->fp16_compatible) {
-      if (xnn_value_is_static(value)) {
+      if (xnn_value_is_static(value->allocation_type)) {
         assert(value->datatype == xnn_datatype_fp32);
         const size_t num_elements = xnn_shape_multiply_all_dims(&value->shape);
         xnn_run_unary_elementwise_nc(
@@ -1141,7 +1169,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
         value->fp16_temp_data = NULL;
         value->datatype = xnn_datatype_fp16;
         xnn_log_debug("FP16 rewrite: converted static FP32 tensor #%" PRIu32 " to FP16 in new buffer", n);
-      } else if (xnn_value_is_external(value)) {
+      } else if (xnn_value_is_external(value->flags)) {
         assert(value->datatype == xnn_datatype_fp32);
         assert(value->fp16_id != XNN_INVALID_VALUE_ID);
         value->producer = XNN_INVALID_NODE_ID;
@@ -1227,7 +1255,7 @@ bool xnn_subgraph_rewrite_for_fp16(xnn_subgraph_t subgraph)
       if (value->fp32_id != XNN_INVALID_VALUE_ID && value->first_consumer == n - 1) {
         // Only insert convert nodes if the value actually is an external input. This value could be an external output,
         // if that's the case, we have already inserted a convert node in loop above for outputs.
-        if (xnn_value_is_external_input(&subgraph->values[value->fp32_id])) {
+        if (xnn_value_is_external_input(subgraph->values[value->fp32_id].flags)) {
           xnn_log_debug("Inserted FP32->FP16 Convert Node from tensor #%"PRIu32" to tensor #%"PRIu32,
                         value->fp32_id, value->id);
           const uint32_t output_node_id = output_node->id;
@@ -1441,7 +1469,7 @@ enum xnn_status xnn_subgraph_fusion(
       // E.g. ---> (N1) --- value ---> (Copy) ---> v1
       // If value is persistent or external, fusing copy upstream into N1 will skip the write to value, N1 will write to
       // v1 instead, which is wrong.
-      if (consumer->type == xnn_node_type_copy && xnn_value_is_valid(value) && xnn_value_is_internal(value) &&
+      if (consumer->type == xnn_node_type_copy && xnn_value_is_valid(value->type) && xnn_value_is_internal(value) &&
           can_reorder_use(subgraph, consumer->outputs[0], producer_id, consumer_id)) {
         xnn_log_info(
           "value %d fuse Copy Node #%" PRIu32 " into upstream %s Node #%" PRIu32, value->id, consumer->id,
@@ -1459,7 +1487,7 @@ enum xnn_status xnn_subgraph_fusion(
       // Try to fuse copy downstream.
       // E.g. --- v1 ---> (copy) --- value ---> (n2)
       // If value is external or persistent, we cannot simply remove the copy, since we need to write to value.
-      if (producer->type == xnn_node_type_copy && xnn_value_is_valid(value) && xnn_value_is_internal(value) &&
+      if (producer->type == xnn_node_type_copy && xnn_value_is_valid(value->type) && xnn_value_is_internal(value) &&
           can_reorder_use(subgraph, producer->inputs[0], producer_id, consumer_id)) {
         // We need to check that value is valid here because value could have been cleared by a previous optimization,
         // this can happen if we have a chain of Copy(s), e.g.:
@@ -1687,7 +1715,7 @@ enum xnn_status xnn_subgraph_optimize(
       continue;
     }
 
-    if (!xnn_value_is_external_input(value) && value->num_consumers == 0 && !xnn_value_is_persistent(value)) {
+    if (!xnn_value_is_external_input(value->flags) && value->num_consumers == 0 && !xnn_value_is_persistent(value->flags, value->allocation_type)) {
       if (value->producer != XNN_INVALID_NODE_ID) {
         struct xnn_node* producer = &subgraph->nodes[value->producer];
         if (producer->num_outputs == 1) {

@@ -658,6 +658,35 @@ size_t xnn_shape_multiply_trailing_dims(
   return product;
 }
 
+size_t xnn_runtime_tensor_get_size(const struct xnn_runtime_value* value)
+{
+  assert(value->type == xnn_value_type_dense_tensor);
+  assert(value->datatype != xnn_datatype_invalid);
+
+  // Special handling for packed quantized types.
+  if (value->datatype == xnn_datatype_qpint8) {
+    assert(value->gemm_config != NULL);
+    size_t num_groups = xnn_shape_multiply_batch_dims(&value->shape, 2);
+    size_t m = value->shape.dim[value->shape.num_dims - 2];
+    const size_t k = value->shape.dim[value->shape.num_dims - 1];
+    if (value->flags & XNN_FLAG_SQUASH_GROUPS) {
+      m *= num_groups;
+      num_groups = 1;
+    }
+    return num_groups *
+           xnn_x8_packq_f32qp8_gemm_packed_size(value->gemm_config, m, k);
+  }
+
+  uint64_t size_bits = xnn_datatype_size_bits(value->datatype);
+
+  size_bits *= xnn_shape_multiply_all_dims(&value->shape);
+
+  // Round size up to the nearest byte.
+  // TODO: We should not be using this helper for non-byte-addressable types,
+  // perhaps we should just assert here.
+  return round_up_po2(size_bits, 8) >> 3;
+}
+
 size_t xnn_tensor_get_size(const struct xnn_value* value)
 {
   assert(value->type == xnn_value_type_dense_tensor);
@@ -689,6 +718,21 @@ size_t xnn_tensor_get_size(const struct xnn_value* value)
 
 // Return size of the dynamic quantization params in this value
 size_t xnn_tensor_get_dynamic_quant_param_size(const struct xnn_value* value)
+{
+  switch (value->datatype) {
+    case xnn_datatype_qdint8:
+    case xnn_datatype_qduint8: {
+      const size_t batch_dims_size = xnn_shape_multiply_batch_dims(
+          &value->shape, value->quantization.num_nonbatch_dims);
+      return batch_dims_size * sizeof(struct xnn_quantization_params);
+    }
+    default:
+      return 0;
+  }
+  return 0;
+}
+// Return size of the dynamic quantization params in this value
+size_t xnn_runtime_tensor_get_dynamic_quant_param_size(const struct xnn_runtime_value* value)
 {
   switch (value->datatype) {
     case xnn_datatype_qdint8:
