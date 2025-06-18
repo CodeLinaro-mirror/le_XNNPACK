@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <type_traits>
 
 #include "include/xnnpack.h"
 #include "src/xnnpack/common.h"
@@ -39,15 +40,28 @@
 #endif  // XNN_ENABLE_KLEIDIAI
 
 struct unaligned_int32_t {
-  char value[sizeof(int32_t)];
+  XNN_INLINE explicit unaligned_int32_t(int32_t v) {
+    memcpy(value_, &v, sizeof(v));
+  }
 
-  XNN_INLINE unaligned_int32_t(int32_t v) { memcpy(value, &v, sizeof(v)); }
+  // Allow assignment from any integer type of at most sizeof(int32_t).
+  template <typename T, std::enable_if_t<sizeof(T) <= sizeof(int32_t) &&
+                                             std::is_integral<T>::value,
+                                         bool> = true>
+  unaligned_int32_t& operator=(T v) {
+    // Clear any trailing bytes.
+    memset(value_ + sizeof(T), 0, sizeof(int32_t) - sizeof(T));
+    memcpy(value_, &v, sizeof(T));
+    return *this;
+  }
 
-  XNN_INLINE operator int32_t() const {
+  XNN_INLINE operator int32_t() const {  // NOLINT(google-explicit-constructor)
     int32_t v;
-    memcpy(&v, value, sizeof(v));
+    memcpy(&v, value_, sizeof(v));
     return v;
   }
+
+  char value_[sizeof(int32_t)];
 };
 
 template <typename Src, typename Dst>
@@ -583,7 +597,8 @@ void xnn_pack_qs8_qc4w_gemm_goi_w_non_planar(
                   }
                 }
                 int8_t kv_hi = kernel_zero_point;
-                if ((nr_block_start + actual_nr_block_offset + row_offset) < nc) {
+                if ((nr_block_start + actual_nr_block_offset + row_offset) <
+                    nc) {
                   if (kc_idx < kc) {
                     kv_hi = ((kh_offset & 1) ? (k[kh_offset >> 1] >> 4)
                                              : (k[kh_offset >> 1] & 0xF));
@@ -605,7 +620,8 @@ void xnn_pack_qs8_qc4w_gemm_goi_w_non_planar(
                   }
                 }
                 uint8_t kv_hi = kernel_zero_point;
-                if ((nr_block_start + actual_nr_block_offset + row_offset) < nc) {
+                if ((nr_block_start + actual_nr_block_offset + row_offset) <
+                    nc) {
                   if (kc_idx < kc) {
                     kv_hi = ((kh_offset & 1) ? (k[kh_offset >> 1] >> 4)
                                              : (k[kh_offset >> 1] & 0xF));
@@ -1755,7 +1771,8 @@ void xnn_pack_qs8_weights_and_biases(
   const size_t extra_bytes =
       extra_data0_element_size + extra_data1_element_size;
   const size_t weights_stride = xnn_packed_stride_qs8_weights_and_biases(
-      gemm_config, input_channels, unused_block_size, packed_k_stride, extra_bytes);
+      gemm_config, input_channels, unused_block_size, packed_k_stride,
+      extra_bytes);
   return pack_weights_and_biases(
       flags, gemm_config, input_channels, output_channels, groups,
       unused_block_size, weights_stride,
@@ -1860,10 +1877,12 @@ void xnn_pack_qb4_weights_and_biases(
         /*extra_bytes_n=*/nr * extra_bytes_n,
         /*params*/ (const struct xnn_qs8_qc4w_packing_params*)params);
   } else {
-    bool has_fast_packing_ukernel = gemm_config->pack_gemm_goi_bl != NULL;
-    xnn_packw_gemm_goi_bl_ukernel_fn pack_gemm_goi = has_fast_packing_ukernel ? 
-        (xnn_packw_gemm_goi_bl_ukernel_fn) gemm_config->pack_gemm_goi_bl : (xnn_packw_gemm_goi_bl_ukernel_fn) xnn_pack_qs8_qb4w_gemm_goi_w;
-    // Fast Packing Ukernel initalizes scales and bias, so we pass in
+    bool has_fast_packing_ukernel = gemm_config->pack_gemm_goi_bl != nullptr;
+    xnn_packw_gemm_goi_bl_ukernel_fn pack_gemm_goi =
+        has_fast_packing_ukernel
+            ? (xnn_packw_gemm_goi_bl_ukernel_fn)gemm_config->pack_gemm_goi_bl
+            : (xnn_packw_gemm_goi_bl_ukernel_fn)xnn_pack_qs8_qb4w_gemm_goi_w;
+    // Fast Packing ukernel initializes scales and bias, so we pass in
     // bias to packing fn if we use the fast packing ukernel, nullptr otherwise
     pack_gemm_goi(
         /*g=*/groups,
@@ -1874,7 +1893,8 @@ void xnn_pack_qb4_weights_and_biases(
         /*sr=*/sr,
         /*bl=*/block_size,
         /*kernel=*/(const uint8_t*)weights,
-        /*bias=*/has_fast_packing_ukernel ? (const int32_t*)accumulator_init : nullptr,
+        /*bias=*/
+        has_fast_packing_ukernel ? (const int32_t*)accumulator_init : nullptr,
         /*scale=*/(const xnn_bfloat16*)extra_data1,
         /*packed_weights=*/packed_weights_ptr,
         /*extra_bytes_bl=*/nr * extra_bytes_bl,
@@ -1936,7 +1956,8 @@ void xnn_pack_qu8_weights_and_biases(
   const size_t extra_bytes =
       extra_data0_element_size + extra_data1_element_size;
   const size_t weights_stride = xnn_packed_stride_qs8_weights_and_biases(
-      gemm_config, input_channels, unused_block_size, packed_k_stride, extra_bytes);
+      gemm_config, input_channels, unused_block_size, packed_k_stride,
+      extra_bytes);
   return pack_weights_and_biases(
       flags, gemm_config, input_channels, output_channels, groups,
       unused_block_size, weights_stride,
@@ -2834,7 +2855,7 @@ void xnn_pack_f32_conv_kgo_w(size_t g, size_t nc, size_t ks, size_t nr,
       for (size_t ki = 0; ki < ks; ki++) {
         for (size_t sr_block_offset = 0; sr_block_offset < sr;
              sr_block_offset++) {
-          // TODO: Is there a more precise zeroing we could do here?
+          // TODO(unassigned): Is there a more precise zeroing we could do here?
           std::fill_n(packed_weights, nr * kr, 0.0f);
           for (size_t nr_block_offset = (-sr_block_offset) & (sr - 1);
                nr_block_offset < nr_block_size; nr_block_offset += sr) {
@@ -2872,7 +2893,7 @@ void xnn_pack_f16_conv_kgo_w(size_t g, size_t nc, size_t ks, size_t nr,
       for (size_t ki = 0; ki < ks; ki++) {
         for (size_t sr_block_offset = 0; sr_block_offset < sr;
              sr_block_offset++) {
-          // TODO: Is there a more precise zeroing we could do here?
+          // TODO(unassigned): Is there a more precise zeroing we could do here?
           std::fill_n(packed_weights, nr * kr, UINT16_C(0));
           for (size_t nr_block_offset = (-sr_block_offset) & (sr - 1);
                nr_block_offset < nr_block_size; nr_block_offset += sr) {
@@ -2910,7 +2931,7 @@ void xnn_pack_f32_to_f16_conv_kgo_w(size_t g, size_t nc, size_t ks, size_t nr,
       for (size_t ki = 0; ki < ks; ki++) {
         for (size_t sr_block_offset = 0; sr_block_offset < sr;
              sr_block_offset++) {
-          // TODO: Is there a more precise zeroing we could do here?
+          // TODO(unassigned): Is there a more precise zeroing we could do here?
           std::fill_n(packed_weights, nr * kr, static_cast<xnn_float16>(0.0f));
           for (size_t nr_block_offset = (-sr_block_offset) & (sr - 1);
                nr_block_offset < nr_block_size; nr_block_offset += sr) {
@@ -2952,7 +2973,7 @@ void xnn_pack_qu8_conv_kgo_w(size_t g, size_t nc, size_t ks, size_t nr,
       for (size_t ki = 0; ki < ks; ki++) {
         for (size_t sr_block_offset = 0; sr_block_offset < sr;
              sr_block_offset++) {
-          // TODO: Is there a more precise zeroing we could do here?
+          // TODO(unassigned): Is there a more precise zeroing we could do here?
           std::fill_n((uint8_t*)packed_weights, nr * kr,
                       params->kernel_zero_point);
           for (size_t nr_block_offset = (-sr_block_offset) & (sr - 1);
@@ -2998,7 +3019,7 @@ void pack_qs8_conv_kgo_w(size_t g, size_t nc, size_t ks, size_t nr, size_t kr,
       for (size_t ki = 0; ki < ks; ki++) {
         for (size_t sr_block_offset = 0; sr_block_offset < sr;
              sr_block_offset++) {
-          // TODO: Is there a more precise zeroing we could do here?
+          // TODO(unassigned): Is there a more precise zeroing we could do here?
           std::fill_n((int8_t*)packed_weights, nr * kr, INT8_C(0));
           for (size_t nr_block_offset = (-sr_block_offset) & (sr - 1);
                nr_block_offset < nr_block_size; nr_block_offset += sr) {
