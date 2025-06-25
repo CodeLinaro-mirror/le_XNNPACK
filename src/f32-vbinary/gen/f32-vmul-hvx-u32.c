@@ -6,8 +6,10 @@
 
 #include <assert.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/vbinary.h"
 

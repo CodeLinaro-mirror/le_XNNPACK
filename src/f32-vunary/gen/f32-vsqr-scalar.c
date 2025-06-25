@@ -12,10 +12,11 @@
 #include <assert.h>
 #include <stddef.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-scalar.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
-#include "src/xnnpack/math.h"
 #include "src/xnnpack/vunary.h"
 #include "src/xnnpack/microparams.h"
 

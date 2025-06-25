@@ -11,7 +11,10 @@
 
 #include <assert.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
+
+// XNNPACK headers.
 #include "src/xnnpack/raddstoreexpminusmax.h"
 
 void xnn_f32_raddstoreexpminusmax_ukernel__hvx_rr2_p5_u128_acc2(

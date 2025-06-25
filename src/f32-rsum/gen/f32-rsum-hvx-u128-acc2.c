@@ -11,8 +11,10 @@
 
 #include <assert.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/reduce.h"
 

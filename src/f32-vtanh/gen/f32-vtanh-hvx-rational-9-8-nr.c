@@ -12,8 +12,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/microparams.h"
 #include "src/xnnpack/vunary.h"

@@ -10,9 +10,11 @@ $SIMD_SIZE = BATCH_TILES[0]
 #include <stddef.h>
 #include <stdint.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/s32-${ARCH}.h"
 
-#include "src/xnnpack/intrinsics-polyfill.h"
+// XNNPACK headers.
+#include "src/xnnpack/common.h"
 #include "src/xnnpack/packw.h"
 $if PREFETCH:
   #include "src/xnnpack/prefetch.h"

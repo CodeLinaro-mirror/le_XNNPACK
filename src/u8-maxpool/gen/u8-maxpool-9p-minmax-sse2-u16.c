@@ -20,8 +20,10 @@
 #define xnn_load_tail_safe_impl(x, c) xnn_load_tail_safe_u8(x, c)
 #define xnn_pre_store_impl(x) x
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/u8-sse2.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/microparams.h"

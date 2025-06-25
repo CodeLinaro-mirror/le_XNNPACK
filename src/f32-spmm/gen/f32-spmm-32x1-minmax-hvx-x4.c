@@ -14,8 +14,10 @@
 #include <hexagon_protos.h>
 #include <hexagon_types.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/prefetch.h"
 #include "src/xnnpack/spmm.h"
 

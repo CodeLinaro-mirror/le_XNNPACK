@@ -10,7 +10,10 @@
 
 #include <assert.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
+
+// XNNPACK headers.
 #include "src/xnnpack/vcvt.h"
 
 void xnn_f32_qs8_vcvt_ukernel__hvx_u96(

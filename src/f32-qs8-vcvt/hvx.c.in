@@ -7,7 +7,10 @@ $assert BATCH_TILE % 32 == 0
 $assert BATCH_TILE >= 32
 #include <assert.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
+
+// XNNPACK headers.
 #include "src/xnnpack/vcvt.h"
 
 $XINT8_T = {"QS8": "int8_t", "QU8": "uint8_t"}[DATATYPE]

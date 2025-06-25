@@ -5,8 +5,10 @@
 
 $assert NR % 32 == 0
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/gemm.h"
 
 $RANGE_MR = list(range(MR))

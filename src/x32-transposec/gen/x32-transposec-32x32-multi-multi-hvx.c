@@ -8,10 +8,12 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "src/xnnpack/simd/f32-hvx.h"
-
 #include <assert.h>
 
+// Architecture-specific headers.
+#include "src/xnnpack/simd/f32-hvx.h"
+
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/transpose.h"

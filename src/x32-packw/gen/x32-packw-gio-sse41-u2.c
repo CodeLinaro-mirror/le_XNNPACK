@@ -13,9 +13,11 @@
 #include <stddef.h>
 #include <stdint.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/s32-sse41.h"
 
-#include "src/xnnpack/intrinsics-polyfill.h"
+// XNNPACK headers.
+#include "src/xnnpack/common.h"
 #include "src/xnnpack/packw.h"
 
 

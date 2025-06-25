@@ -9,8 +9,10 @@
 // LICENSE file in the root directory of this source tree.
 
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/gemm.h"
 
 void xnn_f32_gemm_minmax_ukernel_7x32__hvx_broadcast(

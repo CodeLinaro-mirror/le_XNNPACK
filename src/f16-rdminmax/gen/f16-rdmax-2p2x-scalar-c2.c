@@ -9,11 +9,16 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "src/xnnpack/common.h"
-#include "src/xnnpack/reduce.h"
-
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f16-scalar.h"
+
+// XNNPACK headers.
+#include "src/xnnpack/common.h"
+#include "src/xnnpack/math.h"
+#include "src/xnnpack/reduce.h"
 
 
 void xnn_f16_rdmax_ukernel_2p2x__scalar_c2(

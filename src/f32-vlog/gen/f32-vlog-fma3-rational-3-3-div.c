@@ -11,8 +11,10 @@
 #include <assert.h>
 #include <stddef.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-fma3.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/microparams.h"
 #include "src/xnnpack/vunary.h"

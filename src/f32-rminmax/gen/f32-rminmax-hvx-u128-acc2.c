@@ -9,11 +9,16 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "src/xnnpack/common.h"
-#include "src/xnnpack/reduce.h"
-
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-hvx.h"
+
+// XNNPACK headers.
+#include "src/xnnpack/common.h"
+#include "src/xnnpack/microparams.h"
+#include "src/xnnpack/reduce.h"
 
 
 static XNN_INLINE void load_tail_reduce_minmax_f32(

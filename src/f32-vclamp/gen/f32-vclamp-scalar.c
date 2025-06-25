@@ -9,10 +9,15 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
+// Architecture-specific headers.
 #include "src/xnnpack/simd/f32-scalar.h"
 
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
+#include "src/xnnpack/microparams.h"
 #include "src/xnnpack/vunary.h"
 
 

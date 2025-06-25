@@ -9,11 +9,17 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
+// Architecture-specific headers.
+#include "src/xnnpack/simd/f32-avx512f.h"
+
+// XNNPACK headers.
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/reduce.h"
 #include "src/xnnpack/math.h"
-#include "src/xnnpack/simd/f32-avx512f.h"
+#include "src/xnnpack/microparams.h"
 
 
 void xnn_f32_rdsum_ukernel_7p7x__avx512f_c16(
