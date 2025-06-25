@@ -11,8 +11,11 @@ $assert (TILE_WIDTH * SIZE <= 128)
 $SUFFIX = "float" if TYPE in ["float", "double"] else "int"
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "src/xnnpack/common.h"
+$if TILE_WIDTH > 1:
+  #include "src/xnnpack/common.h"
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/transpose.h"
 

@@ -13,9 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "src/xnnpack/math.h"
+#include "src/xnnpack/common.h"
 #include "src/xnnpack/packw.h"
-
 
 
 void xnn_x32_packw_gemm_goi_ukernel_x4__scalar_float_u4(

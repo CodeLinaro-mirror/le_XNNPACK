@@ -9,9 +9,15 @@ $assert CHANNEL_TILE % SIMD_SIZE == 0
 $assert KERNEL_TILE >= 2
 $assert ACCUMULATORS >= 1
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
+#include "src/xnnpack/common.h"
+#include "src/xnnpack/microparams.h"
 #include "src/xnnpack/simd/f32-${ARCH}.h"
 
+#include "src/xnnpack/common.h"
+#include "src/xnnpack/microparams.h"
 #include "src/xnnpack/dwconv.h"
 
 

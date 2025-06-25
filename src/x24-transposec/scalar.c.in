@@ -9,6 +9,8 @@ $assert TILE_HEIGHT in [1, 2, 4]
 $assert TILE_WIDTH in [1, 2, 4]
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/math.h"

@@ -13,6 +13,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "src/xnnpack/common.h"
+#include "src/xnnpack/microparams.h"
 #include "src/xnnpack/packw.h"
 
 void xnn_qs8_packw_gemm_goi_ukernel_x64c4__scalar(

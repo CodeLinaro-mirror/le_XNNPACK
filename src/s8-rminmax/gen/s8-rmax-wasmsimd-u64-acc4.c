@@ -9,11 +9,13 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "src/xnnpack/simd/s8-wasmsimd.h"
 
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/reduce.h"
-
-#include "src/xnnpack/simd/s8-wasmsimd.h"
 
 void xnn_s8_rmax_ukernel__wasmsimd_u64_acc4(
     size_t batch,

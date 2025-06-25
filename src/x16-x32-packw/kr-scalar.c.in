@@ -12,6 +12,7 @@ $assert BTYPE in ["uint32_t"]
 #include <stddef.h>
 #include <stdint.h>
 
+#include "src/xnnpack/common.h"
 #include "src/xnnpack/packw.h"
 
 $BITS = 16
