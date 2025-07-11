@@ -68,8 +68,9 @@ class Arm(base_architecture.BaseArchitecture):
   def tmp_w_register(self):
     return
 
-  def convert_to_output_type(self):
-    return
+  def convert_to_output(self):
+    self.comment('Min/max clamping.')
+    self.clamp()
 
   def adjust_kc(self):
     return
