@@ -19,12 +19,11 @@
 #include "src/xnnpack/intrinsics-polyfill.h"
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/microparams.h"
-#include "src/xnnpack/prefetch.h"
 #include "src/xnnpack/unaligned.h"
 
 
 
-void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
+void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_2x4c8__avx_madd(
     size_t mr,
     size_t nc,
     size_t kc,
@@ -37,7 +36,7 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
     const union xnn_qs8_qc8w_conv_minmax_params* restrict params) XNN_OOB_READS
 {
   assert(mr != 0);
-  assert(mr <= 1);
+  assert(mr <= 2);
   assert(nc != 0);
   assert(kc != 0);
   assert(kc % sizeof(int8_t) == 0);
@@ -48,6 +47,12 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
   kc = round_up_po2(kc, 8 * sizeof(int8_t));
   const int8_t* a0 = a;
   int8_t* c0 = c;
+  const int8_t* a1 = (const int8_t*) ((uintptr_t) a0 + a_stride);
+  int8_t* c1 = (int8_t*) ((uintptr_t) c0 + cm_stride);
+  if XNN_UNPREDICTABLE(mr != 2) {
+    a1 = a0;
+    c1 = c0;
+  }
 
   const __m128i vsign_mask = _mm_set1_epi8(0x80);
   XNN_FORCE_REALIZATION(vsign_mask);
@@ -60,8 +65,12 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
     const __m128i vksum0123 = _mm_load_si128(w);
     __m128i vacc0x01 = _mm_unpacklo_epi32(vksum0123, _mm_setzero_si128());
     __m128i vacc0x23 = _mm_unpackhi_epi32(vksum0123, _mm_setzero_si128());
+    __m128i vacc1x01 = vacc0x01;
+    __m128i vacc1x23 = vacc0x23;
     __m128i vacc1x0x01 = _mm_setzero_si128();
     __m128i vacc1x0x23 = _mm_setzero_si128();
+    __m128i vacc1x1x01 = _mm_setzero_si128();
+    __m128i vacc1x1x23 = _mm_setzero_si128();
     w = (const int32_t*) w + 4;
 
     size_t k = kc;
@@ -69,6 +78,9 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
       const __m128i va0x01234567 = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a0)), vsign_mask);
       const __m128i va0x89ABCDEF = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a0 + 8)), vsign_mask);
       a0 += 16;
+      const __m128i va1x01234567 = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a1)), vsign_mask);
+      const __m128i va1x89ABCDEF = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a1 + 8)), vsign_mask);
+      a1 += 16;
 
       const __m128i vbb01234567x0123 = _mm_load_si128(w);
       const __m128i vbb89ABCDEFx0123 = _mm_load_si128((const __m128i*) ((const int8_t*) w + 16));
@@ -81,9 +93,12 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
 
       vacc0x01 = _mm_dpbusd_epi32_madd(vacc0x01, va0x01234567, vb01234567x01);
       vacc0x23 = _mm_dpbusd_epi32_madd(vacc0x23, va0x01234567, vb89ABCDEFx01);
-      xnn_prefetch_to_l1((const int8_t*) w + 960);
+      vacc1x01 = _mm_dpbusd_epi32_madd(vacc1x01, va1x01234567, vb01234567x01);
+      vacc1x23 = _mm_dpbusd_epi32_madd(vacc1x23, va1x01234567, vb89ABCDEFx01);
       vacc1x0x01 = _mm_dpbusd_epi32_madd(vacc1x0x01, va0x89ABCDEF, vb01234567x23);
       vacc1x0x23 = _mm_dpbusd_epi32_madd(vacc1x0x23, va0x89ABCDEF, vb89ABCDEFx23);
+      vacc1x1x01 = _mm_dpbusd_epi32_madd(vacc1x1x01, va1x89ABCDEF, vb01234567x23);
+      vacc1x1x23 = _mm_dpbusd_epi32_madd(vacc1x1x23, va1x89ABCDEF, vb89ABCDEFx23);
 
       w = (const int8_t*) w + 32;
       k -= 16 * sizeof(int8_t);
@@ -92,6 +107,8 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
     if (k != 0) {
       const __m128i va0x01234567 = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a0)), vsign_mask);
       a0 += 8;
+      const __m128i va1x01234567 = _mm_xor_si128(_mm_set1_epi64x((int64_t) unaligned_load_u64(a1)), vsign_mask);
+      a1 += 8;
 
       const __m128i vbb01234567x0123 = _mm_load_si128(w);
       const __m128i vbb89ABCDEFx0123 = _mm_load_si128((const __m128i*) ((const int8_t*) w + 16));
@@ -100,47 +117,66 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
 
       vacc0x01 = _mm_dpbusd_epi32_madd(vacc0x01, va0x01234567, vb01234567x01);
       vacc0x23 = _mm_dpbusd_epi32_madd(vacc0x23, va0x01234567, vb89ABCDEFx01);
-      xnn_prefetch_to_l1((const int8_t*) w + 960);
+      vacc1x01 = _mm_dpbusd_epi32_madd(vacc1x01, va1x01234567, vb01234567x01);
+      vacc1x23 = _mm_dpbusd_epi32_madd(vacc1x23, va1x01234567, vb89ABCDEFx01);
 
       w = (const int8_t*) w + 32;
       k -= 8 * sizeof(int8_t);
     }
     vacc0x01 = _mm_add_epi32(vacc0x01, vacc1x0x01);
     vacc0x23 = _mm_add_epi32(vacc0x23, vacc1x0x23);
+    vacc1x01 = _mm_add_epi32(vacc1x01, vacc1x1x01);
+    vacc1x23 = _mm_add_epi32(vacc1x23, vacc1x1x23);
 
     // Add adjacent pairs
     __m128i vacc0x0123 = _mm_hadd_epi32(vacc0x01, vacc0x23);
+    __m128i vacc1x0123 = _mm_hadd_epi32(vacc1x01, vacc1x23);
 
     __m128 vout0x0123 = _mm_cvtepi32_ps(vacc0x0123);
+    __m128 vout1x0123 = _mm_cvtepi32_ps(vacc1x0123);
 
     const __m128 vscale0123 = _mm_load_ps(w);
     w = (const float*) w + 4;
     vout0x0123 = _mm_mul_ps(vout0x0123, vscale0123);
+    vout1x0123 = _mm_mul_ps(vout1x0123, vscale0123);
 
     vout0x0123 = _mm_min_ps(vout0x0123, voutput_max_less_zero_point);
+    vout1x0123 = _mm_min_ps(vout1x0123, voutput_max_less_zero_point);
 
     vacc0x0123 = _mm_cvtps_epi32(vout0x0123);
+    vacc1x0123 = _mm_cvtps_epi32(vout1x0123);
 
     vacc0x0123 = _mm_add_epi32(vacc0x0123, voutput_zero_point);
+    vacc1x0123 = _mm_add_epi32(vacc1x0123, voutput_zero_point);
 
     vacc0x0123 = _mm_packs_epi32(vacc0x0123, vacc0x0123);
+    vacc1x0123 = _mm_packs_epi32(vacc1x0123, vacc1x0123);
     vacc0x0123 = _mm_max_epi16(vacc0x0123, voutput_min);
+    vacc1x0123 = _mm_max_epi16(vacc1x0123, voutput_min);
     __m128i voutb0x0123 = _mm_packs_epi16(vacc0x0123, vacc0x0123);
+    __m128i voutb1x0123 = _mm_packs_epi16(vacc1x0123, vacc1x0123);
 
     if (nc >= 4) {
       _mm_storeu_si32(c0, voutb0x0123);
       c0 = (int8_t*) ((uintptr_t) c0 + cn_stride);
       a0 = (const int8_t*) ((uintptr_t) a0 - kc);
+      _mm_storeu_si32(c1, voutb1x0123);
+      c1 = (int8_t*) ((uintptr_t) c1 + cn_stride);
+      a1 = (const int8_t*) ((uintptr_t) a1 - kc);
 
       nc -= 4;
     } else {
       if (nc & 2) {
         unaligned_store_u16(c0, (uint16_t) _mm_extract_epi16(voutb0x0123, 0));
         c0 += 2;
+        unaligned_store_u16(c1, (uint16_t) _mm_extract_epi16(voutb1x0123, 0));
+        c1 += 2;
         voutb0x0123 = _mm_srli_epi32(voutb0x0123, 16);
+        voutb1x0123 = _mm_srli_epi32(voutb1x0123, 16);
       }
       if (nc & 1) {
         *c0 = (int8_t) _mm_extract_epi16(voutb0x0123, 0);
+        *c1 = (int8_t) _mm_extract_epi16(voutb1x0123, 0);
       }
       nc = 0;
     }

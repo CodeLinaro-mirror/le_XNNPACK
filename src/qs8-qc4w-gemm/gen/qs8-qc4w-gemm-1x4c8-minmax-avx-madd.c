@@ -19,12 +19,11 @@
 #include "src/xnnpack/intrinsics-polyfill.h"
 #include "src/xnnpack/math.h"
 #include "src/xnnpack/microparams.h"
-#include "src/xnnpack/prefetch.h"
 #include "src/xnnpack/unaligned.h"
 
 
 
-void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
+void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__avx_madd(
     size_t mr,
     size_t nc,
     size_t kc,
@@ -81,7 +80,6 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
 
       vacc0x01 = _mm_dpbusd_epi32_madd(vacc0x01, va0x01234567, vb01234567x01);
       vacc0x23 = _mm_dpbusd_epi32_madd(vacc0x23, va0x01234567, vb89ABCDEFx01);
-      xnn_prefetch_to_l1((const int8_t*) w + 960);
       vacc1x0x01 = _mm_dpbusd_epi32_madd(vacc1x0x01, va0x89ABCDEF, vb01234567x23);
       vacc1x0x23 = _mm_dpbusd_epi32_madd(vacc1x0x23, va0x89ABCDEF, vb89ABCDEFx23);
 
@@ -100,7 +98,6 @@ void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
 
       vacc0x01 = _mm_dpbusd_epi32_madd(vacc0x01, va0x01234567, vb01234567x01);
       vacc0x23 = _mm_dpbusd_epi32_madd(vacc0x23, va0x01234567, vb89ABCDEFx01);
-      xnn_prefetch_to_l1((const int8_t*) w + 960);
 
       w = (const int8_t*) w + 32;
       k -= 8 * sizeof(int8_t);

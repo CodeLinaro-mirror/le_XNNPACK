@@ -22,6 +22,7 @@
 #include "src/xnnpack/unaligned.h"
 
 
+
 void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_3x4c8__ssse3_madd(
     size_t mr,
     size_t nc,

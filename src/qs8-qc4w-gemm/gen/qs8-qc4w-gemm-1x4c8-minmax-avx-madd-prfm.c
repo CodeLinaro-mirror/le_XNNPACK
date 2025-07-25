@@ -24,7 +24,7 @@
 
 
 
-void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__ssse3_madd_prfm(
+void xnn_qs8_qc4w_gemm_minmax_fp32_ukernel_1x4c8__avx_madd_prfm(
     size_t mr,
     size_t nc,
     size_t kc,
