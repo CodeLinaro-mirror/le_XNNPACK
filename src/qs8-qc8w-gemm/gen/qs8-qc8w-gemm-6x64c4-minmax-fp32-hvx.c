@@ -18,7 +18,6 @@
 #include "src/xnnpack/gemm.h"
 #include "src/xnnpack/intrinsics-polyfill.h"  // for Q6_V_vstu_variable
 #include "src/xnnpack/math.h"
-#include "src/xnnpack/unaligned.h"
 
 
 // multiply vacc by vscale and return result as int
@@ -74,6 +73,8 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_6x64c4__hvx(
   assert(a != NULL);
   assert(w != NULL);
   assert(c != NULL);
+  assert(((uintptr_t) (a) & 3) == 0);
+  assert((a_stride & 3) == 0);
 
   kc = round_up_po2(kc, 4 * sizeof(int8_t));
   const int8_t* a0 = a;
@@ -108,11 +109,16 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_6x64c4__hvx(
     a5 = a4;
     c5 = c4;
   }
+  assert(((uintptr_t) (a0) & 3) == 0);
+  assert(((uintptr_t) (a1) & 3) == 0);
+  assert(((uintptr_t) (a2) & 3) == 0);
+  assert(((uintptr_t) (a3) & 3) == 0);
+  assert(((uintptr_t) (a4) & 3) == 0);
+  assert(((uintptr_t) (a5) & 3) == 0);
 
   const HVX_Vector voutput_zero_point = Q6_Vh_vsplat_R(params->fp32_scalar.output_zero_point);
   const HVX_Vector voutput_min = Q6_Vb_vsplat_R(params->fp32_scalar.output_min);
   const HVX_Vector voutput_max = Q6_Vb_vsplat_R(params->fp32_scalar.output_max);
-
   do {
     HVX_Vector vacc0x0 = *((HVX_Vector *) w); w = (const int8_t*) w + 128;
     HVX_Vector vacc0x1 = *((HVX_Vector *) w); w = (const int8_t*) w + 128;
@@ -128,13 +134,14 @@ void xnn_qs8_qc8w_gemm_minmax_fp32_ukernel_6x64c4__hvx(
     HVX_Vector vacc5x1 = vacc0x1;
 
     size_t k = kc;
+
     for (; k >= 4 * sizeof(int8_t); k -= 4 * sizeof(int8_t)) {
-      const HVX_Vector va0x0123 = Q6_V_vsplat_R(unaligned_load_s32(a0)); a0 += 4;
-      const HVX_Vector va1x0123 = Q6_V_vsplat_R(unaligned_load_s32(a1)); a1 += 4;
-      const HVX_Vector va2x0123 = Q6_V_vsplat_R(unaligned_load_s32(a2)); a2 += 4;
-      const HVX_Vector va3x0123 = Q6_V_vsplat_R(unaligned_load_s32(a3)); a3 += 4;
-      const HVX_Vector va4x0123 = Q6_V_vsplat_R(unaligned_load_s32(a4)); a4 += 4;
-      const HVX_Vector va5x0123 = Q6_V_vsplat_R(unaligned_load_s32(a5)); a5 += 4;
+      const HVX_Vector va0x0123 = Q6_V_vsplat_R(*((const int32_t*)a0)); a0 += 4;
+      const HVX_Vector va1x0123 = Q6_V_vsplat_R(*((const int32_t*)a1)); a1 += 4;
+      const HVX_Vector va2x0123 = Q6_V_vsplat_R(*((const int32_t*)a2)); a2 += 4;
+      const HVX_Vector va3x0123 = Q6_V_vsplat_R(*((const int32_t*)a3)); a3 += 4;
+      const HVX_Vector va4x0123 = Q6_V_vsplat_R(*((const int32_t*)a4)); a4 += 4;
+      const HVX_Vector va5x0123 = Q6_V_vsplat_R(*((const int32_t*)a5)); a5 += 4;
 
       const HVX_Vector vb0x0123 = *((HVX_Vector *) w); w = (const int8_t*) w + 128;
       const HVX_Vector vb1x0123 = *((HVX_Vector *) w); w = (const int8_t*) w + 128;
