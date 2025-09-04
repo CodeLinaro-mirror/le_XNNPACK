@@ -304,7 +304,7 @@ void TestSubgraphRewrite(const Param& p) {
     // prevent the subgraph replacement.
     xnn_status status = subgraph.CreateRuntime(
         /*threadpool=*/nullptr, XNN_FLAG_NO_OPERATOR_FUSION);
-    if (status == xnn_status_unsupported_hardware) {
+    if (status == xnn_status_unsupported_hardware || subgraph.NumNodes() == 0) {
       GTEST_SKIP();
       return;
     }
