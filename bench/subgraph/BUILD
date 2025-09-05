@@ -13,6 +13,7 @@ load(
 BENCHMARKS_SLOW = {
     "attention": True,
     "depthwise_separable": False,
+    "convolution": False,
     "elementwise": False,
     "l2_norm": False,
     "layer_norm": False,
