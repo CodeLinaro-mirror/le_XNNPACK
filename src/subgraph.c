@@ -3884,6 +3884,11 @@ enum xnn_status xnn_subgraph_optimize_packed_lhs(xnn_subgraph_t subgraph,
                     assumed_datatype = xnn_datatype_qpint8;
                   }
                   break;
+                case xnn_datatype_qcint2:
+                  if ((gemm_config = xnn_init_qd8_f32_qc2w_gemm_config())) {
+                    input_value->flags |= XNN_VALUE_FLAG_INT2_FULLY_CONNECTED;
+                  }
+                  break;
                 case xnn_datatype_qcint8:
                   if ((gemm_config = xnn_init_qp8_f32_qc8w_gemm_config())) {
                     assumed_datatype = xnn_datatype_qpint8;

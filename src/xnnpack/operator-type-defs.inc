@@ -41,6 +41,8 @@ XNN_ENUM_ITEM(xnn_operator_type_constant_pad_nd_x32, "Constant Pad (ND, X32)")
 XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f16_qd8, "Convert (NC, F16, QD8)")
 XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f16_qdu8, "Convert (NC, F16, QDU8)")
 XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f32_qd8, "Convert (NC, F32, QD8)")
+XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f32_qd8_qc2w,
+              "Convert (NC, F32, QD8, QC2W)")
 XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f32_qdu8, "Convert (NC, F32, QDU8)")
 XNN_ENUM_ITEM(xnn_operator_type_convert_nc_f32_qp8, "Convert (NC, F32, QP8)")
 XNN_ENUM_ITEM(xnn_operator_type_convolution_nchw_f16, "Convolution (NCHW, F16)")
@@ -115,6 +117,8 @@ XNN_ENUM_ITEM(xnn_operator_type_fully_connected_nc_qd8_f16_qb4w,
               "Fully Connected (NC, QD8, F16, QB4W)")
 XNN_ENUM_ITEM(xnn_operator_type_fully_connected_nc_qd8_f16_qc4w,
               "Fully Connected (NC, QD8, F16, QC4W)")
+XNN_ENUM_ITEM(xnn_operator_type_fully_connected_nc_qd8_f32_qc2w,
+              "Fully Connected (NC, QD8, F32, QC2W)")
 XNN_ENUM_ITEM(xnn_operator_type_fully_connected_nc_qdu8_f16_qc4w,
               "Fully Connected (NC, QDU8, F16, QC4W)")
 XNN_ENUM_ITEM(xnn_operator_type_fully_connected_nc_qd8_f16_qc8w,

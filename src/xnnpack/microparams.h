@@ -161,10 +161,17 @@ union xnn_qs8_vprelu_scalar_params {
   } scalar;
 };
 
-// Conv w. Min+Max: used by quantized GEMM/IGEMM/DWCONV microkernels with MINMAX activation.
+// Conv w. Min+Max: used by quantized GEMM/IGEMM/DWCONV microkernels with
+// MINMAX activation.
 struct xnn_qd8_quantization_params {
   int32_t zero_point;
   float inv_scale;
+};
+
+struct xnn_qd8_qc2w_quantization_params {
+  int32_t zero_point;
+  float inv_scale;
+  float row_sum;
 };
 
 union xnn_qs8_conv_minmax_params {
@@ -564,6 +571,11 @@ struct xnn_qu8_lrelu_params {
 
 struct xnn_qs8_packw_params {
   int8_t input_zero_point;
+};
+
+struct xnn_qs8_qc2w_packing_params {
+  int8_t input_zero_point;
+  const float* kernel_zero_point;
 };
 
 struct xnn_qs8_qc4w_packing_params {

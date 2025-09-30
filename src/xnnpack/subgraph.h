@@ -46,6 +46,7 @@
 #define XNN_VALUE_FLAG_SHAPE_IS_STATIC 0x00001000
 #define XNN_VALUE_FLAG_IS_ZERO 0x00002000
 #define XNN_VALUE_FLAG_IS_ONE 0x00004000
+#define XNN_VALUE_FLAG_INT2_FULLY_CONNECTED 0x00008000
 
 /// Create explicit `pack-lh` nodes, instead of pack the data on the fly
 /// in a temporary buffer in the consuming op. Inline packing reduces memory
@@ -98,6 +99,8 @@ struct xnn_value_quantization {
       /// Per-channel multiplication factor to convert quantized elements to
       /// real representation.
       const float* channelwise_scale;
+      /// Per-channel offset from zero of the quantized elements.
+      const float* channelwise_zero_point;
       /// Index of the channel dimension with per-channel quantization
       /// parameters.
       size_t channel_dimension;
@@ -121,7 +124,10 @@ struct xnn_value_quantization {
       size_t num_nonbatch_dims;
       /// Per-batch quantization parameters factor to convert quantized
       /// elements to real representation.
-      struct xnn_quantization_params* dynamic_params;
+      union {
+        struct xnn_quantization_params* dynamic_params;
+        struct xnn_qc2w_quantization_params* qc2w_dynamic_params;
+      };
       /// Number of (struct xnn_quantization_params) * sizeof(struct
       /// xnn_quantization_params)
       size_t dynamic_params_size;
@@ -211,7 +217,7 @@ struct xnn_runtime_value {
   struct xnn_shape shape;
   /// Size of tensor.
   size_t size;
-  /// Per-value quantization parameters. 40 bytes.
+  /// Per-value quantization parameters. 44 bytes.
   struct xnn_value_quantization quantization;
   /// Unique ID for the value.
   uint32_t id;
@@ -622,7 +628,7 @@ XNN_INLINE static size_t xnn_tensor_get_rounded_dynamic_quant_param_size(
   // We may read out of bounds for qparams.
   return xnn_get_rounded_size(value->quantization.dynamic_params_size +
                               XNN_EXTRA_QUANTIZATION_PARAMS *
-                                  sizeof(struct xnn_quantization_params));
+                                  sizeof(struct xnn_qc2w_quantization_params));
 }
 
 // Rewrites the subgraph such that values have exactly one producer.

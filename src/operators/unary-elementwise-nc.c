@@ -867,6 +867,12 @@ enum xnn_status xnn_create_convert_nc_f32_qd8(
   return create_convert_nc_f32_qx8(flags, xnn_init_f32_to_qs8_cvt_config(), xnn_operator_type_convert_nc_f32_qd8, convert_op_out);
 }
 
+enum xnn_status xnn_create_convert_nc_f32_qd8_qc2w(
+  uint32_t flags,
+  xnn_operator_t* convert_op_out) {
+  return create_convert_nc_f32_qx8(flags, xnn_init_f32_to_qs8_cvt_config(), xnn_operator_type_convert_nc_f32_qd8_qc2w, convert_op_out);
+}
+
 enum xnn_status xnn_create_convert_nc_f32_qdu8(
   uint32_t flags,
   xnn_operator_t* convert_op_out) {
@@ -1031,10 +1037,20 @@ enum xnn_status reshape_convert_nc_f32_qx8(
     case xnn_operator_type_convert_nc_f32_qd8:
       convert_op->compute[0].task_1d_tile_1d_dynamic =
           (pthreadpool_task_1d_tile_1d_dynamic_t)xnn_compute_f32_qd8_convert;
+      convert_op->compute[1].task_1d =
+          (pthreadpool_task_1d_t) xnn_compute_pad_qd8_params;
+      break;
+    case xnn_operator_type_convert_nc_f32_qd8_qc2w:
+      convert_op->compute[0].task_1d_tile_1d_dynamic =
+          (pthreadpool_task_1d_tile_1d_dynamic_t) xnn_compute_f32_qd8_qc2w_convert;
+      convert_op->compute[1].task_1d =
+          (pthreadpool_task_1d_t) xnn_compute_pad_qd8_qc2w_params;
       break;
     case xnn_operator_type_convert_nc_f32_qdu8:
       convert_op->compute[0].task_1d_tile_1d_dynamic =
           (pthreadpool_task_1d_tile_1d_dynamic_t)xnn_compute_f32_qdu8_convert;
+      convert_op->compute[1].task_1d =
+          (pthreadpool_task_1d_t) xnn_compute_pad_qd8_params;
       break;
     default:
       XNN_UNREACHABLE;
@@ -1044,7 +1060,6 @@ enum xnn_status reshape_convert_nc_f32_qx8(
       get_tile_size(convert_op), convert_op->context.f32_qd8_convert.n);
 
   convert_op->compute[1].type = xnn_parallelization_type_1d;
-  convert_op->compute[1].task_1d = (pthreadpool_task_1d_t) xnn_compute_pad_qd8_params;
   convert_op->compute[1].range[0] = 1;
 
   convert_op->state = xnn_run_state_needs_setup;
@@ -1083,6 +1098,17 @@ enum xnn_status xnn_reshape_convert_nc_f32_qd8(
     pthreadpool_t threadpool)
 {
   return reshape_convert_nc_f32_qx8(convert_op, batch_size, channels, input_stride, output_stride, xnn_operator_type_convert_nc_f32_qd8, threadpool);
+}
+
+enum xnn_status xnn_reshape_convert_nc_f32_qd8_qc2w(
+    xnn_operator_t convert_op,
+    size_t batch_size,
+    size_t channels,
+    size_t input_stride,
+    size_t output_stride,
+    pthreadpool_t threadpool)
+{
+  return reshape_convert_nc_f32_qx8(convert_op, batch_size, channels, input_stride, output_stride, xnn_operator_type_convert_nc_f32_qd8_qc2w, threadpool);
 }
 
 enum xnn_status xnn_reshape_convert_nc_f32_qdu8(
@@ -1282,7 +1308,13 @@ enum xnn_status setup_convert_nc_f32_qx8(
 
   convert_op->context.f32_qd8_convert.x = input;
   convert_op->context.f32_qd8_convert.y = output;
-  convert_op->context.f32_qd8_convert.quantization_params = (struct xnn_qd8_quantization_params*) quantization_params;
+  if (expected_operator_type == xnn_operator_type_convert_nc_f32_qd8_qc2w) {
+    convert_op->context.f32_qd8_convert.qc2w_quantization_params =
+        (struct xnn_qd8_qc2w_quantization_params*) quantization_params;
+  } else {
+    convert_op->context.f32_qd8_convert.quantization_params =
+        (struct xnn_qd8_quantization_params*) quantization_params;
+  }
 
   convert_op->state = xnn_run_state_ready;
 
@@ -1314,6 +1346,15 @@ enum xnn_status xnn_setup_convert_nc_f32_qd8(
   struct xnn_quantization_params* quantization_params)
 {
   return setup_convert_nc_f32_qx8(convert_op, input, output, xnn_operator_type_convert_nc_f32_qd8, quantization_params);
+}
+
+enum xnn_status xnn_setup_convert_nc_f32_qd8_qc2w(
+  xnn_operator_t convert_op,
+  const float* input,
+  int8_t* output,
+  struct xnn_quantization_params* quantization_params)
+{
+  return setup_convert_nc_f32_qx8(convert_op, input, output, xnn_operator_type_convert_nc_f32_qd8_qc2w, quantization_params);
 }
 
 enum xnn_status xnn_setup_convert_nc_f32_qdu8(

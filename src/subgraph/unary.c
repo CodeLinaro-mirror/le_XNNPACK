@@ -47,9 +47,15 @@ static enum xnn_status create_convert_operator(
     case xnn_datatype_fp32:
       switch (output_datatype) {
         case xnn_datatype_qdint8:
-          status = xnn_create_convert_nc_f32_qd8(
-              node->flags,
-              &opdata->operator_objects[0]);
+          if (output_value->flags & XNN_VALUE_FLAG_INT2_FULLY_CONNECTED) {
+            status = xnn_create_convert_nc_f32_qd8_qc2w(
+                node->flags,
+                &opdata->operator_objects[0]);
+          } else {
+            status = xnn_create_convert_nc_f32_qd8(
+                node->flags,
+                &opdata->operator_objects[0]);
+          }
           break;
         case xnn_datatype_qduint8:
           status = xnn_create_convert_nc_f32_qdu8(
@@ -138,6 +144,14 @@ static enum xnn_status reshape_convert_operator(
         threadpool);
       break;
     }
+    case xnn_operator_type_convert_nc_f32_qd8_qc2w: {
+      status = xnn_reshape_convert_nc_f32_qd8_qc2w(
+        opdata->operator_objects[0],
+        dq_batch_size,
+        /*channels=*/dq_channel_stride, /*input_stride=*/dq_channel_stride,  /*output_stride=*/dq_channel_stride,
+        threadpool);
+      break;
+    }
     case xnn_operator_type_convert_nc_f32_qdu8: {
       status = xnn_reshape_convert_nc_f32_qdu8(
         opdata->operator_objects[0],
@@ -219,6 +233,16 @@ static enum xnn_status setup_convert_operator(
       void* quantization_params = output_value->quantization.dynamic_params;
       assert(quantization_params != NULL);
       return xnn_setup_convert_nc_f32_qd8(
+        opdata->operator_objects[0],
+        input_data,
+        output_data,
+        quantization_params);
+    }
+    case xnn_operator_type_convert_nc_f32_qd8_qc2w:
+    {
+      void* quantization_params = output_value->quantization.dynamic_params;
+      assert(quantization_params != NULL);
+      return xnn_setup_convert_nc_f32_qd8_qc2w(
         opdata->operator_objects[0],
         input_data,
         output_data,

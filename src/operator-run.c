@@ -466,6 +466,30 @@ void xnn_compute_dqgemm(struct gemm_context* restrict context,
   }
 }
 
+void xnn_compute_dqgemm_qc2w(struct gemm_context* restrict context,
+                             size_t nr_block_start, size_t mr_block_start,
+                             size_t nr_block_size, size_t mr_block_size) {
+  const size_t a_stride = context->a_stride;
+  const size_t cm_stride = context->cm_stride;
+
+  while (mr_block_size > 0) {
+    const size_t mr_step = min(mr_block_size, context->mr);
+
+    context->dq_qc2w_ukernel.function[XNN_UARCH_DEFAULT](
+        mr_step, nr_block_size, context->k_scaled,
+        (const void*)((uintptr_t)context->a + mr_block_start * a_stride),
+        a_stride,
+        (const void*)((uintptr_t)context->packed_w +
+                      nr_block_start * context->w_stride),
+        (void*)((uintptr_t)context->c + mr_block_start * cm_stride +
+                (nr_block_start << context->log2_csize)),
+        cm_stride, context->cn_stride, context->fused_params,
+        &context->qc2w_quantization_params[mr_block_start]);
+    mr_block_size -= mr_step;
+    mr_block_start += mr_step;
+  }
+}
+
 void xnn_compute_hmp_grouped_qp8gemm(struct gemm_context* restrict context,
                                      uint32_t uarch_index, size_t group_index,
                                      size_t nr_block_start,
@@ -683,6 +707,78 @@ XNN_INLINE static void compute_inline_packed_qp8gemm(
   }
 }
 
+XNN_INLINE static void compute_inline_packed_qp8gemm_qc2w(
+    struct gemm_context* context, uint32_t uarch_index, size_t thread_id,
+    size_t group_index_a, size_t group_index_b, size_t group_index_c,
+    size_t mr_block_start, size_t mr_block_size) {
+  assert(context->packed_lh_config != NULL);
+  assert(context->packed_lh_config->offset_fn != NULL);
+  assert(context->packed_lh_config->pack_lh_fn != NULL);
+
+  const size_t cm_stride = context->cm_stride;
+  const size_t cn_stride = context->cn_stride;
+  const size_t mr = context->mr;
+  const size_t mr_packed = context->mr_packed;
+  const size_t kr = context->kr;
+  const size_t sr = context->sr;
+  const size_t kc = context->kc;
+  const size_t nc = context->nc;
+  const uintptr_t a =
+      (uintptr_t)context->a + group_index_a * context->ga_stride;
+  const size_t a_stride = context->a_stride;
+  const void* packed_w = (const void*)((uintptr_t)context->packed_w +
+                                       group_index_b * context->gw_stride);
+  const uintptr_t c =
+      (uintptr_t)context->c + group_index_c * context->gc_stride;
+  const size_t k_scaled =
+      context->kc << context->packed_lh_config->log2_packed_element_size;
+  const uintptr_t packed_input_stride = round_up(kc, kr * sr) * sizeof(int8_t);
+
+  const bool skip_lhs_packing = context->packed_lh_config->gemv_noop && mr == 1;
+  void* workspace =
+      skip_lhs_packing
+          ? NULL
+          : (void*)((uintptr_t)context->workspace + context->workspace_offset +
+                    context->packed_lh_config->offset_fn(thread_id * mr, kc,
+                                                         mr_packed, kr, sr));
+  const void* packed_lhs = workspace;
+
+  while (mr_block_size > 0) {
+    const size_t mr_step = min(mr_block_size, mr);
+
+    // Pack the `mr_step` rows of the left-hand operand into the workspace.
+    if (skip_lhs_packing) {
+      packed_lhs = (const void*)(a + mr_block_start * a_stride);
+    } else {
+      context->packed_lh_config->pack_lh_fn(
+          /*m=*/mr_step, kc, mr_packed, kr, sr,
+          /*m_idx_start=*/0, (const void*)(a + mr_block_start * a_stride),
+          a_stride, workspace);
+    }
+
+    // Call the appropriate GEMM kernel.
+    if (context->dynamic_quantization) {
+      const struct xnn_qd8_qc2w_quantization_params* quantization_params =
+          packed_lhs;
+      const void* packed_inputs =
+          (const void*)((uintptr_t)packed_lhs +
+                        mr * sizeof(struct xnn_qd8_qc2w_quantization_params));
+      context->dq_qc2w_ukernel.function[uarch_index](
+          mr_step, nc, k_scaled, packed_inputs, packed_input_stride, packed_w,
+          (void*)(c + mr_block_start * cm_stride), cm_stride, cn_stride,
+          context->fused_params, quantization_params);
+    } else {
+      context->qp8_ukernel.function[uarch_index](
+          mr_step, nc, k_scaled, packed_lhs, packed_w,
+          (void*)(c + mr_block_start * cm_stride), cm_stride,
+          /*dst_stride_col=*/1 << context->log2_csize, context->fused_params);
+    }
+
+    mr_block_size -= mr_step;
+    mr_block_start += mr_step;
+  }
+}
+
 void xnn_compute_hmp_inline_packed_qp8gemm(struct gemm_context* context,
                                            uint32_t uarch_index,
                                            size_t thread_id,
@@ -702,6 +798,16 @@ void xnn_compute_inline_packed_qp8gemm(struct gemm_context* context,
                                 /*group_index_a=*/0, /*group_index_b=*/0,
                                 /*group_index_c=*/0, mr_block_start,
                                 mr_block_size);
+}
+
+void xnn_compute_inline_packed_qp8gemm_qc2w(struct gemm_context* context,
+                                            uint32_t thread_id,
+                                            size_t mr_block_start,
+                                            size_t mr_block_size) {
+  compute_inline_packed_qp8gemm_qc2w(context, XNN_UARCH_DEFAULT, thread_id,
+                                     /*group_index_a=*/0, /*group_index_b=*/0,
+                                     /*group_index_c=*/0, mr_block_start,
+                                     mr_block_size);
 }
 
 void xnn_compute_hmp_grouped_inline_packed_qp8gemm(
@@ -1867,10 +1973,26 @@ void xnn_compute_pad_qd8_params(
   }
 }
 
+void xnn_compute_pad_qd8_qc2w_params(
+    struct f32_qd8_convert_context* restrict context, size_t batch_index) {
+  const size_t batch_size = context->batch_size;
+  for (size_t i = 0; i < XNN_EXTRA_QUANTIZATION_PARAMS; ++i) {
+    context->qc2w_quantization_params[batch_size + i].zero_point =
+        context->qc2w_quantization_params[batch_size - 1].zero_point;
+    context->qc2w_quantization_params[batch_size + i].inv_scale =
+        context->qc2w_quantization_params[batch_size - 1].inv_scale;
+    context->qc2w_quantization_params[batch_size + i].row_sum =
+        context->qc2w_quantization_params[batch_size - 1].row_sum;
+  }
+}
+
 typedef struct xnn_qd8_quantization_params(f16_quantization_params_fn)(
     xnn_float16 min, xnn_float16 max, xnn_float16* f32_scale);
 typedef struct xnn_qd8_quantization_params(f32_quantization_params_fn)(
     float min, float max, float* f32_scale);
+typedef struct xnn_qd8_qc2w_quantization_params(
+    f32_qc2w_quantization_params_fn)(
+    float min, float max, float* f32_scale, float row_sum);
 
 void xnn_compute_f16_qx8_convert(
     struct f16_qd8_convert_context* restrict context,
@@ -1939,6 +2061,47 @@ void xnn_compute_f32_qx8_convert(
   params.scalar.output_zero_point =
       context->quantization_params[batch_index].zero_point;
   context->convert_ukernel(n, input, output, (union xnn_unary_uparams*)&params);
+}
+
+void xnn_compute_f32_qx8_qc2w_convert(
+    struct f32_qd8_convert_context* restrict context,
+    f32_qc2w_quantization_params_fn quantization_params_function,
+    size_t batch_index) {
+  const size_t x_stride = context->x_stride;
+  const size_t y_stride = context->y_stride;
+  const size_t n = context->n;
+  const void* input =
+      (const void*)((uintptr_t)context->x + x_stride * batch_index);
+  void* output = (void*)((uintptr_t)context->y + y_stride * batch_index);
+
+  float minmax[2] = {INFINITY, -INFINITY};
+  context->rminmax_ukernel(n, input, minmax, &context->params);
+  float scale;
+  context->qc2w_quantization_params[batch_index] = quantization_params_function(
+      minmax[0], minmax[1], &scale, 0.0f);
+
+  struct xnn_f32_qs8_cvt_params params;
+  params.scalar.scale = scale;
+  params.scalar.output_zero_point =
+      context->qc2w_quantization_params[batch_index].zero_point;
+  context->convert_ukernel(n, input, output, (union xnn_unary_uparams*)&params);
+
+  // Compute and store the row sum of the quantized output.
+  const size_t num_bytes = n / sizeof(float) * sizeof(int8_t);
+  for (size_t i = 0; i < num_bytes; ++i) {
+    context->qc2w_quantization_params[batch_index].row_sum +=
+        ((const int8_t*)output)[i];
+  }
+}
+
+void xnn_compute_f32_qd8_qc2w_convert(
+    struct f32_qd8_convert_context* restrict context, size_t batch_offset,
+    size_t batch_range) {
+  for (size_t batch_index = batch_offset;
+       batch_index < batch_offset + batch_range; batch_index++) {
+    xnn_compute_f32_qx8_qc2w_convert(
+        context, xnn_f32_qd8_qc2w_asymmetric_quantization_params, batch_index);
+  }
 }
 
 void xnn_compute_f32_qd8_convert(
@@ -2116,6 +2279,30 @@ void xnn_compute_hmp_dqgemm(struct gemm_context* restrict context,
                 (nr_block_start << context->log2_csize)),
         cm_stride, context->cn_stride, context->fused_params,
         &context->quantization_params[mr_block_start]);
+    mr_block_size -= mr_step;
+    mr_block_start += mr_step;
+  }
+}
+
+void xnn_compute_hmp_dqgemm_qc2w(struct gemm_context* restrict context,
+                                 uint32_t uarch_index, size_t nr_block_start,
+                                 size_t mr_block_start, size_t nr_block_size,
+                                 size_t mr_block_size) {
+  const size_t a_stride = context->a_stride;
+  const size_t cm_stride = context->cm_stride;
+
+  while (mr_block_size > 0) {
+    const size_t mr_step = min(mr_block_size, context->mr);
+    context->dq_qc2w_ukernel.function[uarch_index](
+        mr_step, nr_block_size, context->k_scaled,
+        (const void*)((uintptr_t)context->a + mr_block_start * a_stride),
+        a_stride,
+        (const void*)((uintptr_t)context->packed_w +
+                      nr_block_start * context->w_stride),
+        (void*)((uintptr_t)context->c + mr_block_start * cm_stride +
+                (nr_block_start << context->log2_csize)),
+        cm_stride, context->cn_stride, context->fused_params,
+        &context->qc2w_quantization_params[mr_block_start]);
     mr_block_size -= mr_step;
     mr_block_start += mr_step;
   }

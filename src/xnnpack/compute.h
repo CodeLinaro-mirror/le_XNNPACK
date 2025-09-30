@@ -350,10 +350,14 @@ struct gemm_context {
   union {
     struct xnn_hmp_gemm_ukernel ukernel;
     struct xnn_hmp_dqgemm_ukernel dq_ukernel;
+    struct xnn_hmp_dqgemm_qc2w_ukernel dq_qc2w_ukernel;
     struct xnn_hmp_qp8gemm_ukernel qp8_ukernel;
   };
   // Parameters for dynamically quantized inputs.
-  const struct xnn_qd8_quantization_params* quantization_params;
+  union {
+    const struct xnn_qd8_quantization_params* quantization_params;
+    const struct xnn_qd8_qc2w_quantization_params* qc2w_quantization_params;
+  };
   // Stride between each group of quantization params.
   size_t gq_stride;
   // Parameters for fused GEMM.
@@ -383,6 +387,12 @@ XNN_PRIVATE void xnn_compute_dqgemm(struct gemm_context* context,
                                     size_t mr_block_start, size_t nr_block_size,
                                     size_t mr_block_size);
 
+XNN_PRIVATE void xnn_compute_dqgemm_qc2w(struct gemm_context* context,
+                                         size_t nr_block_start,
+                                         size_t mr_block_start,
+                                         size_t nr_block_size,
+                                         size_t mr_block_size);
+
 XNN_PRIVATE void xnn_compute_gemm(struct gemm_context* context,
                                   size_t nr_block_start, size_t mr_block_start,
                                   size_t nr_block_size, size_t mr_block_size);
@@ -397,6 +407,10 @@ XNN_PRIVATE void xnn_compute_inline_packed_qp8gemm(struct gemm_context* context,
                                                    uint32_t thread_id,
                                                    size_t mr_block_start,
                                                    size_t mr_block_size);
+
+XNN_PRIVATE void xnn_compute_inline_packed_qp8gemm_qc2w(
+    struct gemm_context* context, uint32_t thread_id, size_t mr_block_start,
+    size_t mr_block_size);
 
 XNN_PRIVATE void xnn_compute_grouped_inline_packed_qp8gemm(
     struct gemm_context* context, uint32_t thread_id, size_t group_index,
@@ -422,6 +436,10 @@ XNN_PRIVATE void xnn_compute_hmp_gemm(
     size_t mr_block_start, size_t nr_block_size, size_t mr_block_size);
 
 XNN_PRIVATE void xnn_compute_hmp_dqgemm(
+    struct gemm_context* context, uint32_t uarch_index, size_t nr_block_start,
+    size_t mr_block_start, size_t nr_block_size, size_t mr_block_size);
+
+XNN_PRIVATE void xnn_compute_hmp_dqgemm_qc2w(
     struct gemm_context* context, uint32_t uarch_index, size_t nr_block_start,
     size_t mr_block_start, size_t nr_block_size, size_t mr_block_size);
 
@@ -1239,7 +1257,10 @@ struct f32_qd8_convert_context {
   int8_t* y;
   size_t y_stride;
   size_t batch_size;
-  struct xnn_qd8_quantization_params* quantization_params;
+  union {
+    struct xnn_qd8_quantization_params* quantization_params;
+    struct xnn_qd8_qc2w_quantization_params* qc2w_quantization_params;
+  };
   xnn_reduce_ukernel_fn rminmax_ukernel;
   xnn_vunary_ukernel_fn convert_ukernel;
   xnn_init_unary_uparams_fn init_params;
@@ -1256,6 +1277,10 @@ XNN_PRIVATE void xnn_compute_f16_qdu8_convert(
     struct f16_qd8_convert_context* context, size_t batch_offset,
     size_t batch_range);
 
+XNN_PRIVATE void xnn_compute_f32_qd8_qc2w_convert(
+    struct f32_qd8_convert_context* context, size_t batch_offset,
+    size_t batch_range);
+
 XNN_PRIVATE void xnn_compute_f32_qd8_convert(
     struct f32_qd8_convert_context* context, size_t batch_offset,
     size_t batch_range);
@@ -1265,6 +1290,9 @@ XNN_PRIVATE void xnn_compute_f32_qdu8_convert(
     size_t batch_range);
 
 XNN_PRIVATE void xnn_compute_pad_qd8_params(
+    struct f32_qd8_convert_context* context, size_t batch_index);
+
+XNN_PRIVATE void xnn_compute_pad_qd8_qc2w_params(
     struct f32_qd8_convert_context* context, size_t batch_index);
 
 struct pack_lh_context {

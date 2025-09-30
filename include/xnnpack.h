@@ -128,6 +128,12 @@ struct xnn_quantization_params {
   float scale;
 };
 
+struct xnn_qc2w_quantization_params {
+  int32_t zero_point;
+  float scale;
+  float row_sum;
+};
+
 /// Status code for any XNNPACK function call.
 enum xnn_status {
   /// The call succeeded, and all output arguments now contain valid data.
@@ -306,6 +312,9 @@ enum xnn_datatype {
   /// Packed quantized 8-bit unsigned integer with shared per-Value quantization
   /// parameters.
   xnn_datatype_pqint8 = 17,
+  /// Quantized 2-bit signed integer with shared per-channel quantization
+  /// parameters, but packed into 8-bit integers.
+  xnn_datatype_qcint2 = 18,
 };
 
 /// Define a tensor-type Value and add it to a Subgraph.
@@ -436,6 +445,21 @@ enum xnn_status xnn_validate_channelwise_quantized_tensor(
 ///                and XNN_VALUE_FLAG_EXTERNAL_OUTPUT.
 /// @param id_out - pointer to the variable that will be initialized with the Value ID upon successful return. If a
 ///                 valid @a external_id was provided, the variable will be initialized with the @a external_id value.
+/// @param channelwise_zero_point - per-channel offset from zero to subtract from the quantized elements in the Value.
+enum xnn_status xnn_define_channelwise_quantized_tensor_value_v3(
+  xnn_subgraph_t subgraph,
+  enum xnn_datatype datatype,
+  int32_t zero_point,
+  const float* scale,
+  size_t num_dims,
+  size_t channel_dim,
+  const size_t* dims,
+  const void* data,
+  uint32_t external_id,
+  uint32_t flags,
+  uint32_t* id_out,
+  const float* channelwise_zero_point);
+
 enum xnn_status xnn_define_channelwise_quantized_tensor_value_v2(
   xnn_subgraph_t subgraph,
   enum xnn_datatype datatype,
@@ -2924,7 +2948,19 @@ enum xnn_status xnn_create_convert_nc_f32_qd8(
   uint32_t flags,
   xnn_operator_t* convert_op_out);
 
+enum xnn_status xnn_create_convert_nc_f32_qd8_qc2w(
+  uint32_t flags,
+  xnn_operator_t* convert_op_out);
+
 enum xnn_status xnn_reshape_convert_nc_f32_qd8(
+  xnn_operator_t convert_op,
+  size_t batch_size,
+  size_t channels,
+  size_t input_stride,
+  size_t output_stride,
+  pthreadpool_t threadpool);
+
+enum xnn_status xnn_reshape_convert_nc_f32_qd8_qc2w(
   xnn_operator_t convert_op,
   size_t batch_size,
   size_t channels,
@@ -2934,6 +2970,12 @@ enum xnn_status xnn_reshape_convert_nc_f32_qd8(
 
 // quantization_params must be padded with at least XNN_EXTRA_QUANTIZATION_PARAMS entries.
 enum xnn_status xnn_setup_convert_nc_f32_qd8(
+  xnn_operator_t convert_op,
+  const float* input,
+  int8_t* output,
+  struct xnn_quantization_params* quantization_params);
+
+enum xnn_status xnn_setup_convert_nc_f32_qd8_qc2w(
   xnn_operator_t convert_op,
   const float* input,
   int8_t* output,
@@ -4004,6 +4046,21 @@ enum xnn_status xnn_reshape_fully_connected_nc_qd8_f16_qc4w(
   size_t* workspace_size,
   pthreadpool_t threadpool);
 
+enum xnn_status xnn_create_fully_connected_nc_qd8_f32_qc2w(
+  size_t input_channels,
+  size_t output_channels,
+  size_t input_stride,
+  size_t output_stride,
+  const float* kernel_zero_point,
+  const float* kernel_scale,
+  const void* kernel,
+  const float* bias,
+  float output_min,
+  float output_max,
+  uint32_t flags,
+  xnn_weights_cache_t weights_cache,
+  xnn_operator_t* fully_connected_op_out);
+
 enum xnn_status xnn_create_fully_connected_nc_qd8_f16_qb4w(
     size_t input_channels,
     size_t output_channels,
@@ -4064,6 +4121,13 @@ enum xnn_status xnn_create_fully_connected_nc_qd8_f32_qc4w(
   xnn_weights_cache_t weights_cache,
   xnn_operator_t* fully_connected_op_out);
 
+enum xnn_status xnn_setup_fully_connected_nc_qd8_f32_qc2w(
+  xnn_operator_t fully_connected_op,
+  const int8_t* input,
+  float* output,
+  void* workspace,
+  const struct xnn_qc2w_quantization_params* quantization_params);
+
 enum xnn_status xnn_setup_fully_connected_nc_qd8_f32_qc4w(
   xnn_operator_t fully_connected_op,
   const int8_t* input,
@@ -4092,6 +4156,12 @@ enum xnn_status xnn_create_fully_connected_nc_qd8_f32_qb4w(
   uint32_t flags,
   xnn_weights_cache_t weights_cache,
   xnn_operator_t* fully_connected_op_out);
+
+enum xnn_status xnn_reshape_fully_connected_nc_qd8_f32_qc2w(
+  xnn_operator_t fully_connected_op,
+  size_t batch_size,
+  size_t* workspace,
+  pthreadpool_t threadpool);
 
 enum xnn_status xnn_reshape_fully_connected_nc_qd8_f32_qb4w(
   xnn_operator_t fully_connected_op,

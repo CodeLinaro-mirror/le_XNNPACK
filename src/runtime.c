@@ -270,10 +270,9 @@ static enum xnn_status initialize_workspace_values(
         (void*) ((uintptr_t) runtime->workspace->data + mem_alloc_tracker->usage[i].alloc_offset);
       if (value->datatype == xnn_datatype_qdint8 ||
           value->datatype == xnn_datatype_qduint8) {
-        value->quantization.dynamic_params =
+        value->quantization.qc2w_dynamic_params =
           (void*) ((uintptr_t) runtime->workspace->data + mem_alloc_tracker->usage[i].alloc_offset
                    + xnn_tensor_get_rounded_size(value));
-
       }
     }
   }
@@ -310,7 +309,9 @@ static enum xnn_status initialize_workspace_values(
             value->data = (void*) ((uintptr_t) value->data + workspace_data_delta);
             if (value->datatype == xnn_datatype_qdint8 ||
                 value->datatype == xnn_datatype_qduint8) {
-              value->quantization.dynamic_params = (void*) ((uintptr_t) value->quantization.dynamic_params
+              // qc2w_dynamic_params is a bigger member of the union with dynamic_params,
+              // setting it will also set dynamic_params.
+              value->quantization.qc2w_dynamic_params = (void*) ((uintptr_t) value->quantization.qc2w_dynamic_params
                                                             + workspace_data_delta);
             }
           }

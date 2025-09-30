@@ -88,6 +88,8 @@ xnn_init_f16_qduint8_pack_lh_config();
 XNN_INTERNAL const struct xnn_pack_lh_config*
 xnn_init_f32_qdint8_pack_lh_config();
 XNN_INTERNAL const struct xnn_pack_lh_config*
+xnn_init_f32_qdint8_qc2w_pack_lh_config();
+XNN_INTERNAL const struct xnn_pack_lh_config*
 xnn_init_f32_qduint8_pack_lh_config();
 
 #ifdef __cplusplus
