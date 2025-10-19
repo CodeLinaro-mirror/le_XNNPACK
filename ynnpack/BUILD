@@ -76,6 +76,24 @@ selects.config_setting_group(
     ],
 )
 
+config_setting(
+    name = "windows_x86_msvc",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "msvc"},
+    visibility = ["//:__subpackages__"],
+)
+
+config_setting(
+    name = "windows_x86_clangcl",
+    constraint_values = [
+        "@platforms//os:windows",
+    ],
+    flag_values = {"@bazel_tools//tools/cpp:compiler": "clangcl"},
+    visibility = ["//:__subpackages__"],
+)
+
 define_build_option(
     name = "ynn_enable_arm_neon",
     default_all = [":arm"],
