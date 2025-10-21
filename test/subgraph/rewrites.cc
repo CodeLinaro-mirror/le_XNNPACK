@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <numeric>
 #include <random>
 #include <tuple>
@@ -20,6 +21,7 @@
 #include "include/xnnpack.h"
 #include "src/xnnpack/buffer.h"
 #include "src/xnnpack/datatype.h"
+#include "src/xnnpack/node-type.h"
 #include "src/xnnpack/subgraph.h"
 #include "test/replicable_random_device.h"
 #include "test/subgraph/runtime-flags.h"
@@ -52,8 +54,12 @@ static std::tuple<Tensor<T>, uint32_t> add_static_tensor(
     ReplicableRandomDevice& rng, SubgraphTester& subgraph,
     const TensorShape shape, double min = 0.0, double max = 1.0) {
   Tensor<T> static_tensor(shape.dims, xnnpack::XnnExtraBytes);
-  DatatypeGenerator<T> generator(min, max);
-  static_tensor.generate([&]() { return generator(rng); });
+  if (min < max) {
+    DatatypeGenerator<T> generator(min, max);
+    static_tensor.generate([&]() { return generator(rng); });
+  } else {
+    std::fill(static_tensor.begin(), static_tensor.end(), static_cast<T>(min));
+  }
   uint32_t static_value_id = XNN_INVALID_VALUE_ID;
   subgraph.AddInternalStaticTensor(shape, xnn_datatype_of<T>(),
                                    &static_value_id, static_tensor.base(),
@@ -88,7 +94,9 @@ std::pair<T, T> random_swap(ReplicableRandomDevice& rng, T a, U b) {
 }  // namespace
 
 template <typename F>
-void RewriteTestImpl(size_t rank, F populate, int expected_size_diff) {
+void RewriteTestImpl(
+    size_t rank, F populate, int expected_size_diff,
+    const std::map<enum xnn_node_type, int> expected_node_type_counts = {}) {
   ReplicableRandomDevice rng;
   std::uniform_int_distribution<size_t> dim_dist(1, 9);
 
@@ -98,7 +106,7 @@ void RewriteTestImpl(size_t rank, F populate, int expected_size_diff) {
     std::vector<size_t> input_shape = random_shape(rng, rank);
 
     // Create the subgraph inputs.
-    DatatypeGenerator<float> generator;
+    DatatypeGenerator<float> generator(-1, 1);
     Tensor<float> input(input_shape, xnnpack::XnnExtraBytes);
     input.generate([&]() { return generator(rng); });
 
@@ -134,6 +142,19 @@ void RewriteTestImpl(size_t rank, F populate, int expected_size_diff) {
     subgraph.ReshapeExternalTensor(input_shape, input.base(), input_id)
         .ReshapeRuntime();
     ASSERT_EQ(subgraph.Status(), xnn_status_success);
+
+    // Check the node type counts in the rewritten subgraph.
+    for (const auto& entry : expected_node_type_counts) {
+      const auto& node_type = entry.first;
+      const auto& expected_count = entry.second;
+      size_t count = 0;
+      for (int k = 0; k < subgraph.NumNodes(); k++) {
+        count += (subgraph.Node(k)->type == node_type);
+      }
+      ASSERT_EQ(count, expected_count)
+          << "Unexpected number of " << xnn_node_type_to_string(node_type)
+          << " nodes (expected " << expected_count << ", got " << count << ").";
+    }
 
     // Run subgraph without rewrites.
     Tensor<float> output(subgraph.GetExternalTensorShape(output_id));
@@ -537,9 +558,328 @@ TEST_P(RewriteClampsTest, DoesNotRewriteSharedSequenceOfClamps) {
       /*expected_size_diff=*/0);
 }
 
+class RewriteArithmeticTest : public ::testing::TestWithParam<int> {};
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpMul) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_one_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `1.0`.
+        uint32_t static_one_value_id;
+        std::tie(static_one_tensor, static_one_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 1.0, 1.0);
+
+        // Add the binary `multiply` op with the constant 1.0.
+        auto inputs = random_swap(rng, static_one_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_multiply, /*params=*/nullptr,
+                           inputs.first, inputs.second, output_id);
+      },
+      /*expected_size_diff=*/0,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1}, {xnn_node_type_binary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpDiv) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_one_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `1.0`.
+        uint32_t static_one_value_id;
+        std::tie(static_one_tensor, static_one_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 1.0, 1.0);
+
+        // Add the binary `divide` op with the constant 1.0.
+        subgraph.AddBinary(xnn_binary_multiply, /*params=*/nullptr, input_id,
+                           static_one_value_id, output_id);
+      },
+      /*expected_size_diff=*/0,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1}, {xnn_node_type_binary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpAdd) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_zero_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `0.0`.
+        uint32_t static_zero_value_id;
+        std::tie(static_zero_tensor, static_zero_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 0.0, 0.0);
+
+        // Add the binary `add` op with the constant 0.0.
+        auto inputs = random_swap(rng, static_zero_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_add, /*params=*/nullptr, inputs.first,
+                           inputs.second, output_id);
+      },
+      /*expected_size_diff=*/0,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1}, {xnn_node_type_binary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpSub) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_zero_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `0.0`.
+        uint32_t static_zero_value_id;
+        std::tie(static_zero_tensor, static_zero_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 0.0, 0.0);
+
+        // Add the binary `sub` op with the constant 0.0.
+        subgraph.AddBinary(xnn_binary_subtract, /*params=*/nullptr, input_id,
+                           static_zero_value_id, output_id);
+      },
+      /*expected_size_diff=*/0,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1}, {xnn_node_type_binary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, RewritesZeroMinusXToNegX) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_zero_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `0.0`.
+        uint32_t static_zero_value_id;
+        std::tie(static_zero_tensor, static_zero_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 0.0, 0.0);
+
+        // Add the binary `sub` op with the constant 0.0.
+        subgraph.AddBinary(xnn_binary_subtract, /*params=*/nullptr,
+                           static_zero_value_id, input_id, output_id);
+      },
+      /*expected_size_diff=*/0,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_binary_elementwise, 0},
+       {xnn_node_type_unary_elementwise, 1}});
+}
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpChainOfMulZeroAdd) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_zero_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `0.0`.
+        uint32_t static_zero_value_id;
+        std::tie(static_zero_tensor, static_zero_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 0.0, 0.0);
+
+        // Add the binary `multiply` op with the constant 0.0.
+        uint32_t dynamic_zero_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        auto inputs = random_swap(rng, static_zero_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_multiply, /*params=*/nullptr,
+                           inputs.first, inputs.second, dynamic_zero_value_id);
+
+        // Add the binary `add` op with the input and the dynamic zero value.
+        inputs = random_swap(rng, dynamic_zero_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_add, /*params=*/nullptr, inputs.first,
+                           inputs.second, output_id);
+      },
+      /*expected_size_diff=*/-1,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1}, {xnn_node_type_binary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, ElidesNoOpChainOfDivOneMul) {
+  // Keep static and external tensor data in this scope so that it lives for the
+  // duration of the test.
+  Tensor<float> static_one_tensor;
+
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        // Add a scalar static tensor with the value `1.0`.
+        uint32_t static_one_value_id;
+        std::tie(static_one_tensor, static_one_value_id) =
+            add_static_tensor<float>(rng, subgraph, /*shape=*/{1}, 1.0, 1.0);
+
+        // Add the static `1.0` to the absolute value of the inputs to make sure
+        // they are non-negative
+        uint32_t abs_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        uint32_t shifted_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_abs, /*params=*/nullptr, input_id,
+                          abs_value_id);
+        auto inputs = random_swap(rng, abs_value_id, static_one_value_id);
+        subgraph.AddAddition(inputs.first, inputs.second, shifted_value_id);
+
+        // Add the binary `div(x, x)` op.
+        uint32_t dynamic_one_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddBinary(xnn_binary_divide, /*params=*/nullptr,
+                           shifted_value_id, shifted_value_id,
+                           dynamic_one_value_id);
+
+        // Add the binary `mul` op with the input and the dynamic one value.
+        inputs = random_swap(rng, dynamic_one_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_multiply, /*params=*/nullptr,
+                           inputs.first, inputs.second, output_id);
+      },
+      /*expected_size_diff=*/-3,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_copy, 1},
+       {xnn_node_type_binary_elementwise, 0},
+       {xnn_node_type_unary_elementwise, 0}});
+}
+
+TEST_P(RewriteArithmeticTest, RewritesAddOfNegValue) {
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        uint32_t exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_exp, /*params=*/nullptr, input_id,
+                          exp_value_id);
+
+        uint32_t neg_exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, exp_value_id,
+                          neg_exp_value_id);
+
+        // Add the negated value to the original input.
+        auto inputs = random_swap(rng, neg_exp_value_id, input_id);
+        subgraph.AddBinary(xnn_binary_add, /*params=*/nullptr, inputs.first,
+                           inputs.second, output_id);
+      },
+      /*expected_size_diff=*/-1,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_binary_elementwise, 1},
+       {xnn_node_type_unary_elementwise, 1}});
+}
+
+TEST_P(RewriteArithmeticTest, RewritesSubOfNegValue) {
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        uint32_t exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_exp, /*params=*/nullptr, input_id,
+                          exp_value_id);
+
+        uint32_t neg_exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, exp_value_id,
+                          neg_exp_value_id);
+
+        // Subgract the negated value from the original input.
+        subgraph.AddBinary(xnn_binary_subtract, /*params=*/nullptr,
+                           input_id, neg_exp_value_id, output_id);
+      },
+      /*expected_size_diff=*/-1,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_binary_elementwise, 1},
+       {xnn_node_type_unary_elementwise, 1}});
+}
+
+TEST_P(RewriteArithmeticTest, RewritesMulOfNegValue) {
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        uint32_t exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_exp, /*params=*/nullptr, input_id,
+                          exp_value_id);
+
+        uint32_t neg_exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, exp_value_id,
+                          neg_exp_value_id);
+
+        uint32_t neg_input_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, input_id,
+                          neg_input_value_id);
+
+        // Multiply the two negated values.
+        auto inputs = random_swap(rng, neg_exp_value_id, neg_input_value_id);
+        subgraph.AddBinary(xnn_binary_multiply, /*params=*/nullptr,
+                           inputs.first, inputs.second, output_id);
+      },
+      /*expected_size_diff=*/-2,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_binary_elementwise, 1},
+       {xnn_node_type_unary_elementwise, 1}});
+}
+
+TEST_P(RewriteArithmeticTest, RewritesDivOfNegValue) {
+  RewriteTestImpl(
+      GetParam(),
+      [&](ReplicableRandomDevice& rng, SubgraphTester& subgraph) {
+        const TensorShape input_shape(&subgraph.Value(input_id)->shape);
+
+        uint32_t exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_exp, /*params=*/nullptr, input_id,
+                          exp_value_id);
+
+        uint32_t neg_exp_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, exp_value_id,
+                          neg_exp_value_id);
+
+        uint32_t neg_input_value_id =
+            add_internal_dynamic_tensor<float>(subgraph, input_shape);
+        subgraph.AddUnary(xnn_unary_negate, /*params=*/nullptr, input_id,
+                          neg_input_value_id);
+
+        // Divide the two negated values.
+        subgraph.AddBinary(xnn_binary_divide, /*params=*/nullptr,
+                           neg_input_value_id, neg_exp_value_id, output_id);
+      },
+      /*expected_size_diff=*/-2,
+      /*expected_node_type_counts=*/
+      {{xnn_node_type_binary_elementwise, 1},
+       {xnn_node_type_unary_elementwise, 1}});
+}
+
 INSTANTIATE_TEST_SUITE_P(Rewrite, RewriteShapesTest,
                          testing::Range(0, XNN_MAX_TENSOR_DIMS));
-INSTANTIATE_TEST_SUITE_P(Rewrite, RewriteClampsTest,
-                         testing::Range(0, XNN_MAX_TENSOR_DIMS));
+INSTANTIATE_TEST_SUITE_P(Rewrite, RewriteClampsTest, testing::Values(0, 1, 3));
+INSTANTIATE_TEST_SUITE_P(Rewrite, RewriteArithmeticTest,
+                         testing::Values(0, 1, 3));
 
 }  // namespace xnnpack
