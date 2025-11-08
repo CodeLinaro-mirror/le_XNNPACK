@@ -11,10 +11,12 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <optional>
 #include <string>
 
 #include <gtest/gtest.h>
 #include "src/xnnpack/common.h"
+#include "src/xnnpack/log.h"
 
 namespace xnnpack {
 
@@ -89,7 +91,16 @@ class ReplicableRandomDevice {
         scoped_trace_(__FILE__, __LINE__,
                       "To replicate this failure, re-run the test with "
                       "`--gtest_random_seed=" +
-                          std::to_string(random_seed_) + "`.") {}
+                          std::to_string(random_seed_) + "`.") {
+    static std::optional<int> last_seed;
+    if (last_seed != random_seed_) {
+      xnn_log_info(
+          "Creating a random device for testing, to replicate it re-run the "
+          "test with  `--gtest_random_seed=%d`.\n",
+          random_seed_);
+      last_seed = random_seed_;
+    }
+  }
 
   // Wrapped methods from `BaseRandomDevice`.
   result_type operator()() { return random_generator_(); }
