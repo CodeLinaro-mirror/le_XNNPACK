@@ -103,7 +103,13 @@ struct sum_accumulator_x32 {
   template <typename AT, typename NT, typename KT>
   YNN_ALWAYS_INLINE void reduce(const AT* A, size_t A_stride_n,
                                 NT n, KT k) {
-    const simd::vec<AT, K> zero(0);
+    using ZeroT =
+        std::conditional_t<std::is_same_v<AT, typename AccT::value_type> &&
+                               (AccT::N == K),
+                           AccT, simd::vec<AT, K>>;
+
+    const ZeroT zero(0);
+
     auto a_0 = load(offset_bytes(A, 0 * A_stride_n), zero, k);
     auto a_1 = 1 < n ? load(offset_bytes(A, 1 * A_stride_n), zero, k) : zero;
     auto a_2 = 2 < n ? load(offset_bytes(A, 2 * A_stride_n), zero, k) : zero;
@@ -120,7 +126,6 @@ struct sum_accumulator_x32 {
                                     NT n) {
     static_assert(N == 4);
     using OutAccT = simd::vec<T, N>;
-
     store(C, load(C, OutAccT{}, n) + sum_rows<AccT>(acc, AccT::N), n);
   }
 };
