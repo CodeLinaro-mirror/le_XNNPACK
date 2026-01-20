@@ -103,6 +103,16 @@ cc_test(
 )
 
 cc_test(
+    name = "unary_fallback",
+    srcs = ["unary_fallback.cc"],
+    linkopts = ynn_binary_linkopts(),
+    malloc = ynn_binary_malloc(),
+    deps = TEST_DEPS + [
+        "//ynnpack/kernels/unary:reference",
+    ],
+)
+
+cc_test(
     name = "dot",
     srcs = ["dot.cc"],
     linkopts = ynn_binary_linkopts(),
@@ -123,6 +133,14 @@ cc_test(
     malloc = ynn_binary_malloc(),
     deps = TEST_DEPS + [
         "//ynnpack/kernels/ternary",
+        "//ynnpack/subgraph",
+    ],
+)
+
+cc_test(
+    name = "fusion_lut",
+    srcs = ["fusion_lut.cc"],
+    deps = TEST_DEPS + [
         "//ynnpack/subgraph",
     ],
 )
@@ -162,3 +180,11 @@ cc_test(
     "static_pad",
     "stencil_copy",
 ]]
+
+cc_test(
+    name = "utils",
+    srcs = ["utils.cc"],
+    linkopts = ynn_binary_linkopts(),
+    malloc = ynn_binary_malloc(),
+    deps = TEST_DEPS + ["//ynnpack/subgraph"],
+)
