@@ -603,6 +603,7 @@ jobs:
       BAZEL_DEFINES: |
         --define=ynn_enable_arm64_sme=false
         --define=ynn_enable_arm_neonbf16=false
+        --define=ynn_enable_arm64_sve=false
     steps:
       - uses: actions/checkout@v6
       - name: Mount Bazel Cache
