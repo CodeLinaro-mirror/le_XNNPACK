@@ -60,9 +60,40 @@ bool rewrite_multiply_add(ynn_subgraph& subgraph, ynn_node& node,
           ynn::ternary_op::multiply_add, a.type, b.type, c.type, x.type);
       if (kernel != nullptr) {
         // Yes we do. Rewrite this to a multiply-add.
-        YNN_LOG_DEBUG() << "Rewriting convert to ternary multiply_add";
+        YNN_LOG_DEBUG() << "Rewriting multiply and add to ternary multiply_add";
         ynn::define_ternary(subgraph, node, a.id, b.id, c.id, x.id,
                             ynn::ternary_op::multiply_add, kernel);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Rewrite multiply(multiply(a, b), c) to ternary multiply.
+bool rewrite_multiply_multiply(ynn_subgraph& subgraph, ynn_node& node,
+                               subgraph_analysis& analysis) {
+  if (!is_binary_node(node, ynn_binary_multiply)) {
+    return false;
+  }
+
+  for (int i : {0, 1}) {
+    ynn_node* producer = analysis.producer_of(node.inputs[i]);
+    if (producer && is_binary_node(*producer, ynn_binary_multiply) &&
+        analysis.consumers[producer->outputs[0]].size() == 1) {
+      // This is a multiply of a multiply. Do we have a kernel for this case?
+      const ynn_value& a = subgraph.value(node.inputs[1 - i]);
+      const ynn_value& b = subgraph.value(producer->inputs[0]);
+      const ynn_value& c = subgraph.value(producer->inputs[1]);
+      const ynn_value& x = subgraph.value(node.outputs[0]);
+      const ynn::ternary_kernel_fn kernel = ynn::get_ternary_kernel(
+          ynn::ternary_op::multiply, a.type, b.type, c.type, x.type);
+      if (kernel != nullptr) {
+        // Yes we do. Rewrite this to a multiply-add.
+        YNN_LOG_DEBUG() <<
+            "Rewriting multiply and multiply to ternary multiply";
+        ynn::define_ternary(subgraph, node, a.id, b.id, c.id, x.id,
+                            ynn::ternary_op::multiply, kernel);
         return true;
       }
     }
@@ -105,61 +136,6 @@ bool rewrite_subtract_multiply(ynn_subgraph& subgraph, ynn_node& node,
                           ynn::ternary_op::subtract_multiply, kernel);
       return true;
     }
-  }
-  return false;
-}
-
-// Rewrite x = convert(a) where a is an int32 with a scale and no zero point to
-// a binary (or ternary, if the scale is itself a multiply) multiply.
-bool rewrite_convert_to_multiply(ynn_subgraph& subgraph, ynn_node& node,
-                                 subgraph_analysis& analysis) {
-  const ynn_node::unary_elementwise* unary =
-      std::get_if<ynn_node::unary_elementwise>(&node.op);
-  if (unary == nullptr || unary->op != ynn_unary_convert) {
-    return false;
-  }
-
-  // The input should have a scale and no zero point.
-  const ynn_value& input = subgraph.value(node.inputs[0]);
-  if (input.scale_id == YNN_INVALID_VALUE_ID ||
-      input.zero_point_id != YNN_INVALID_VALUE_ID) {
-    return false;
-  }
-
-  // The output should not have a scale or zero point.
-  const ynn_value& output = subgraph.value(node.outputs[0]);
-  if (output.scale_id != YNN_INVALID_VALUE_ID ||
-      output.zero_point_id != YNN_INVALID_VALUE_ID) {
-    return false;
-  }
-
-  ynn_node* producer = analysis.producer_of(input.scale_id);
-  if (producer && is_binary_node(*producer, ynn_binary_multiply)) {
-    uint32_t scale_a_id = producer->inputs[0];
-    uint32_t scale_b_id = producer->inputs[1];
-
-    const ynn::ternary_kernel_fn kernel = ynn::get_ternary_kernel(
-        ynn::ternary_op::multiply, input.type, subgraph.value(scale_a_id).type,
-        subgraph.value(scale_b_id).type, output.type);
-    if (kernel != nullptr) {
-      // This is a ternary integer*float*float multiply, and we have a kernel
-      // that matches the types we have.
-      YNN_LOG_DEBUG() << "Rewriting convert to ternary multiply";
-      ynn::define_ternary(subgraph, node, node.inputs[0], scale_a_id,
-                          scale_b_id, node.outputs[0],
-                          ynn::ternary_op::multiply, kernel);
-      return true;
-    }
-  }
-  const ynn::binary_kernel* kernel =
-      ynn::get_binary_kernel(ynn_binary_multiply, input.type,
-                             subgraph.value(input.scale_id).type, output.type);
-  if (kernel != nullptr) {
-    // This is a binary integer*float multiply, and we have a kernel that
-    // matches the types we have.
-    YNN_LOG_DEBUG() << "Rewriting convert to binary multiply";
-    ynn::define_binary(subgraph, node, node.inputs[0], input.scale_id,
-                       node.outputs[0], ynn_binary_multiply, kernel->op);
   }
   return false;
 }
@@ -557,8 +533,8 @@ ynn_status ynn_subgraph::fusion() {
 
       changed =
           changed || ynn::rewrite_multiply_add(*this, node, analysis) ||
+          ynn::rewrite_multiply_multiply(*this, node, analysis) ||
           ynn::rewrite_subtract_multiply(*this, node, analysis) ||
-          ynn::rewrite_convert_to_multiply(*this, node, analysis) ||
           ynn::rewrite_clamp(*this, node, analysis) ||
           ynn::remove_broadcast(*this, node, analysis) ||
           ynn::rewrite_transpose_stencil_copy(*this, node, analysis) ||

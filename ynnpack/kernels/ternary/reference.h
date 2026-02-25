@@ -88,6 +88,16 @@ struct quantize_uint8 {
   }
 };
 
+struct dequantize {
+  float operator()(float a, float zero_point, float scale) const {
+    return (a - zero_point) * scale;
+  }
+
+  float tolerance(float a, float b, float c, ynn_type type) const {
+    return epsilon(type);
+  }
+};
+
 // Check that `op(a, b, c)` == x, within tolerances described by `op`.
 template <typename A, typename B, typename C, typename X, typename OpInfo>
 void check_results(const OpInfo& op, const Tensor<A>& a, const Tensor<B>& b,

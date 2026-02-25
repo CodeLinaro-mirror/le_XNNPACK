@@ -49,6 +49,26 @@ void quantize(size_t m, size_t n, size_t stride_a_m, size_t stride_a_n,
   }
 }
 
+template <typename A, typename X>
+void dequantize(size_t m, size_t n, size_t stride_a_m, size_t stride_a_n,
+                const A* a, size_t stride_b_m, size_t stride_b_n,
+                const int32_t* b, size_t stride_c_m, size_t stride_c_n,
+                const float* c, size_t stride_x_m, X* x,
+                const ternary_params* params) {
+  for (size_t i = 0; i < m; ++i) {
+    for (size_t j = 0; j < n; ++j) {
+      const A a_j = *offset_bytes(a, j * stride_a_n);
+      const int32_t b_j = *offset_bytes(b, j * stride_b_n);
+      const float c_j = *offset_bytes(c, j * stride_c_n);
+      x[j] = (a_j - b_j) * c_j;
+    }
+    a = offset_bytes(a, stride_a_m);
+    b = offset_bytes(b, stride_b_m);
+    c = offset_bytes(c, stride_c_m);
+    x = offset_bytes(x, stride_x_m);
+  }
+}
+
 }  // namespace
 
 void quantize_fp32_to_int8(size_t m, size_t n, size_t stride_a_m,
@@ -71,6 +91,45 @@ void quantize_fp32_to_uint8(size_t m, size_t n, size_t stride_a_m,
            stride_b_m, stride_b_n, reinterpret_cast<const float*>(b),
            stride_c_m, stride_c_n, reinterpret_cast<const int32_t*>(c),
            stride_x_m, reinterpret_cast<uint8_t*>(x), params);
+}
+
+void dequantize_int8_to_fp32(size_t m, size_t n, size_t stride_a_m,
+                             size_t stride_a_n, const void* a,
+                             size_t stride_b_m, size_t stride_b_n,
+                             const void* b, size_t stride_c_m,
+                             size_t stride_c_n, const void* c,
+                             size_t stride_x_m, void* x,
+                             const ternary_params* params) {
+  dequantize(m, n, stride_a_m, stride_a_n, reinterpret_cast<const int8_t*>(a),
+             stride_b_m, stride_b_n, reinterpret_cast<const int32_t*>(b),
+             stride_c_m, stride_c_n, reinterpret_cast<const float*>(c),
+             stride_x_m, reinterpret_cast<float*>(x), params);
+}
+
+void dequantize_uint8_to_fp32(size_t m, size_t n, size_t stride_a_m,
+                              size_t stride_a_n, const void* a,
+                              size_t stride_b_m, size_t stride_b_n,
+                              const void* b, size_t stride_c_m,
+                              size_t stride_c_n, const void* c,
+                              size_t stride_x_m, void* x,
+                              const ternary_params* params) {
+  dequantize(m, n, stride_a_m, stride_a_n, reinterpret_cast<const uint8_t*>(a),
+             stride_b_m, stride_b_n, reinterpret_cast<const int32_t*>(b),
+             stride_c_m, stride_c_n, reinterpret_cast<const float*>(c),
+             stride_x_m, reinterpret_cast<float*>(x), params);
+}
+
+void dequantize_int32_to_fp32(size_t m, size_t n, size_t stride_a_m,
+                              size_t stride_a_n, const void* a,
+                              size_t stride_b_m, size_t stride_b_n,
+                              const void* b, size_t stride_c_m,
+                              size_t stride_c_n, const void* c,
+                              size_t stride_x_m, void* x,
+                              const ternary_params* params) {
+  dequantize(m, n, stride_a_m, stride_a_n, reinterpret_cast<const int32_t*>(a),
+             stride_b_m, stride_b_n, reinterpret_cast<const int32_t*>(b),
+             stride_c_m, stride_c_n, reinterpret_cast<const float*>(c),
+             stride_x_m, reinterpret_cast<float*>(x), params);
 }
 
 ternary_kernel_fn get_ternary_kernel(ternary_op op, ynn_type type_a,
@@ -103,6 +162,8 @@ const char* to_string(ternary_op op) {
       return "quantize_int8";
     case ternary_op::quantize_uint8:
       return "quantize_uint8";
+    case ternary_op::dequantize:
+      return "dequantize";
   }
   YNN_UNREACHABLE;
   return "unknown";

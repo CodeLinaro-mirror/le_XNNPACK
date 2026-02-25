@@ -170,24 +170,24 @@ const std::vector<Shape> all_shapes = []() {
                                                                                \
   TEST_P(OpsTest_##kernel, op) {                                               \
     const KernelInfo kernel_info(arch_flags, kernel, init_params_fn);          \
-    const op op_info;                                                          \
+    const struct op op_info;                                                   \
     TestOp<type_a, type_b, type_c, type_x>(kernel_info, op_info, GetParam());  \
   }                                                                            \
   TEST_P(OpsTest_##kernel, op_broadcast_a) {                                   \
     const KernelInfo kernel_info(arch_flags, kernel, init_params_fn);          \
-    const op op_info;                                                          \
+    const struct op op_info;                                                   \
     TestOpBroadcastA<type_a, type_b, type_c, type_x>(kernel_info, op_info,     \
                                                      GetParam());              \
   }                                                                            \
   TEST_P(OpsTest_##kernel, op_broadcast_b) {                                   \
     const KernelInfo kernel_info(arch_flags, kernel, init_params_fn);          \
-    const op op_info;                                                          \
+    const struct op op_info;                                                   \
     TestOpBroadcastB<type_a, type_b, type_c, type_x>(kernel_info, op_info,     \
                                                      GetParam());              \
   }                                                                            \
   TEST_P(OpsTest_##kernel, op_broadcast_c) {                                   \
     const KernelInfo kernel_info(arch_flags, kernel, init_params_fn);          \
-    const op op_info;                                                          \
+    const struct op op_info;                                                   \
     TestOpBroadcastC<type_a, type_b, type_c, type_x>(kernel_info, op_info,     \
                                                      GetParam());              \
   }                                                                            \

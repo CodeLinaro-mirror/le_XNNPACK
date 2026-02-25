@@ -710,6 +710,10 @@ ynn_status ynn_define_convert(ynn_subgraph_t subgraph, uint32_t input_id,
     ternary_kernel_fn kernel =
         get_ternary_kernel(op, a.type, ynn_type_fp32, ynn_type_int32, x.type);
     if (!kernel && a.type != ynn_type_fp32) {
+      YNN_LOG_DEBUG() << "No ternary kernel for operator " << op
+                      << ", input type " << a.type << " and output type "
+                      << x.type << ", attempting to convert to fp32.";
+
       // Try converting a to fp32 first.
       kernel = get_ternary_kernel(op, ynn_type_fp32, ynn_type_fp32,
                                   ynn_type_int32, x.type);
@@ -732,6 +736,95 @@ ynn_status ynn_define_convert(ynn_subgraph_t subgraph, uint32_t input_id,
     return ynn_status_success;
   }
 
+  if (type_is_integral(a.type) && type_is_floating_point(x.type) &&
+      (a.scale_id != YNN_INVALID_VALUE_ID ||
+       a.zero_point_id != YNN_INVALID_VALUE_ID)) {
+    uint32_t a_scale_id = a.scale_id;
+    uint32_t a_zero_point_id = a.zero_point_id;
+    if (a.scale_id == YNN_INVALID_VALUE_ID) {
+      a_scale_id = subgraph->get_scalar_value_id(1.0f);
+    }
+    if (a.zero_point_id == YNN_INVALID_VALUE_ID) {
+      // First try to find a multiply kernel for this.
+      const binary_kernel* kernel =
+          get_binary_kernel(ynn_binary_multiply, a.type, ynn_type_fp32, x.type,
+                            /*is_quantized=*/false);
+      if (kernel) {
+        ynn_node node;
+        define_binary(*subgraph, node, input_id, a_scale_id, *output_id,
+                      ynn_binary_multiply, kernel->op, kernel->init_params);
+        subgraph->add_node(std::move(node));
+        return ynn_status_success;
+      }
+
+      // Try converting from fp32.
+      kernel = get_binary_kernel(ynn_binary_multiply, a.type, ynn_type_fp32,
+                                 ynn_type_fp32,
+                                 /*is_quantized=*/false);
+      if (kernel) {
+        uint32_t output_float_id = YNN_INVALID_VALUE_ID;
+        ynn_status status = ynn_define_tensor_value(
+            subgraph, ynn_type_fp32, /*rank=*/0, /*dims=*/nullptr,
+            /*data=*/nullptr, /*zero_point_id=*/YNN_INVALID_VALUE_ID,
+            /*scale_id=*/YNN_INVALID_VALUE_ID, /*flags=*/0, &output_float_id);
+        if (status != ynn_status_success) {
+          return status;
+        }
+
+        ynn_node node;
+        define_binary(*subgraph, node, input_id, a_scale_id,
+                      output_float_id, ynn_binary_multiply, kernel->op,
+                      kernel->init_params);
+        subgraph->add_node(std::move(node));
+        return ynn_define_convert(subgraph, output_float_id, x.type,
+                                  YNN_INVALID_VALUE_ID, YNN_INVALID_VALUE_ID,
+                                  output_id, flags);
+      }
+
+      // We didn't handle it with a multiply, try to do it with a dequantize
+      // kernel.
+      a_zero_point_id = subgraph->get_scalar_value_id(0);
+    }
+
+    ternary_kernel_fn kernel = get_ternary_kernel(
+        ternary_op::dequantize, a.type, ynn_type_int32, ynn_type_fp32, x.type);
+
+    if (kernel) {
+      ynn_node node;
+      define_ternary(*subgraph, node, input_id, a_zero_point_id, a_scale_id,
+                     *output_id, ternary_op::dequantize, kernel);
+      subgraph->add_node(std::move(node));
+      return ynn_status_success;
+    } else if (x.type != ynn_type_fp32) {
+      YNN_LOG_DEBUG()
+          << "No ternary kernel for operator dequantize, input type " << a.type
+          << ", output type " << x.type
+          << "; attempting to dequantize to fp32.";
+
+      kernel = get_ternary_kernel(ternary_op::dequantize, a.type,
+                                  ynn_type_int32, ynn_type_fp32, ynn_type_fp32);
+      assert(kernel);
+
+      uint32_t output_float_id = YNN_INVALID_VALUE_ID;
+      ynn_status status = ynn_define_tensor_value(
+          subgraph, ynn_type_fp32, /*rank=*/0, /*dims=*/nullptr,
+          /*data=*/nullptr, /*zero_point_id=*/YNN_INVALID_VALUE_ID,
+          /*scale_id=*/YNN_INVALID_VALUE_ID, /*flags=*/0, &output_float_id);
+      if (status != ynn_status_success) {
+        return status;
+      }
+
+      ynn_node node;
+      define_ternary(*subgraph, node, input_id, a_zero_point_id, a_scale_id,
+                     output_float_id, ternary_op::dequantize, kernel);
+      subgraph->add_node(std::move(node));
+
+      return ynn_define_convert(subgraph, output_float_id, x.type,
+                                YNN_INVALID_VALUE_ID, YNN_INVALID_VALUE_ID,
+                                output_id, flags);
+    }
+  }
+
   // Find the kernel.
   const bool a_is_quantized = a.scale_id != YNN_INVALID_VALUE_ID ||
                               a.zero_point_id != YNN_INVALID_VALUE_ID;
@@ -740,6 +833,10 @@ ynn_status ynn_define_convert(ynn_subgraph_t subgraph, uint32_t input_id,
   const unary_kernel* kernel = get_unary_kernel(
       ynn_unary_convert, a.type, a_is_quantized, x.type, x_is_quantized);
   if (!kernel) {
+    YNN_LOG_DEBUG() << "No unary kernel for operator convert, input type "
+                    << a.type << ", output type " << x.type
+                    << "; attempting to convert to fp32.";
+
     const unary_kernel* float_kernel = get_unary_kernel(
         ynn_unary_convert, ynn_type_fp32, /*a_quantized=*/false, ynn_type_fp32,
         /*x_quantized=*/false);
@@ -841,6 +938,11 @@ ynn_status ynn_define_binary(ynn_subgraph_t subgraph, ynn_binary_operator op,
   const binary_kernel* kernel =
       get_binary_kernel(op, a.type, b.type, x.type, is_quantized);
   if (!kernel) {
+    YNN_LOG_DEBUG() << "No binary kernel for operator " << op
+                    << ", input types " << a.type << ", " << b.type
+                    << ", output type " << x.type
+                    << "; attempting to convert to fp32.";
+
     if (!(a.type == ynn_type_fp32 && b.type == ynn_type_fp32)) {
       uint32_t a_fp32_id = YNN_INVALID_VALUE_ID;
       if (a.type != ynn_type_fp32) {
