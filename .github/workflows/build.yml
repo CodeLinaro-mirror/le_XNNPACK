@@ -329,7 +329,28 @@ jobs:
   gn-linux-x86_64:
     runs-on: 'ubuntu-24.04-8core'
     timeout-minutes: 15
+    env:
+      CMAKE_C_COMPILER_LAUNCHER: ccache
+      CMAKE_CXX_COMPILER_LAUNCHER: ccache
+      CCACHE_SLOPPINESS: time_macros
+      CCACHE_DIR: /home/runner/.ccache
     steps:
+      - name: Restore gclient cache
+        id: cache-gclient-restore
+        uses: actions/cache@v5
+        with:
+          # Cache the Git repos
+          path: |
+            /home/runner/.cache/gclient
+            /home/runner/.cache/ccache
+          key: experimental-v2-gclient-linux-${{ github.ref_name }}-${{ github.sha }}
+          restore-keys: |
+            experimental-v2-gclient-linux-${{ github.ref_name }}-
+            experimental-v2-gclient-linux-master-
+            experimental-v2-gclient-linux-
+      - name: Install sccache
+        run: |
+          sudo apt-get install -y sccache
       - name: Install Depot Tools
         uses: newkdev/setup-depot-tools@v1.0.1
       - name: Write .gclient
@@ -345,21 +366,24 @@ jobs:
             "custom_vars": {},
             },
           ]
+          cache_dir = r"/home/runner/.cache/gclient"
           EOF
       - name: Sync to commit and run hooks
-        run: gclient sync -vv --revision $GITHUB_SHA
+        run: gclient sync --reset --force --upstream --revision $GITHUB_SHA
       - name: Check formatting
         run: |
           git cl format --presubmit --no-clang-format --no-python --diff
         working-directory: ${{ github.workspace }}/xnnpack
       - name: Generate build files
         run: |
-          gn gen --check --args="is_debug=false dcheck_always_on=true xnnpack_enable_avx512=false target_cpu=\"x64\" use_siso=true" out/x64.dchecks
+          gn gen --check --args="is_debug=false clang_use_chrome_plugins=false dcheck_always_on=true cc_wrapper=\"sccache\" symbol_level=0 xnnpack_enable_avx512=false target_cpu=\"x64\" use_siso=true" out/x64.dchecks
         working-directory: ${{ github.workspace }}/xnnpack
       - name: Build all targets (Release + debug checks)
         run: |
           autoninja -C out/x64.dchecks
         working-directory: ${{ github.workspace }}/xnnpack
+      - name: Print sccache stats
+        run: sccache -s
       - name: Run tests
         run: |
           python3 scripts/run-gn-tests.py out/x64.dchecks
