@@ -143,36 +143,6 @@ def make_x86_integer_patterns(vector_bits, prefix):
       i.vectorize(vector_bits)
       for i in [
           Rule(
-              u32_a & u32_b,
-              Op(
-                  UInt(32),
-                  prefix + "and_si" + str(vector_bits),
-                  [u32_a, u32_b],
-              ),
-          ),
-          Rule(
-              i32_a & i32_b,
-              Op(Int(32), prefix + "and_si" + str(vector_bits), [i32_a, i32_b]),
-          ),
-          Rule(
-              u32_a | u32_b,
-              Op(UInt(32), prefix + "or_si" + str(vector_bits), [u32_a, u32_b]),
-          ),
-          Rule(
-              i32_a | i32_b,
-              Op(Int(32), prefix + "or_si" + str(vector_bits), [i32_a, i32_b]),
-          ),
-          Rule(
-              u32_a ^ u32_b,
-              Op(
-                  UInt(32), prefix + "xor_si" + str(vector_bits), [u32_a, u32_b]
-              ),
-          ),
-          Rule(
-              i32_a ^ i32_b,
-              Op(Int(32), prefix + "xor_si" + str(vector_bits), [i32_a, i32_b]),
-          ),
-          Rule(
               saturating_add(u8_a, u8_b),
               Op(UInt(8), prefix + "adds_epu8", [u8_a, u8_b]),
           ),
@@ -452,27 +422,6 @@ def make_x86_slice_patterns(vector_bits, prefix):
   return []
 
 
-def make_x86_float32_patterns(vector_bits, prefix):
-  return [
-      i.vectorize(vector_bits)
-      for i in [
-          Rule(f32_a / f32_b, Op(Float(32), prefix + "div_ps", [f32_a, f32_b])),
-          Rule(
-              f32_a & f32_b,
-              Op(Float(32), prefix + "and_ps", [f32_a, f32_b]),
-          ),
-          Rule(
-              f32_a | f32_b,
-              Op(Float(32), prefix + "or_ps", [f32_a, f32_b]),
-          ),
-          Rule(
-              f32_a ^ f32_b,
-              Op(Float(32), prefix + "xor_ps", [f32_a, f32_b]),
-          ),
-      ]
-  ]
-
-
 def make_x86_f16c_patterns(vector_bits, prefix):
   # TODO(vksnk): this is just a workaround, because the fp16 vector is shorter
   # than target bit width. This needs a clean-up.
@@ -533,7 +482,6 @@ class X86(Target):
         Float(32, 4): "simd::vec<float, 4>",
     })
 
-    self.patterns += make_x86_float32_patterns(128, "_mm_")
     self.patterns += make_x86_integer_patterns(128, "_mm_")
     self.patterns += make_x86_cast_patterns(128, "_mm_")
     self.patterns += make_x86_reinterpret_cast_patterns(128, "_mm_")
@@ -602,7 +550,7 @@ YNN_INTRINSIC __m128 bitwise_not(__m128 val) {
 
   def update_for_sse41(self):
     """Updates the target for SSE41 support."""
-    self.patterns += make_x86_float32_patterns(128, "_mm_")
+    pass
 
   def update_for_avx(self):
     """Updates the target for AVX support."""
@@ -653,7 +601,6 @@ YNN_INTRINSIC __m128 wrapper_mm256_slice_extract_ps256_1(
         BFloat(16, 16): "simd::vec<bfloat16, 16>",
         BFloat(16, 8): "simd::vec<bfloat16, 8>",
     })
-    self.patterns += make_x86_float32_patterns(256, "_mm256_")
     self.patterns += make_x86_reinterpret_cast_patterns(256, "_mm256_")
     self.patterns += make_x86_slice_patterns(256, "_mm256_")
 
@@ -812,7 +759,6 @@ YNN_INTRINSIC __m256 wrapper_mm512_slice_extract_ps512_1(
         Float(16, 16): "simd::vec<half, 16>",
     })
     self.patterns += make_x86_fma_patterns(512, "_mm512_")
-    self.patterns += make_x86_float32_patterns(512, "_mm512_")
     self.patterns += make_x86_reinterpret_cast_patterns(512, "_mm512_")
     self.patterns += make_x86_integer_patterns(512, "_mm512_")
     self.patterns += make_x86_cast_patterns(512, "_mm512_")
