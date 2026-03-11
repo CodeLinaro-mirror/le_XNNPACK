@@ -15,6 +15,7 @@
 
 #include "include/experimental.h"
 #include "include/xnnpack.h"
+#include "src/subgraph/rewrites/fp16_to_fp32.h"
 #include "src/xnnpack/allocation-type.h"
 #include "src/xnnpack/allocator.h"
 #include "src/xnnpack/common.h"
@@ -4370,6 +4371,36 @@ enum xnn_status xnn_subgraph_rewrite_for_row_sum(xnn_subgraph_t subgraph) {
                     ((output_datatype == xnn_datatype_fp16) &&
                      (gemm_config = xnn_init_qd8_f16_qc2w_gemm_config()))) {
                     if (producer->type != xnn_node_type_convert) {
+                       xnn_log_error(
+                          "Expected producer node #%u of %s tensor #%u to be of"
+                          " type %s, but found type %s instead.",
+                          input_value->producer,
+                          xnn_datatype_to_string(input_datatype), input_id,
+                          xnn_node_type_to_string(xnn_node_type_convert),
+                          xnn_node_type_to_string(producer->type));
+                      return xnn_status_invalid_state;
+                    }
+                    producer->flags |= XNN_NODE_FLAG_REQUIRES_ROW_SUM;
+                  }
+                }
+                break;
+              default:
+                break;
+            }
+            break;
+          }
+          case xnn_datatype_qduint8: {
+            const struct xnn_gemm_config* gemm_config = NULL;
+
+            switch (kernel_datatype) {
+              case xnn_datatype_qcint2: {
+                struct xnn_node* producer =
+                    &subgraph->nodes[input_value->producer];
+                if (((output_datatype == xnn_datatype_fp32) &&
+                     (gemm_config = xnn_init_qdu8_f32_qc2w_gemm_config())) ||
+                    ((output_datatype == xnn_datatype_fp16) &&
+                     (gemm_config = xnn_init_qdu8_f16_qc2w_gemm_config()))) {
+                    if (producer->type != xnn_node_type_convert) {
                       xnn_log_error(
                           "Expected producer node #%u of %s tensor #%u to be of"
                           " type %s, but found type %s instead.",
@@ -4559,6 +4590,10 @@ enum xnn_status xnn_subgraph_optimize(xnn_subgraph_t subgraph,
 
   XNN_RETURN_IF_ERROR(
       xnn_subgraph_optimize_packed_lhs(subgraph, optimization_flags));
+
+  if (!xnn_is_f16_supported_natively(hardware_config) && !force_fp16) {
+    XNN_RETURN_IF_ERROR(xnn_subgraph_fallback_from_fp16_to_fp32(subgraph, optimization_flags));
+  }
 
   return xnn_status_success;
 }
