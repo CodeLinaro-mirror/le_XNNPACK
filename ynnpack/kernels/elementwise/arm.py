@@ -198,6 +198,10 @@ YNN_INTRINSIC uint16x8_t cast_f32_to_f16(float32x4_t f0, float32x4_t f1) {
       )
 
       self.update_for_fp16()
+    if "FMA" in all_features:
+      self.header += (
+          '#include "ynnpack/base/simd/arm_neonfma.h"\n'
+      )
 
   def arch_flags(self):
     return "|".join(["arch_flag::" + i.lower() for i in self.features])

@@ -378,24 +378,6 @@ def make_x86_slice_patterns(vector_bits, prefix):
   return []
 
 
-def make_x86_fma_patterns(vector_bits, prefix):
-  return [
-      i.vectorize(vector_bits)
-      for i in [
-          Rule(
-              multiply_add(f32_a, f32_b, f32_c),
-              Op(Float(32), prefix + "fmadd_ps", [f32_a, f32_b, f32_c]),
-              ["FMA3", "AVX512F"],
-          ),
-          Rule(
-              multiply_sub(f32_a, f32_b, f32_c),
-              Op(Float(32), prefix + "fmsub_ps", [f32_a, f32_b, f32_c]),
-              ["FMA3", "AVX512F"],
-          ),
-      ]
-  ]
-
-
 class X86(Target):
   """X86 target for elementwise kernels compiler."""
 
@@ -609,7 +591,6 @@ YNN_INTRINSIC __m256i saturating_cast_f32_to_uint8(__m256 f0, __m256 f1, __m256 
 
   def update_for_fma3(self):
     """Updates the target for FMA3 support."""
-    self.patterns += make_x86_fma_patterns(256, "_mm256_")
 
   def update_for_f16c(self):
     """Updates the target for F16C support."""
@@ -658,7 +639,6 @@ YNN_INTRINSIC __m256 wrapper_mm512_slice_extract_ps512_1(
         Float(32, 16): "simd::vec<float, 16>",
         Float(16, 16): "simd::vec<half, 16>",
     })
-    self.patterns += make_x86_fma_patterns(512, "_mm512_")
     self.patterns += make_x86_integer_patterns(512, "_mm512_")
     self.patterns += make_x86_cast_patterns(512)
     self.patterns += make_x86_slice_patterns(512, "_mm512_")
