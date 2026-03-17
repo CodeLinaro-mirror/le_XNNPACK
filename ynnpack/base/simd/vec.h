@@ -148,6 +148,9 @@ auto extract(vec<T, N>, SliceN);
 template <typename To, typename From, size_t N>
 vec<To, N> convert(vec<From, N> from, To);
 
+template <typename To, typename From, size_t N>
+vec<To, N> saturating_convert(vec<From, N> from, To);
+
 namespace internal {
 
 template <typename T, size_t N>
@@ -305,6 +308,30 @@ YNN_ALWAYS_INLINE vec<T, 1> saturating_sub(vec<T, 1> a, vec<T, 1> b) {
 template <typename To, typename From>
 YNN_ALWAYS_INLINE vec<To, 1> convert(vec<From, 1> from, To) {
   return vec<To, 1>{static_cast<To>(from.v)};
+}
+
+template <typename To, typename From>
+YNN_ALWAYS_INLINE vec<To, 1> saturating_convert(vec<From, 1> from, To) {
+  if constexpr (std::is_floating_point_v<From>) {
+    if constexpr (std::is_integral_v<To>) {
+      const From min_to = static_cast<From>(std::numeric_limits<To>::min());
+      const From max_to = static_cast<From>(std::numeric_limits<To>::max());
+      return vec<To, 1>{static_cast<To>(
+          std::max(min_to, std::min(max_to, std::round(from.v))))};
+    } else {
+      return vec<To, 1>{static_cast<To>(from.v)};
+    }
+  } else {
+    if constexpr (sizeof(To) >= sizeof(From)) {
+      return vec<To, 1>{static_cast<To>(from.v)};
+    } else {
+      const int64_t val = static_cast<int64_t>(from.v);
+      const int64_t min_to = std::numeric_limits<To>::min();
+      const int64_t max_to = std::numeric_limits<To>::max();
+      return vec<To, 1>{
+          static_cast<To>(std::max(min_to, std::min(max_to, val)))};
+    }
+  }
 }
 
 template <typename T>

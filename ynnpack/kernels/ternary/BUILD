@@ -175,6 +175,11 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "x86_sse2_cc",
+    srcs = ["x86_sse2.cc"],
+)
+
 cc_test(
     name = "test",
     srcs = ["test.cc"],
