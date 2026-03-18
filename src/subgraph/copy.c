@@ -100,6 +100,14 @@ static enum xnn_status resize_copy_output_tensor(
   const size_t input_num_elements = xnn_shape_multiply_all_dims(&input->shape);
   if (output_axis_dynamic < XNN_MAX_TENSOR_DIMS) {
     const size_t output_num_elements = xnn_shape_multiply_all_dims(&output->shape);
+    if (output_num_elements == 0) {
+      xnn_log_error("failed to reshape %s operator with input ID #%" PRIu32
+                    " and output ID #%" PRIu32
+                    ": output number of elements must be non-zero",
+                    xnn_node_type_to_string(xnn_node_type_static_reshape),
+                    input_id, output_id);
+      return xnn_status_invalid_parameter;
+    }
     const size_t inferred_dim = input_num_elements / output_num_elements;
     if (inferred_dim * output_num_elements != input_num_elements) {
       xnn_log_error(
