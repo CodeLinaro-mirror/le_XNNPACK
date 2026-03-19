@@ -202,8 +202,8 @@ xnnpack_unit_test(
 
 xnnpack_unit_test(
     name = "depthwise_convolution_2d_test",
+    timeout = "moderate",
     srcs = ["depthwise-convolution-2d.cc"],
-    tags = ["no_ynnpack"],
     deps = SUBGRAPH_TEST_DEPS + [":stencil"],
 )
 

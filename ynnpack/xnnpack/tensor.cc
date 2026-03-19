@@ -143,11 +143,15 @@ xnn_status xnn_define_channelwise_quantized_tensor_value_v3(
   // dimension is a broadcast, and every dimension before that is elementwise...
   size_t quantization_dims[YNN_MAX_TENSOR_RANK];
   std::copy_n(dims, channel_dim + 1, quantization_dims);
-  if (channel_dim > 0) {
-    // ... *except* for the one dimension before the channel dimension, which is
-    // a broadcast?!?! This might only be true for XNN_FLAG_TRANSPOSE_B (or not)
-    // which would be a headache to support here.
-    quantization_dims[channel_dim - 1] = 1;
+  for (size_t i = 0; i < channel_dim; ++i) {
+    // For convolutions/depthwise, the channel dimension is 0 or 3.
+    // For batch matrix multiply filters, this is expected to be a broadcast
+    // only for the non-channel dimension of the "matrix" argument, dim 1.
+    if (channel_dim == 2 && i == 0) {
+      // Keep batch dimension for batch matrix multiply.
+      continue;
+    }
+    quantization_dims[i] = 1;
   }
 
   // XNNPACK copies the scale data from the caller, do the same here.
