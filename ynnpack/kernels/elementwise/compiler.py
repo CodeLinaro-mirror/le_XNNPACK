@@ -998,10 +998,6 @@ class Target:
   def indent(self):
     return "  " * self.indent_level
 
-  def get_natural_lanes_num(self, ty):
-    """Returns a number of lanes in the native vector type."""
-    return self.vector_bits // ty.size
-
   def as_buffer(self, arg, buffers):
     b = None
     if isinstance(arg, Var):
@@ -1604,29 +1600,29 @@ class Target:
 
     ast = copy.deepcopy(func.value)
 
-    natural_lanes = self.get_natural_lanes_num(func.value.ty)
-    ast = self.vectorize(ast, natural_lanes, {})
-    ast = self.pattern_match(ast, {})
-
-    constants = {}
-    ast = self.lift_constants(ast, constants)
-
-    values = {}
-    ops = []
-    self.linearize(ast, ops, values)
-
-    ops.append((
-        None,
-        Op(
-            func.value.ty.with_lanes(natural_lanes),
-            "store",
-            [func.to, values[ast]],
-        ),
-    ))
-
     for tile in tile_shapes:
       tile_width = tile[1]
       tile_height = tile[0]
+
+      natural_lanes = tile_width
+      ast = self.vectorize(ast, natural_lanes, {})
+      ast = self.pattern_match(ast, {})
+
+      constants = {}
+      ast = self.lift_constants(ast, constants)
+
+      values = {}
+      ops = []
+      self.linearize(ast, ops, values)
+
+      ops.append((
+          None,
+          Op(
+              func.value.ty.with_lanes(natural_lanes),
+              "store",
+              [func.to, values[ast]],
+          ),
+      ))
 
       self.begin_function(
           name,
