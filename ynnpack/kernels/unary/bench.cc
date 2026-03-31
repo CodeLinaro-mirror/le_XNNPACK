@@ -37,7 +37,7 @@ void bench(benchmark::State& state, uint64_t arch_flags, unary_kernel_fn kernel,
 
   for (auto _ : state) {
     kernel(m, n, a.stride(0) * sizeof(TA), a.base(), x.stride(0) * sizeof(TX),
-           x.base());
+           x.base(), nullptr);
   }
 
   const size_t ops = m * n;

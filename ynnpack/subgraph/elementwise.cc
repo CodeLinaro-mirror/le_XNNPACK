@@ -53,7 +53,7 @@ auto make_unary_elementwise_impl(unary_kernel_fn kernel) {
         slinky::for_each_element(
             [&](void* x, const void* a) {
               kernel(x_m.extent(), x_n.extent(), a_m.stride(), a, x_m.stride(),
-                     x);
+                     x, nullptr);
             },
             x, a);
         return 0;
@@ -100,7 +100,7 @@ auto make_binary_elementwise_impl(binary_kernel_fn kernel) {
     slinky::for_each_element(
         [&](void* x, const void* a, const void* b) {
           kernel(x_m.extent(), x_n.extent(), a_m.stride(), a_n.stride(), a,
-                 b_m.stride(), b_n.stride(), b, x_m.stride(), x);
+                 b_m.stride(), b_n.stride(), b, x_m.stride(), x, nullptr);
         },
         x, a, b);
     return 0;
@@ -140,7 +140,7 @@ auto make_ternary_elementwise_impl(ternary_kernel_fn kernel) {
             [&](void* x, const void* a, const void* b, const void* c) {
               kernel(x_m.extent(), x_n.extent(), a_m.stride(), a_n.stride(), a,
                      b_m.stride(), b_n.stride(), b, c_m.stride(), c_n.stride(),
-                     c, x_m.stride(), x);
+                     c, x_m.stride(), x, nullptr);
             },
             x, a, b, c);
         return 0;

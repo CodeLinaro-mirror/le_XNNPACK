@@ -3,6 +3,7 @@
 import math
 
 # pylint: disable=undefined-variable
+# pylint: disable=missing-function-docstring
 from ynnpack.kernels.elementwise.compiler import *  # pylint: disable=wildcard-import
 
 
@@ -30,8 +31,10 @@ def qd_round_f32(a):
 
 @const_buffer("a", Float(32))
 @buffer("x", Float(32))
+@scalar("r1", Float(32), 1.0)
+@scalar("r2", Float(32), 1.0)
 @operator_name("exp")
-def exp_fp32(a, x):
+def exp_fp32(a, x, r1, r2):
   # The monomial coefficients of the numerator polynomial (`valpha_0` = 1.0).
   valpha_1 = 4.1594290733e-01
   valpha_2 = 7.2068706155e-02
@@ -43,7 +46,7 @@ def exp_fp32(a, x):
 
   va = load(a)
   # Clamp `vz_prime = x * log2(e)` to the maximum exponents [-127, 128].
-  vz_prime = min(max(va * f32(math.log2(math.e)), -127.0), 128.0)
+  vz_prime = min(max(va * f32(math.log2(math.e)) * r1, -127.0), 128.0)
 
   # Decompose x * log2e into `z` (integer part) and `r` (remainder).
   vz = qd_round_f32(vz_prime)
@@ -67,7 +70,7 @@ def exp_fp32(a, x):
   # Compute 2^z * 2^r.
   vx = v2z * v2r
 
-  return store(vx, x)
+  return store(vx * r2, x)
 
 
 @const_buffer("a", Float(32))

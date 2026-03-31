@@ -105,7 +105,7 @@ void TestImpl(A, X, const KernelInfo& kernel_info, const OpInfo& op_info,
   x = x.crop_padding({0, 0}, {0, shape.padding_x});
 
   kernel(shape.m, shape.n, a.stride(0) * sizeof(A), a.base(),
-         x.stride(0) * sizeof(X), x.base());
+         x.stride(0) * sizeof(X), x.base(), nullptr);
 
   check_results(op_info, a, x);
 }

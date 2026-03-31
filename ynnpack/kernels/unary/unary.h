@@ -15,12 +15,28 @@
 
 namespace ynn {
 
+struct erf_params {
+  float r1;
+  float r2;
+};
+
+struct exp_params {
+  float r1;
+  float r2;
+};
+
+union ynn_unary_params {
+  erf_params erf;
+  exp_params exp;
+};
+
 typedef void (*unary_kernel_fn)(size_t width, size_t height, size_t stride_a,
-                                const void* a, size_t stride_x, void* x);
+                                const void* a, size_t stride_x, void* x,
+                                const ynn_unary_params* params);
 
 #define YNN_ELEMENTWISE_KERNEL(arch, name, op, type_a, type_c)    \
   void name(size_t m, size_t n, size_t stride_a_m, const void* a, \
-            size_t stride_x_m, void* x);
+            size_t stride_x_m, void* x, const ynn_unary_params* params);
 #include "ynnpack/kernels/unary/kernels.inc"
 #undef YNN_ELEMENTWISE_KERNEL
 

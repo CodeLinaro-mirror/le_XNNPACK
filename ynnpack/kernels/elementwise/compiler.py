@@ -701,6 +701,14 @@ class BroadcastMode(enum.Enum):
   AUTO = 5
 
 
+class Scalar:
+
+  def __init__(self, name, ty, default):
+    self.name = name
+    self.ty = ty
+    self.default = Constant(ty, default)
+
+
 class Buffer:
 
   def __init__(
@@ -713,6 +721,8 @@ class Buffer:
 
 
 buffer_args = []
+scalar_args = []
+
 op_name = "unknown"
 code = ""
 
@@ -807,10 +817,11 @@ YNN_INTRINSIC simd::vec<T, N> select_greater_than(simd::vec<T, N> a, simd::vec<T
 """
 
 
-def scalar(name, ty):
+def scalar(name, ty, default):
   def actual_decorator(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+      scalar_args.append(Scalar(name, ty, default))
       # fn_args.append((name, ty, 0))
       args += (Var(name, ty),)
       return func(*args, **kwargs)
@@ -982,6 +993,12 @@ class Target:
     if isinstance(arg, Var):
       b = next((buf for buf in buffers if buf.name == arg.name), None)
     return b
+
+  def is_scalar_arg(self, arg):
+    s = None
+    if isinstance(arg, Var):
+      s = next((s for s in scalar_args if s.name == arg.name), None)
+    return s
 
   def compute_all_features(self, features, implied_features, all_features):
     for feature in features:
@@ -1158,6 +1175,8 @@ class Target:
         f" base_{args[-1].name}"
     )
 
+    arity = self.get_arity_string(args)
+    args_str.append(f"{self.indent()}const ynn_{arity}_params* params")
     self.result += ",\n".join(args_str)
     self.result += ") {\n"
 
@@ -1289,6 +1308,19 @@ class Target:
           f" {self.legalize_op(v)}({v.args[0]});\n"
       )
 
+  def emit_scalar_arguments(self, scalars, tile_width):
+    """Emits scalar arguments."""
+
+    for s in scalars:
+      self.result += (
+          f"{self.indent()}const"
+          f" {self.legalize_type(s.ty.with_lanes(tile_width))}"
+          f" {s.name} = params != nullptr ?"
+          f" {self.legalize_op(broadcast(s.default, tile_width))}(reinterpret_cast<const"
+          f" {op_name}_params*>(params)->{s.name}) :"
+          f" {self.legalize_op(broadcast(s.default, tile_width))}({s.default.value});\n"
+      )
+
   def emit_op(self, i, j, is_rem_width, buffers, constants, tile_width):
     """Emits a single operation."""
     op = i[1]
@@ -1345,7 +1377,9 @@ class Target:
       else:
         if isinstance(arg, Constant):
           str_args.append(f"{arg}")
-        elif isinstance(arg, Var) and arg in constants:
+        elif isinstance(arg, Var) and (
+            arg in constants or (self.is_scalar_arg(arg) is not None)
+        ):
           str_args.append(f"{arg}{self.simd_suffix(op)}")
         else:
           str_args.append(f"{arg}_{j}{self.simd_suffix(op)}")
@@ -1570,6 +1604,7 @@ class Target:
         self.emit_asserts(buffers)
 
       self.emit_constants(constants)
+      self.emit_scalar_arguments(scalar_args, tile_width)
 
       self.handle_specialize(
           ops,
@@ -1590,9 +1625,20 @@ class Target:
   def arch_string(self):
     return "x86_" + "_".join([i.lower() for i in self.features])
 
+  def get_arity_string(self, buffers):
+    if len(buffers) == 4:
+      return "ternary"
+    elif len(buffers) == 3:
+      return "binary"
+    elif len(buffers) == 2:
+      return "unary"
+    else:
+      assert False, "Unsupported number of buffers."
+
   def compile_function(self, name, fn, tile_shapes):
     self.result = ""
     buffer_args.clear()
+    scalar_args.clear()
     global op_name
     op_name = "unknown"
     result = fn()
@@ -1613,12 +1659,8 @@ class Target:
     )
 
     src = '#include "ynnpack/kernels/'
-    if len(buffer_args) == 4:
-      src += "ternary/ternary.h"
-    elif len(buffer_args) == 3:
-      src += "binary/binary.h"
-    elif len(buffer_args) == 2:
-      src += "unary/unary.h"
+    arity = self.get_arity_string(buffer_args)
+    src += f"{arity}/{arity}.h"
     src += '"\n'
     src += "namespace ynn {\n"
     src += self.compile(func_name, buffer_args, result, tile_shapes)

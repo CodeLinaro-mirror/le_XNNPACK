@@ -29,7 +29,7 @@ namespace {
 // intend to give the compiler a reasonable chance at optimizing them.
 template <typename TIn, typename TOut, typename Operator>
 void unary_impl(size_t m, size_t n, size_t stride_x, const void* vx,
-                size_t stride_y, void* vy) {
+                size_t stride_y, void* vy, const ynn_unary_params* params) {
   auto x = reinterpret_cast<const TIn*>(vx);
   auto y = reinterpret_cast<TOut*>(vy);
 
