@@ -81,13 +81,13 @@ auto make_dot_impl(dot_type type, bool consistent_arithmetic, bool transposed_a,
 
     const int b_type_element_count = type_element_count(type.b);
     const index_t tile_k = b_k1i.extent() * b_type_element_count;
-    const index_t a_stride_m = a_m.stride();
-    const index_t a_stride_k3 = a_k3.stride();
-    const index_t a_stride_k2 = a_k2.stride();
-    const index_t a_stride_k1 = a_k1.stride();
     // If a is transposed, then the k dimension has been reshaped to have tile_k
     // values in each element.
     const index_t a_tile_k = transposed_a ? tile_k : 1;
+    const index_t a_stride_m = a_m.stride();
+    const index_t a_stride_k3 = a_k3.stride();
+    const index_t a_stride_k2 = a_k2.stride();
+    const index_t a_stride_k1 = a_k1.stride() / a_tile_k;
     const index_t k1 = (a_k1.extent() * a_tile_k) & ~(tile_k - 1);
     const index_t k1_tail = (a_k1.extent() * a_tile_k) & (tile_k - 1);
     const index_t k2 = a_k2.extent();
@@ -227,7 +227,7 @@ auto make_dot_impl(dot_type type, bool consistent_arithmetic, bool transposed_a,
       slinky::for_each_element(
           [&](void* c, const void* a, const void* b, const void* init_c) {
             run_dot(loops, c_m.extent(), c_n.extent(), k1, block_m, block_n,
-                    block_k, a_stride_m, a_stride_k1 / a_tile_k, a, b_stride_k1,
+                    block_k, a_stride_m, a_stride_k1, a, b_stride_k1,
                     b_stride_n, b, init_c_stride_m, init_c, c_stride_m,
                     c_stride_n, c, call_kernel);
           },
@@ -265,7 +265,8 @@ auto make_dot_impl(dot_type type, bool consistent_arithmetic, bool transposed_a,
                                          K2 * a_stride_k2),
                      k1 * a_elem_size);
             }
-            kernel.kernel(m, n, /*k3=*/1, /*k2=*/1, tile_k, a_padded_stride_m,
+            kernel.kernel(m, n, /*k3=*/1, /*k2=*/1, tile_k,
+                          transposed_a ? a_elem_size : a_padded_stride_m,
                           /*a_stride_k3=*/0, /*a_stride_k2=*/0, a_padded,
                           /*b_stride_k3=*/0,
                           /*b_stride_k2=*/0, b_stride_k1,
@@ -285,10 +286,12 @@ auto make_dot_impl(dot_type type, bool consistent_arithmetic, bool transposed_a,
             }
             a = offset_bytes(a, a_stride_k1 * k1);
             b = offset_bytes(b, b_stride_k1 * k1);
+            // We only expect to run one iteration of k here, so the k strides
+            // are irrelevant.
             run_dot(loops, c_m.extent(), c_n.extent(), k1_tail, block_m,
-                    block_n, block_k, a_stride_m, a_stride_k1, a, b_stride_k1,
-                    b_stride_n, b, tail_init_c_stride_m, init_c, c_stride_m,
-                    c_stride_n, c, call_kernel_tail);
+                    block_n, block_k, a_stride_m, /*a_stride_k1=*/0, a,
+                    /*b_stride_k1=*/0, b_stride_n, b, tail_init_c_stride_m,
+                    init_c, c_stride_m, c_stride_n, c, call_kernel_tail);
           },
           c, a, b, init_c);
     }

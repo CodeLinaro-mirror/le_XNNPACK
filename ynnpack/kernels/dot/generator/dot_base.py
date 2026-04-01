@@ -158,7 +158,12 @@ void {func_name}(
       k1 //= self.tile_shape[2]
       i = f"{i} * {self.tile_shape[2]}"
       i, k1 = k1, i
-    offset = f"({i} * A_stride_m) + ({k1} * sizeof({self.a_type}))"
+      offset = (
+          f"({i * self.tile_shape[2]} * A_stride_m) + ({k1} *"
+          f" sizeof({self.a_type}))"
+      )
+    else:
+      offset = f"({i} * A_stride_m) + ({k1} * sizeof({self.a_type}))"
     return f"reinterpret_cast<const {ty}*>(offset_bytes(A_k1, {offset}))"
 
   def b_ptr(self, k1, j, ty=None):
@@ -398,7 +403,7 @@ std::ptrdiff_t k1 = K1;
           " B_stride_k1);\n"
       )
     if "dot_flag::transpose_a" in self.flags:
-      a_step = f"{self.block_shape[2]//self.tile_shape[2]} * A_stride_m"
+      a_step = f"{self.block_shape[2]} * A_stride_m"
     else:
       a_step = f"{self.block_shape[2]} * sizeof({self.a_type})"
     block_body += f"A_k1 = offset_bytes(A_k1, {a_step});\n"
@@ -420,10 +425,11 @@ std::ptrdiff_t k1 = K1;
               f"B_k1_{j} = offset_bytes(B_k1_{j}, {self.tile_shape[2]} *"
               " B_stride_k1);\n"
           )
-        tile_body += (
-            f"A_k1 = offset_bytes(A_k1, {self.tile_shape[2]} *"
-            f" sizeof({self.a_type}));\n"
-        )
+        if "dot_flag::transpose_a" in self.flags:
+          a_step = f"{self.tile_shape[2]} * A_stride_m"
+        else:
+          a_step = f"{self.tile_shape[2]} * sizeof({self.a_type})"
+        tile_body += f"A_k1 = offset_bytes(A_k1, {a_step});\n"
       result += indent(tile_body, "  ") + "\n"
       result += "}\n"
 
