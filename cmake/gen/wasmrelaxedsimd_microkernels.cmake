@@ -279,6 +279,12 @@ SET(NON_PROD_WASMRELAXEDSIMD_MICROKERNEL_SRCS
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmrelaxedsimd-rr2-p5-u4.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmrelaxedsimd-rr2-p5-u8-acc2.c
   src/f32-raddstoreexpminusmax/gen/f32-raddstoreexpminusmax-wasmrelaxedsimd-rr2-p5-u16-acc4.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u4.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u8-acc2.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u12-acc3.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u16-acc2.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u16-acc4.c
+  src/f32-rminmax/gen/f32-rminmax-wasmrelaxedsimd-minmax-u32-acc4.c
   src/f32-spmm/gen/f32-spmm-4x1-minmax-wasmrelaxedsimd-arm-pipelined-u2.c
   src/f32-spmm/gen/f32-spmm-4x1-minmax-wasmrelaxedsimd-arm-pipelined.c
   src/f32-spmm/gen/f32-spmm-4x1-minmax-wasmrelaxedsimd-arm-u2.c
