@@ -131,7 +131,7 @@ static XNN_INLINE xnn_simd_f32_t xnn_neg_f32(xnn_simd_f32_t a) {
 }
 
 // todo: v81 use rnd
-#if __HVX_ARCH__ >= 73
+#if 0
 static XNN_INLINE xnn_simd_f32_t xnn_round_f32(xnn_simd_f32_t a) {
   const HVX_Vector vabs_a = Q6_V_vand_VV(a, Q6_V_vsplat_R(0x7FFFFFFF));
   const HVX_Vector vhalf = Q6_V_vsplat_R(float_as_uint32(0.5f));
@@ -152,7 +152,7 @@ static XNN_INLINE xnn_simd_f32_t xnn_round_f32(xnn_simd_f32_t a) {
   XNN_ALIGN(128) float output[xnn_simd_size_f32];
   *((HVX_Vector*)input) = a;
   for (size_t k = 0; k < xnn_simd_size_f32; ++k) {
-    output[k] = roundf(input[k]);
+    output[k] = rintf(input[k]);
   }
   return *((HVX_Vector*)output);
 }
