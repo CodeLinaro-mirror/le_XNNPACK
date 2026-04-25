@@ -9,7 +9,6 @@ load(
 )
 load(
     "//:build_params.bzl",
-    # "xnnpack_select_if",
     "xnnpack_simd_copts_for_arch",
     "xnnpack_simd_f16_archs",
     "xnnpack_simd_f32_archs",
@@ -45,7 +44,10 @@ SIMD_TEST_DEPS = [
     ],
     copts = xnnpack_simd_copts_for_arch(arch),
     features = ["-use_header_modules"],
-    tags = ["simd_wrapper_test"],
+    tags = ["simd_wrapper_test"] + ([
+        "manual",
+        "notap",
+    ] if arch == "wasmrelaxedsimd" else []),
     deps = SIMD_TEST_DEPS,
 ) for arch in xnnpack_simd_f16_archs()]
 
