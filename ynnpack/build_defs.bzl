@@ -145,7 +145,10 @@ _YNN_PARAMS_FOR_ARCH = {
     },
     "arm64_neoni8mm": {
         "cond": "//ynnpack:ynn_enable_arm64_neoni8mm",
-        "arch_copts": ["-march=armv8.2-a+i8mm"],
+        "arch_copts": select({
+            "//ynnpack:arm64": ["-march=armv8.2-a+i8mm"],
+            "//conditions:default": [],
+        }),
         "arch_flag": "neoni8mm",
     },
     "arm64": {
@@ -162,7 +165,8 @@ _YNN_PARAMS_FOR_ARCH = {
             # Apple's Clang generates code that crashes with -msve (and works without it), while
             # other compilers can't compile this code without it.
             "//ynnpack:apple_clang": ["-march=armv8.2-a+sme"],
-            "//conditions:default": ["-march=armv8.2-a+sve+sme"],
+            "//ynnpack:arm64": ["-march=armv8.2-a+sve+sme"],
+            "//conditions:default": [],
         }),
         "arch_flag": "sme",
     },
@@ -170,13 +174,17 @@ _YNN_PARAMS_FOR_ARCH = {
         "cond": "//ynnpack:ynn_enable_arm64_sme2",
         "arch_copts": select({
             "//ynnpack:apple_clang": ["-march=armv8.2-a+sme2"],
-            "//conditions:default": ["-march=armv8.2-a+sve+sme2"],
+            "//ynnpack:arm64": ["-march=armv8.2-a+sve+sme2"],
+            "//conditions:default": [],
         }),
         "arch_flag": "sme2",
     },
     "arm64_sve": {
         "cond": "//ynnpack:ynn_enable_arm64_sve",
-        "arch_copts": ["-march=armv8.2-a+sve"],
+        "arch_copts": select({
+            "//ynnpack:arm64": ["-march=armv8.2-a+sve"],
+            "//conditions:default": [],
+        }),
         "arch_flag": "sve",
     },
     "x86_sse2": {
@@ -266,7 +274,10 @@ _YNN_PARAMS_FOR_ARCH = {
     },
     "wasm_simd128": {
         "cond": "//ynnpack:ynn_enable_wasm_simd128",
-        "arch_copts": ["-msimd128"],
+        "arch_copts": select({
+            "//ynnpack:wasm": ["-msimd128"],
+            "//conditions:default": [],
+        }),
         "arch_flag": "wasm_simd128",
     },
 }
