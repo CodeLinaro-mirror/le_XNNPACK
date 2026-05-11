@@ -21,6 +21,17 @@
 
 namespace ynn {
 
+struct int2_t {
+  int8_t value = 0;
+  int2_t() = default;
+  int2_t(int v) : value(static_cast<int8_t>(v)) {}
+};
+struct int4_t {
+  int8_t value = 0;
+  int4_t() = default;
+  int4_t(int v) : value(static_cast<int8_t>(v)) {}
+};
+
 using int8x1_t = int8_t;
 using uint8x1_t = uint8_t;
 using int16x1_t = int16_t;

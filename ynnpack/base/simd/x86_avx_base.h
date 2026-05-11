@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "ynnpack/base/arithmetic.h"
 #include "ynnpack/base/base.h"
 #include "ynnpack/base/bfloat16.h"
 #include "ynnpack/base/bit_cast.h"
@@ -214,6 +215,32 @@ struct vec<int8_t, 32> {
   YNN_ALWAYS_INLINE s8x16 hi() const { return s8x16{internal::hi(v)}; }
 };
 
+template <>
+struct vec<int2_t, 128> {
+  using value_type = int2_t;
+  static constexpr std::integral_constant<size_t, 128> N = {};
+
+  vec() = default;
+  YNN_ALWAYS_INLINE explicit vec(__m256i v) : v(v) {}
+  YNN_ALWAYS_INLINE explicit vec(int2_t x)
+      : v(_mm256_set1_epi8(static_cast<char>((x.value & 0x03) * 85))) {}
+
+  __m256i v;
+};
+
+template <>
+struct vec<int4_t, 64> {
+  using value_type = int4_t;
+  static constexpr std::integral_constant<size_t, 64> N = {};
+
+  vec() = default;
+  YNN_ALWAYS_INLINE explicit vec(__m256i v) : v(v) {}
+  YNN_ALWAYS_INLINE explicit vec(int4_t x)
+      : v(_mm256_set1_epi8(static_cast<char>((x.value & 0x0f) * 17))) {}
+
+  __m256i v;
+};
+
 using f64x4 = vec<double, 4>;
 using f32x8 = vec<float, 8>;
 using u32x8 = vec<uint32_t, 8>;
@@ -224,6 +251,8 @@ using u16x16 = vec<uint16_t, 16>;
 using s16x16 = vec<int16_t, 16>;
 using u8x32 = vec<uint8_t, 32>;
 using s8x32 = vec<int8_t, 32>;
+using s2x128 = vec<int2_t, 128>;
+using s4x64 = vec<int4_t, 64>;
 
 namespace internal {
 
@@ -269,6 +298,14 @@ YNN_ALWAYS_INLINE u8x32 load_aligned(const uint8_t* ptr, decltype(u8x32::N),
 YNN_ALWAYS_INLINE s8x32 load_aligned(const int8_t* ptr, decltype(s8x32::N),
                                      s8x32 = {}) {
   return s8x32{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x128 load_aligned(const int2_t* ptr, decltype(s2x128::N),
+                                      s2x128 = {}) {
+  return s2x128{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s4x64 load_aligned(const int4_t* ptr, decltype(s4x64::N),
+                                     s4x64 = {}) {
+  return s4x64{_mm256_load_si256(reinterpret_cast<const __m256i*>(ptr))};
 }
 
 YNN_ALWAYS_INLINE void store_aligned(double* ptr, f64x4 b,
@@ -346,6 +383,35 @@ YNN_ALWAYS_INLINE u8x32 load(const uint8_t* ptr, decltype(u8x32::N),
 YNN_ALWAYS_INLINE s8x32 load(const int8_t* ptr, decltype(s8x32::N),
                              s8x32 = {}) {
   return s8x32{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x128 load(const int2_t* ptr, decltype(s2x128::N),
+                              s2x128 = {}) {
+  return s2x128{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s4x64 load(const int4_t* ptr, decltype(s4x64::N),
+                             s4x64 = {}) {
+  return s4x64{_mm256_loadu_si256(reinterpret_cast<const __m256i*>(ptr))};
+}
+
+YNN_ALWAYS_INLINE s4x64 load(const int4_t* ptr, size_t n, s4x64 src) {
+  return s4x64{load(reinterpret_cast<const int8_t*>(ptr),
+                    ceil_div<size_t>(n * 4, 8), s8x32{src.v})
+                   .v};
+}
+YNN_ALWAYS_INLINE s4x64 load(const int4_t* ptr, size_t n, undef<64>) {
+  return s4x64{load(reinterpret_cast<const int8_t*>(ptr),
+                    ceil_div<size_t>(n * 4, 8), undef<32>{})
+                   .v};
+}
+YNN_ALWAYS_INLINE s2x128 load(const int2_t* ptr, size_t n, s2x128 src) {
+  return s2x128{load(reinterpret_cast<const int8_t*>(ptr),
+                     ceil_div<size_t>(n * 2, 8), s8x32{src.v})
+                    .v};
+}
+YNN_ALWAYS_INLINE s2x128 load(const int2_t* ptr, size_t n, undef<128>) {
+  return s2x128{load(reinterpret_cast<const int8_t*>(ptr),
+                     ceil_div<size_t>(n * 2, 8), undef<32>{})
+                    .v};
 }
 
 YNN_ALWAYS_INLINE void store(double* ptr, f64x4 b, decltype(f64x4::N) = {}) {

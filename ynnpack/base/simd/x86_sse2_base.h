@@ -135,6 +135,47 @@ struct vec<int8_t, 16> {
 };
 
 template <>
+struct vec<int2_t, 64> {
+  using value_type = int2_t;
+  static constexpr std::integral_constant<size_t, 64> N = {};
+
+  vec() = default;
+  YNN_ALWAYS_INLINE explicit vec(__m128i v) : v(v) {}
+  YNN_ALWAYS_INLINE explicit vec(int2_t x)
+      : v(_mm_set1_epi8(static_cast<char>((x.value & 0x03) * 85))) {}
+
+  __m128i v;
+};
+
+template <>
+struct vec<int2_t, 32> {
+  using value_type = int2_t;
+  static constexpr std::integral_constant<size_t, 32> N = {};
+
+  vec() = default;
+  YNN_ALWAYS_INLINE explicit vec(uint64_t v) : v(v) {}
+  YNN_ALWAYS_INLINE explicit vec(int2_t x) {
+    const uint64_t byte = static_cast<uint8_t>((x.value & 0x03) * 85);
+    v = byte * 0x0101010101010101ULL;
+  }
+
+  uint64_t v;
+};
+
+template <>
+struct vec<int4_t, 32> {
+  using value_type = int4_t;
+  static constexpr std::integral_constant<size_t, 32> N = {};
+
+  vec() = default;
+  YNN_ALWAYS_INLINE explicit vec(__m128i v) : v(v) {}
+  YNN_ALWAYS_INLINE explicit vec(int4_t x)
+      : v(_mm_set1_epi8(static_cast<char>((x.value & 0x0f) * 17))) {}
+
+  __m128i v;
+};
+
+template <>
 struct vec<double, 2> {
   using value_type = double;
   static constexpr std::integral_constant<size_t, 2> N = {};
@@ -164,6 +205,9 @@ using u16x8 = vec<uint16_t, 8>;
 using s16x8 = vec<int16_t, 8>;
 using u8x16 = vec<uint8_t, 16>;
 using s8x16 = vec<int8_t, 16>;
+using s2x64 = vec<int2_t, 64>;
+using s2x32 = vec<int2_t, 32>;
+using s4x32 = vec<int4_t, 32>;
 
 namespace internal {
 
@@ -218,6 +262,18 @@ YNN_ALWAYS_INLINE u8x16 load_aligned(const uint8_t* ptr, decltype(u8x16::N),
 YNN_ALWAYS_INLINE s8x16 load_aligned(const int8_t* ptr, decltype(s8x16::N),
                                      s8x16 = {}) {
   return s8x16{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x64 load_aligned(const int2_t* ptr, decltype(s2x64::N),
+                                     s2x64 = {}) {
+  return s2x64{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x32 load_aligned(const int2_t* ptr, decltype(s2x32::N),
+                                     s2x32 = {}) {
+  return s2x32{*reinterpret_cast<const uint64_t*>(ptr)};
+}
+YNN_ALWAYS_INLINE s4x32 load_aligned(const int4_t* ptr, decltype(s4x32::N),
+                                     s4x32 = {}) {
+  return s4x32{_mm_load_si128(reinterpret_cast<const __m128i*>(ptr))};
 }
 
 YNN_ALWAYS_INLINE void store_aligned(double* ptr, f64x2 b,
@@ -294,6 +350,58 @@ YNN_ALWAYS_INLINE u8x16 load(const uint8_t* ptr, decltype(u8x16::N),
 YNN_ALWAYS_INLINE s8x16 load(const int8_t* ptr, decltype(s8x16::N),
                              s8x16 = {}) {
   return s8x16{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x64 load(const int2_t* ptr, decltype(s2x64::N),
+                             s2x64 = {}) {
+  return s2x64{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+}
+YNN_ALWAYS_INLINE s2x32 load(const int2_t* ptr, decltype(s2x32::N),
+                             s2x32 = {}) {
+  uint64_t val;
+  std::memcpy(&val, ptr, sizeof(val));
+  return s2x32{val};
+}
+YNN_ALWAYS_INLINE s4x32 load(const int4_t* ptr, decltype(s4x32::N),
+                             s4x32 = {}) {
+  return s4x32{_mm_loadu_si128(reinterpret_cast<const __m128i*>(ptr))};
+}
+
+// We could use partial loads from x86_sse2_partial_load_store.h for these,
+// but it's useful to have this defined here, so they are available for AVX2
+// and AVX512 targets.
+YNN_ALWAYS_INLINE s2x64 load(const int2_t* ptr, size_t n, s2x64 src) {
+  alignas(16) uint8_t temp[16] = {0};
+  _mm_store_si128(reinterpret_cast<__m128i*>(temp), src.v);
+  std::memcpy(temp, ptr, ceil_div<size_t>(n * 2, 8));
+  src.v = _mm_load_si128(reinterpret_cast<const __m128i*>(temp));
+  return src;
+}
+YNN_ALWAYS_INLINE s2x32 load(const int2_t* ptr, size_t n, s2x32 src) {
+  uint64_t val = src.v;
+  std::memcpy(&val, ptr, ceil_div<size_t>(n * 2, 8));
+  return s2x32{val};
+}
+YNN_ALWAYS_INLINE s4x32 load(const int4_t* ptr, size_t n, s4x32 src) {
+  alignas(16) uint8_t temp[16] = {0};
+  _mm_store_si128(reinterpret_cast<__m128i*>(temp), src.v);
+  std::memcpy(temp, ptr, ceil_div<size_t>(n * 4, 8));
+  src.v = _mm_load_si128(reinterpret_cast<const __m128i*>(temp));
+  return src;
+}
+YNN_ALWAYS_INLINE s2x64 load(const int2_t* ptr, size_t n, undef<64>) {
+  alignas(16) uint8_t temp[16] = {0};
+  std::memcpy(temp, ptr, ceil_div<size_t>(n * 2, 8));
+  return s2x64{_mm_load_si128(reinterpret_cast<const __m128i*>(temp))};
+}
+YNN_ALWAYS_INLINE s2x32 load(const int2_t* ptr, size_t n, undef<32>) {
+  uint64_t val = 0;
+  std::memcpy(&val, ptr, ceil_div<size_t>(n * 2, 8));
+  return s2x32{val};
+}
+YNN_ALWAYS_INLINE s4x32 load(const int4_t* ptr, size_t n, undef<32>) {
+  alignas(16) uint8_t temp[16] = {0};
+  std::memcpy(temp, ptr, ceil_div<size_t>(n * 4, 8));
+  return s4x32{_mm_load_si128(reinterpret_cast<const __m128i*>(temp))};
 }
 
 YNN_ALWAYS_INLINE void store(double* ptr, f64x2 b, decltype(f64x2::N) = {}) {

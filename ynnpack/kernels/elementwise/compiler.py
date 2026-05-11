@@ -38,7 +38,19 @@ class Type:
     return self.type_class in ("float", "bfloat")
 
   def __str__(self):
-    return f"{self.type_class}{self.size}x{self.lanes}_t"
+    if self.lanes == 1:
+      if self.type_class == "int" and self.size == 2:
+        return "int2x4"
+      elif self.type_class == "uint" and self.size == 2:
+        return "uint2x4"
+      elif self.type_class == "int" and self.size == 4:
+        return "int4x2"
+      elif self.type_class == "uint" and self.size == 4:
+        return "uint4x2"
+      else:
+        return self.to_c_decl(False)
+    else:
+      return f"{self.type_class}{self.size}x{self.lanes}_t"
 
   def __repr__(self):
     return str(self)
@@ -1309,10 +1321,18 @@ class Target:
         self.result += "\n"
 
   def advance_pointers(self, buffers, var, step):
+    """Emit code to advance pointers."""
     for b in buffers:
       stride = ""
       if b.broadcast_mode == BroadcastMode.NONE:
-        stride = str(b.ty.size // 8)
+        if b.ty.size < 8:
+          self.result += (
+              f"{self.indent()} {b.name} = offset_bytes({b.name},"
+              f" ({step} * {b.ty.size}) / 8);\n"
+          )
+          continue
+        else:
+          stride = str(b.ty.size // 8)
       elif b.broadcast_mode == BroadcastMode.ALWAYS:
         stride = "0"
       else:
