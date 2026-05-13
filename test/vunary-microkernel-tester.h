@@ -230,14 +230,14 @@ class VUnaryMicrokernelTester {
     ukernel(outputs.size() * sizeof(In), inputs.data(), outputs.data(),
             (UKernelParamsType*)&uparams);
     for (size_t i = 0; i < outputs.size(); i++) {
-      if (std::isfinite(expected[i])) {
-        ASSERT_NEAR(expected[i], outputs[i],
-                    tolerance_ulp * std::abs(expected[i]) *
+      if (std::isfinite((double)expected[i])) {
+        ASSERT_NEAR((double)expected[i], (double)outputs[i],
+                    tolerance_ulp * std::abs((double)expected[i]) *
                         std::numeric_limits<float>::epsilon())
-            << "for input " << inputs[i];
+            << "for input " << (double)inputs[i];
       } else {
-        EXPECT_EQ(std::fpclassify(expected[i]), std::fpclassify(outputs[i]))
-            << "for input " << inputs[i] << " and output " << outputs[i]
+        EXPECT_EQ(std::fpclassify((double)expected[i]), std::fpclassify((double)outputs[i]))
+            << "for input " << (double)inputs[i] << " and output " << (double)outputs[i]
             << " (FP_INFINITE=" << FP_INFINITE << ", FP_NAN=" << FP_NAN
             << ", FP_NORMAL=" << FP_NORMAL << ", FP_SUBNORMAL=" << FP_SUBNORMAL
             << ", FP_ZERO=" << FP_ZERO << ")";
