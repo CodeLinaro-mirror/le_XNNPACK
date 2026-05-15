@@ -23,6 +23,23 @@ cc_library(
 )
 
 cc_library(
+    name = "type_id",
+    hdrs = ["type_id.h"],
+    deps = [
+        "@abseil-cpp//absl/strings:string_view",
+    ],
+)
+
+cc_test(
+    name = "type_id_test",
+    srcs = ["type_id_test.cc"],
+    deps = [
+        ":type_id",
+        "@com_google_googletest//:gtest_main",  # gunit
+    ],
+)
+
+cc_library(
     name = "arithmetic_helpers",
     hdrs = ["arithmetic_helpers.h"],
     deps = [
@@ -86,6 +103,7 @@ cc_library(
         "//conditions:default": [],
     }),
     deps = [
+        ":type_id",
         "//litert/tensor:buffer",
         "//litert/tensor:datatypes",
         "//litert/tensor/utils:macros",
@@ -103,6 +121,7 @@ cc_test(
     srcs = ["graph_test.cc"],
     deps = [
         ":graph",
+        ":type_id",
         "//litert/tensor:buffer",
         "//litert/tensor:datatypes",
         "//litert/tensor/utils:matchers",
