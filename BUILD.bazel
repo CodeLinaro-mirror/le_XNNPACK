@@ -938,11 +938,21 @@ xnnpack_cc_library(
 )
 
 xnnpack_cc_library(
+    name = "init",
+    srcs = ["src/init.c"],
+    deps = [
+        ":allocator",
+        ":common",
+        ":init_once",
+        ":logging",
+        ":params",
+        ":xnnpack_h",
+        "//src/configs:hardware_config",
+    ],
+)
+
+xnnpack_cc_library(
     name = "XNNPACK",
-    srcs = select({
-        "//ynnpack/xnnpack:use_ynnpack": [],
-        "//conditions:default": ["src/init.c"],
-    }),
     hdrs = [
         "include/experimental.h",
         "include/xnnpack.h",
@@ -963,6 +973,7 @@ xnnpack_cc_library(
             "//:common",  # build_cleaner: keep
             "//:fingerprint_check",
             "//:fingerprint_id",
+            "//:init",
             "//:init_once",
             "//:logging",
             "//:math",  # build_cleaner: keep

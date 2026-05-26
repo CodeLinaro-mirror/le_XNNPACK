@@ -97,6 +97,7 @@ xnnpack_cc_library(
         ":hardware_config",
         "//:common",
         "//:indirection",
+        "//:init",
         "//:init_once",
         "//:logging",
         "//:math",

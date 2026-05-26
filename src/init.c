@@ -23,6 +23,7 @@
 
 #include "include/xnnpack.h"
 #include "src/xnnpack/allocator.h"
+#include "src/xnnpack/common.h"
 #include "src/xnnpack/hardware-config.h"
 #include "src/xnnpack/init-once.h"
 #include "src/xnnpack/log.h"
@@ -81,4 +82,48 @@ enum xnn_status xnn_initialize(const struct xnn_allocator* allocator) {
 
 enum xnn_status xnn_deinitialize(void) {
   return xnn_status_success;
+}
+
+// Initialization guards keep track of the config generation they were
+// initialized on.
+//
+// If the generation stored in the guard is different from this value it means
+// the initialization needs to be run again.
+//
+// This is initialized to 1 to invalidate guards that are initialized to 0.
+uint32_t xnn_init_generation = 1;
+
+#if XNN_PLATFORM_WINDOWS || XNN_HAS_PTHREADS
+void xnn_init_once_impl(struct xnn_init_guard* guard, XNN_ONCE_LOCK_TYPE* lock, void (*init_fn)(void)) {
+#if XNN_PLATFORM_WINDOWS
+  AcquireSRWLockExclusive(lock);
+#elif XNN_HAS_PTHREADS
+  pthread_mutex_lock(lock);
+#endif
+
+  if (guard->generation != xnn_init_generation) {
+    init_fn();
+    guard->generation = xnn_init_generation;
+  }
+
+#if XNN_PLATFORM_WINDOWS
+  ReleaseSRWLockExclusive(lock);
+#elif XNN_HAS_PTHREADS
+  pthread_mutex_unlock(lock);
+#endif
+}
+#else
+void xnn_init_once_impl(struct xnn_init_guard* guard, void (*init_fn)(void)) {
+  if (guard->generation != xnn_init_generation) {
+    init_fn();
+    guard->generation = xnn_init_generation;
+  }
+}
+#endif
+
+void xnn_reset_all_configs(void) {
+  xnn_init_generation++;
+  if (xnn_init_generation == 0) {
+    xnn_init_generation = 1;
+  }
 }
