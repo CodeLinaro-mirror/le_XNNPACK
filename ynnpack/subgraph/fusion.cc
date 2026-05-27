@@ -1806,8 +1806,35 @@ bool rewrite_sum_to_dot(ynn_subgraph& subgraph, ynn_node& node,
 
   subgraph.topological_sort();
   analysis.invalidate();
-
   return true;
+}
+
+bool rewrite_fast_math(ynn_subgraph& subgraph, ynn_node& node,
+                       subgraph_analysis& analysis) {
+  if ((subgraph.flags & YNN_FLAG_FAST_MATH) == 0) return false;
+
+  ynn_node::unary_elementwise* unary =
+      std::get_if<ynn_node::unary_elementwise>(&node.op);
+  if (!unary) return false;
+
+  if (unary->op == ynn_unary_erf) {
+    const ynn_value& input = subgraph.value(node.inputs[0]);
+    const ynn_value& output = subgraph.value(node.outputs[0]);
+    if (input.type == ynn_type_fp32 && output.type == ynn_type_fp32) {
+      const ynn::unary_kernel_fn kernel =
+          ynn::get_unary_kernel(ynn_unary_approx_erf, input.type, output.type);
+      if (kernel) {
+        YNN_LOG_DEBUG() << "Rewriting erf to approx_erf (fast math)";
+        unary_params new_params;
+        new_params.approx_erf = unary->params.erf;
+
+        ynn::define_unary(subgraph, node, node.inputs[0], node.outputs[0],
+                          ynn_unary_approx_erf, kernel, new_params);
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 }  // namespace
@@ -1855,6 +1882,21 @@ ynn_status ynn_subgraph::fusion() {
     }
     if (changed) invalidate_dead_values();
   } while (changed);
+
+  if ((flags & YNN_FLAG_FAST_MATH) != 0) {
+    do {
+      subgraph_analysis analysis(*this);
+      changed = false;
+      for (ynn_node& node : nodes) {
+        if (!node.is_valid()) continue;
+        changed = changed || ynn::rewrite_fast_math(*this, node, analysis);
+        if (!analysis.is_valid) {
+          break;
+        }
+      }
+      if (changed) invalidate_dead_values();
+    } while (changed);
+  }
 
   do {
     subgraph_analysis analysis(*this);

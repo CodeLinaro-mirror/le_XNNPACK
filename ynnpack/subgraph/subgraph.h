@@ -261,6 +261,8 @@ struct ynn_node {
           return a.params.exp == b.params.exp;
         case ynn_unary_erf:
           return a.params.erf == b.params.erf;
+        case ynn_unary_approx_erf:
+          return a.params.approx_erf == b.params.approx_erf;
         case ynn_unary_tanh:
           return a.params.tanh == b.params.tanh;
         case ynn_unary_poly3:
@@ -278,6 +280,8 @@ struct ynn_node {
           return a.params.exp < b.params.exp;
         case ynn_unary_erf:
           return a.params.erf < b.params.erf;
+        case ynn_unary_approx_erf:
+          return a.params.approx_erf < b.params.approx_erf;
         case ynn_unary_tanh:
           return a.params.tanh < b.params.tanh;
         case ynn_unary_poly3:

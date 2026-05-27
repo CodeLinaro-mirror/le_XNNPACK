@@ -243,6 +243,22 @@ struct erf_op {
   }
 };
 
+struct approx_erf_op {
+  approx_erf_params params;
+
+  explicit approx_erf_op(const unary_params& params)
+      : params(params.approx_erf) {}
+  float operator()(float x) const {
+    return std::erf(static_cast<float>(params.input_multiplier) * x) *
+               static_cast<float>(params.output_multiplier) +
+           static_cast<float>(params.output_offset);
+  }
+  double operator()(double x) const {
+    return std::erf(params.input_multiplier * x) * params.output_multiplier +
+           params.output_offset;
+  }
+};
+
 struct sign_op {
   explicit sign_op(const unary_params& = {}) {}
   float operator()(float x) const {
@@ -356,6 +372,8 @@ unary_kernel_fn get_float_unary_reference_kernel(ynn_unary_operator op,
       return unary_impl<T, T, expm1_op>;
     case ynn_unary_erf:
       return unary_impl<T, T, erf_op>;
+    case ynn_unary_approx_erf:
+      return unary_impl<T, T, approx_erf_op>;
     case ynn_unary_floor:
       return unary_impl<T, T, floor_op>;
     case ynn_unary_log:
@@ -496,6 +514,11 @@ unary_params get_unary_params(ynn_unary_operator op) {
       return unary_params{.erf = erf_params{.output_offset = 0.0,
                                             .output_multiplier = 1.0,
                                             .input_multiplier = 1.0}};
+    case ynn_unary_approx_erf:
+      return unary_params{.approx_erf =
+                              approx_erf_params{.output_offset = 0.0,
+                                                .output_multiplier = 1.0,
+                                                .input_multiplier = 1.0}};
     case ynn_unary_tanh:
       return unary_params{
           .tanh = tanh_params{.output_offset = 0.0, .output_multiplier = 1.0}};
