@@ -306,7 +306,6 @@ static XNN_INLINE void xnn_store_tail_f32(float* output, xnn_simd_f32_t v,
     vst1_lane_f32(output, v_low, 0);
   }
 }
-
 #if (defined(__ARM_FP16_FORMAT_IEEE) || defined(__ARM_FP16_FORMAT_ALTERNATIVE)) && (defined(__ARM_FP) && (__ARM_FP & 2)) || (XNN_COMPILER_MSVC && XNN_ARCH_ARM64)
 #include "src/xnnpack/math.h"
 
@@ -348,7 +347,7 @@ static XNN_INLINE xnn_simd_f16_t xnn_load_tail_f16(const xnn_float16* input,
 }
 
 static XNN_INLINE void xnn_store_tail_f16(xnn_float16* output, xnn_simd_f16_t v,
-                                          size_t num_elements) {
+                                           size_t num_elements) {
   if (num_elements == 4) {
 #if XNN_COMPILER_MSVC
     vst1_u16((uint16_t*)output, vreinterpret_u16_f16(v));
