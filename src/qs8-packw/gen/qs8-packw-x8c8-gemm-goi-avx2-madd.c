@@ -30,12 +30,12 @@ __m256i mm256_dpbusd_epi32_madd(__m256i i32, const __m256i u7, const __m256i s8)
   return _mm256_add_epi32(i32, v);
 }
 
-XNN_INLINE static uint64_t safe_load_u64(const void* address, size_t n) {
-  uint64_t value = 0;
+XNN_INLINE static uint64_t safe_load_u64(const void* address, size_t n, uint8_t pad_value) {
+  uint64_t value = (uint64_t)pad_value * 0x0101010101010101ULL;
   assert(n <= sizeof(uint64_t));
   const uint8_t* bytes = (const uint8_t*) address;
   for (size_t i = 0; i < n; ++i) {
-    value |= (uint64_t) bytes[i] << (i * 8);
+    ((uint8_t*)&value)[i] = bytes[i];
   }
   return value;
 }
@@ -190,14 +190,14 @@ void xnn_qs8_packw_gemm_goi_ukernel_x8c8__avx2_madd(
       if (k != 0) {
         assert(k >= 1 && k <= 7);
 
-        __m256i v0 = _mm256_set1_epi64x((int64_t) safe_load_u64(w0, k));
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w1, k)), 0x0C);
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w2, k)), 0x30);
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w3, k)), 0xC0);
-        __m256i v4 = _mm256_set1_epi64x((int64_t) safe_load_u64(w4, k));
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w5, k)), 0x0C);
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w6, k)), 0x30);
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w7, k)), 0xC0);
+        __m256i v0 = _mm256_set1_epi64x((int64_t) safe_load_u64(w0, k, 0));
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w1, k, 0)), 0x0C);
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w2, k, 0)), 0x30);
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w3, k, 0)), 0xC0);
+        __m256i v4 = _mm256_set1_epi64x((int64_t) safe_load_u64(w4, k, 0));
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w5, k, 0)), 0x0C);
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w6, k, 0)), 0x30);
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w7, k, 0)), 0xC0);
 
         w0 += k;
         w1 += k;
@@ -369,14 +369,14 @@ void xnn_qs8_packw_gemm_goi_ukernel_x8c8__avx2_madd(
       if (k != 0) {
         assert(k >= 1 && k <= 7);
 
-        __m256i v0 = _mm256_set1_epi64x((int64_t) safe_load_u64(w0, k));
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w1, k)), 0x0C);
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w2, k)), 0x30);
-        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w3, k)), 0xC0);
-        __m256i v4 = _mm256_set1_epi64x((int64_t) safe_load_u64(w4, k));
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w5, k)), 0x0C);
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w6, k)), 0x30);
-        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w7, k)), 0xC0);
+        __m256i v0 = _mm256_set1_epi64x((int64_t) safe_load_u64(w0, k, 0));
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w1, k, 0)), 0x0C);
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w2, k, 0)), 0x30);
+        v0 = _mm256_blend_epi32(v0, _mm256_set1_epi64x((int64_t) safe_load_u64(w3, k, 0)), 0xC0);
+        __m256i v4 = _mm256_set1_epi64x((int64_t) safe_load_u64(w4, k, 0));
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w5, k, 0)), 0x0C);
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w6, k, 0)), 0x30);
+        v4 = _mm256_blend_epi32(v4, _mm256_set1_epi64x((int64_t) safe_load_u64(w7, k, 0)), 0xC0);
 
         w0 += k;
         w1 += k;

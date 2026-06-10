@@ -46,7 +46,7 @@ __m256i xnn_packed2planar(__m256i* vacc, const __m256i v, const __m256i vmask, c
    return _mm256_or_si256(vl01, v23);
 }
 
-void xnn_qs8_qc4w_packw_gemm_goi_ukernel_x8c8__avxvnni(
+void xnn_qs8_to_qu8_qc4w_packw_gemm_goi_ukernel_x8c8__avxvnni(
   size_t g,
   size_t nc,
   size_t kc,
@@ -77,7 +77,7 @@ void xnn_qs8_qc4w_packw_gemm_goi_ukernel_x8c8__avxvnni(
 
   const __m256i vone = _mm256_set1_epi8(1);
   const __m256i vmask = _mm256_set1_epi8(0xF0);
-  const __m256i vzeropoint = _mm256_set1_epi32((int32_t) params->input_zero_point + 0);
+  const __m256i vzeropoint = _mm256_set1_epi32((int32_t) params->input_zero_point + 128);
   const __m256i vkernel_zero_point = _mm256_set1_epi32((uint32_t) params->kernel_zero_point * 0x11111111);
   assert(params->kernel_zero_point == 8 || params->kernel_zero_point == 0);
 

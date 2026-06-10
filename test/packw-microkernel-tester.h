@@ -314,10 +314,12 @@ class PackWMicrokernelTester {
     std::fill(packed_w_ref.begin(), packed_w_ref.end(), INT8_C(0x7B));
 
     const int32_t* bias_data = nullbias() ? nullptr : bias.data();
-    const xnn_qs8_qc4w_packing_params packing_params = {0};
+    const xnn_qs8_qc4w_packing_params packing_params = {
+        0, static_cast<uint8_t>(kzp())};
 
     // Compute reference results.
-    xnn_pack_qs8_qc4w_gemm_goi_w(
+    auto reference_fn = izp() == 128 ? xnn_pack_qs8_to_qu8_qc4w_gemm_goi_w : xnn_pack_qs8_qc4w_gemm_goi_w;
+    reference_fn(
         /*g=*/1, n(), k2, nr(), kr(), sr(), weights.data(), bias_data,
         /*scale=*/nullptr, reinterpret_cast<void*>(packed_w_ref.data()),
         /*extra_bytes=*/0, &packing_params);
