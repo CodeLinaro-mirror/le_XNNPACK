@@ -119,7 +119,10 @@ cc_test(
 
 cc_test(
     name = "dot",
-    srcs = ["dot.cc"],
+    srcs = [
+        "batched_dot.cc",
+        "dot.cc",
+    ],
     linkopts = ynn_binary_linkopts(),
     malloc = ynn_binary_malloc(),
     shard_count = 24,

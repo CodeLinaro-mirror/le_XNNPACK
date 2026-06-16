@@ -230,18 +230,18 @@ std::vector<slinky::expr> make_split_factors(
     int d = get_loop_dim(index_d);
     assert(d < extents.size());
     if (!extents[d].defined()) continue;
-    if (d < given_splits.size()) {
+    if (d < given_splits.size() && given_splits[d].defined()) {
       splits[d] = given_splits[d];
     } else {
       slinky::expr s = slinky::simplify(slinky::max(
           1, slinky::min(tile_area / tile_area_so_far, extents[d])));
       s = globals.get(s, "s");
       splits[d] = s;
-    }
-    if (splits[d].defined() && slinky::prove_true(splits[d] >= extents[d])) {
-      // TODO(b/458542243): We should not need to do this optimization
-      // ourselves.
-      splits[d] = {};
+      if (splits[d].defined() && slinky::prove_true(splits[d] >= extents[d])) {
+        // TODO(b/458542243): We should not need to do this optimization
+        // ourselves.
+        splits[d] = {};
+      }
     }
     if (splits[d].defined()) {
       tile_area_so_far = slinky::simplify(tile_area_so_far * splits[d]);
