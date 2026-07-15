@@ -28,9 +28,14 @@ xnn_status xnn_define_tensor_value(xnn_subgraph_t subgraph,
   // YNNPACK interprets non-null dims for non-constant values to be static
   // shapes, so we can't pass them here unless the shape really is static.
   const size_t* xnn_dims = data ? dims : nullptr;
+  uint32_t ynn_flags = ynn::value_flags_from_xnn(flags);
+  if (data != nullptr) {
+    ynn_flags &=
+        ~(YNN_VALUE_FLAG_EXTERNAL_INPUT | YNN_VALUE_FLAG_EXTERNAL_OUTPUT);
+  }
   ynn_status status = ynn_define_tensor(
       subgraph->ynn, ynn::type_from_xnn(datatype), num_dims, xnn_dims, data,
-      ynn::value_flags_from_xnn(flags), id_out);
+      ynn_flags, id_out);
   if (status != ynn_status_success) {
     return ynn::xnn_status_from_ynn(status);
   }
@@ -75,9 +80,14 @@ xnn_status xnn_define_quantized_tensor_value(
   // YNNPACK interprets non-null dims for non-constant values to be static
   // shapes, so we can't pass them here unless the shape really is static.
   const size_t* xnn_dims = data ? dims : nullptr;
+  uint32_t ynn_flags = ynn::value_flags_from_xnn(flags);
+  if (data != nullptr) {
+    ynn_flags &=
+        ~(YNN_VALUE_FLAG_EXTERNAL_INPUT | YNN_VALUE_FLAG_EXTERNAL_OUTPUT);
+  }
   ynn_status status = ynn_define_tensor(
       subgraph->ynn, ynn::type_from_xnn(datatype), num_dims, xnn_dims, data,
-      ynn::value_flags_from_xnn(flags), id_out);
+      ynn_flags, id_out);
   if (status != ynn_status_success) {
     return ynn::xnn_status_from_ynn(status);
   }
@@ -168,9 +178,14 @@ xnn_status xnn_define_channelwise_quantized_tensor_value_v3(
 
   *id_out =
       external_id == XNN_INVALID_VALUE_ID ? YNN_INVALID_VALUE_ID : external_id;
+  uint32_t ynn_flags = ynn::value_flags_from_xnn(flags);
+  if (data != nullptr) {
+    ynn_flags &=
+        ~(YNN_VALUE_FLAG_EXTERNAL_INPUT | YNN_VALUE_FLAG_EXTERNAL_OUTPUT);
+  }
   status =
       ynn_define_tensor(subgraph->ynn, ynn::type_from_xnn(datatype), num_dims,
-                        dims, data, ynn::value_flags_from_xnn(flags), id_out);
+                        dims, data, ynn_flags, id_out);
   if (status != ynn_status_success) {
     return ynn::xnn_status_from_ynn(status);
   }
