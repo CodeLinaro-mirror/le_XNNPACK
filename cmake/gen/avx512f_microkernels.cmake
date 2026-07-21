@@ -11,8 +11,10 @@
 
 SET(PROD_AVX512F_MICROKERNEL_SRCS
   src/f16-vapproxgelu/gen/f16-f32acc-vapproxgelu-avx512f-rational-6-4-div.c
+  src/f16-vcos/gen/f16-f32acc-vcos-avx512f-poly-3.c
   src/f16-vexp/gen/f16-f32acc-vexp-avx512f-poly-3.c
   src/f16-vlog/gen/f16-f32acc-vlog-avx512f-rational-1-3-div.c
+  src/f16-vsin/gen/f16-f32acc-vsin-avx512f-poly-3.c
   src/f16-vtanh/gen/f16-f32acc-vtanh-avx512f-rational-5-4-div.c
   src/f32-avgpool/gen/f32-avgpool-9p-minmax-avx512f-u16.c
   src/f32-dwconv/gen/f32-dwconv-3p16c-minmax-avx512f.c
@@ -62,7 +64,7 @@ SET(PROD_AVX512F_MICROKERNEL_SRCS
   src/f32-vcopysign/gen/f32-vcopysign-avx512f.c
   src/f32-vcopysign/gen/f32-vcopysignc-avx512f.c
   src/f32-vcopysign/gen/f32-vrcopysignc-avx512f.c
-  src/f32-vcos/gen/f32-vcos-avx512f-rational-5-4-div.c
+  src/f32-vcos/gen/f32-vcos-avx512f-poly-5.c
   src/f32-velu/gen/f32-velu-avx512f-rr1-p6-u64.c
   src/f32-vexp/gen/f32-vexp-avx512f-rational-3-2-div.c
   src/f32-vgelu/gen/f32-vgelu-avx512f-rational-12-10-div.c
@@ -76,7 +78,7 @@ SET(PROD_AVX512F_MICROKERNEL_SRCS
   src/f32-vrsqrt/gen/f32-vrsqrt-avx512f-rsqrt.c
   src/f32-vrsqrt/gen/f32-vrsqrt-avx512f-sqrt.c
   src/f32-vsigmoid/gen/f32-vsigmoid-avx512f-rr2-lut32-p2-perm2-scalef-div-u64.c
-  src/f32-vsin/gen/f32-vsin-avx512f-rational-5-4-div.c
+  src/f32-vsin/gen/f32-vsin-avx512f-poly-5.c
   src/f32-vsqrt/gen/f32-vsqrt-avx512f-rsqrt.c
   src/f32-vtanh/gen/f32-vtanh-avx512f-rational-9-8-div.c
   src/f32-vunary/gen/f32-vabs-avx512f.c
@@ -227,6 +229,7 @@ SET(NON_PROD_AVX512F_MICROKERNEL_SRCS
   src/f32-vcmul/gen/f32-vcmul-avx512f-u16.c
   src/f32-vcmul/gen/f32-vcmul-avx512f-u64.c
   src/f32-vcmul/gen/f32-vcmul-avx512f-u128.c
+  src/f32-vcos/gen/f32-vcos-avx512f-rational-5-4-div.c
   src/f32-vcos/gen/f32-vcos-avx512f-rational-5-4-nr.c
   src/f32-velu/gen/f32-velu-avx512f-rr1-lut16-p3-perm-u16.c
   src/f32-velu/gen/f32-velu-avx512f-rr1-lut16-p3-perm-u32.c
@@ -274,6 +277,7 @@ SET(NON_PROD_AVX512F_MICROKERNEL_SRCS
   src/f32-vsigmoid/gen/f32-vsigmoid-avx512f-rr2-lut32-p2-perm2-scalef-nr1fma-u32.c
   src/f32-vsigmoid/gen/f32-vsigmoid-avx512f-rr2-lut32-p2-perm2-scalef-nr1fma-u48.c
   src/f32-vsigmoid/gen/f32-vsigmoid-avx512f-rr2-lut32-p2-perm2-scalef-nr1fma-u64.c
+  src/f32-vsin/gen/f32-vsin-avx512f-rational-5-4-div.c
   src/f32-vsin/gen/f32-vsin-avx512f-rational-5-4-nr.c
   src/f32-vtanh/gen/f32-vtanh-avx512f-rational-9-8-nr.c
   src/x32-packw/gen/x32-packw-x16-gemm-goi-avx512f-u4.c
