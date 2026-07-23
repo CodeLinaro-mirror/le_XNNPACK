@@ -1625,14 +1625,14 @@ static void init_f32_cosine_config_impl(struct xnn_unary_elementwise_config* con
     assert(hardware_config != NULL);
     (void) hardware_config;  // May be unused.
     if (hardware_config->arch_flags & xnn_arch_arm_neon) {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__neon_rational_5_4_div_u16);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__neon_poly_4_u16);
       config->element_tile = 16;
     } else {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_rational_5_4_div_u4);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_poly_4_u4);
       config->element_tile = 4;
     }
   #elif XNN_ARCH_ARM64
-    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__neon_rational_5_4_div_u16);
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__neon_poly_4_u16);
     config->element_tile = 16;
   #elif XNN_ARCH_X86 || XNN_ARCH_X86_64
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
@@ -1640,13 +1640,13 @@ static void init_f32_cosine_config_impl(struct xnn_unary_elementwise_config* con
     (void) hardware_config;  // May be unused.
     #if XNN_ENABLE_AVX512F
       if (hardware_config->arch_flags & xnn_arch_x86_avx512f) {
-        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__avx512f_rational_5_4_div_u32);
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__avx512f_poly_4_u32);
         config->element_tile = 32;
       } else
     #endif
     #if XNN_ENABLE_FMA3
       if (hardware_config->arch_flags & xnn_arch_x86_fma3) {
-        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__fma3_rational_5_4_div_u16);
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__fma3_poly_4_u16);
         config->element_tile = 16;
       } else
     #endif
@@ -1658,18 +1658,21 @@ static void init_f32_cosine_config_impl(struct xnn_unary_elementwise_config* con
     #endif
     #if XNN_ENABLE_SSE2
       if (!consistent_arithmetic && (hardware_config->arch_flags & xnn_arch_x86_sse2)) {
-          config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__sse2_rational_5_4_div_u8);
-          config->element_tile = 8;
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__sse2_poly_4_u16);
+        config->element_tile = 16;
       } else if (consistent_arithmetic && (hardware_config->arch_flags & xnn_arch_x86_sse2)) {
-          config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__sse2fma_rational_5_4_div_u8);
-          config->element_tile = 8;
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__sse2fma_poly_4_u16);
+        config->element_tile = 16;
       } else
     #endif
     {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_rational_5_4_div_u1);
-      config->element_tile = 1;
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_poly_4_u4);
+      config->element_tile = 4;
     }
-  #elif XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  #elif XNN_ARCH_WASMRELAXEDSIMD
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__wasmrelaxedsimd_poly_4_u16);
+    config->element_tile = 16;
+  #elif XNN_ARCH_WASMSIMD
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
     assert(hardware_config != NULL);
     (void) hardware_config;  // May be unused.
@@ -1691,15 +1694,15 @@ static void init_f32_cosine_config_impl(struct xnn_unary_elementwise_config* con
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
     assert(hardware_config != NULL);
     if (hardware_config->arch_flags & xnn_arch_riscv_vector) {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__rvv_rational_5_4_div_u8v);
-      config->element_tile = 8 * hardware_config->vlenb / sizeof(float);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__rvv_poly_4_u4v);
+      config->element_tile = 4 * hardware_config->vlenb / sizeof(float);
     } else {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_rational_5_4_div_u1);
-      config->element_tile = 1;
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_poly_4_u4);
+      config->element_tile = 4;
     }
   #else
-    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_rational_5_4_div_u1);
-    config->element_tile = 1;
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vcos_ukernel__scalar_poly_4_u4);
+    config->element_tile = 4;
   #endif
 }
 
@@ -2882,14 +2885,14 @@ static void init_f32_sine_config_impl(struct xnn_unary_elementwise_config* confi
     assert(hardware_config != NULL);
     (void) hardware_config;  // May be unused.
     if (hardware_config->arch_flags & xnn_arch_arm_neon) {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__neon_rational_5_4_div_u16);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__neon_poly_4_u16);
       config->element_tile = 16;
     } else {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_rational_5_4_div_u4);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_poly_4_u4);
       config->element_tile = 4;
     }
   #elif XNN_ARCH_ARM64
-    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__neon_rational_5_4_div_u16);
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__neon_poly_4_u16);
     config->element_tile = 16;
   #elif XNN_ARCH_X86 || XNN_ARCH_X86_64
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
@@ -2897,13 +2900,13 @@ static void init_f32_sine_config_impl(struct xnn_unary_elementwise_config* confi
     (void) hardware_config;  // May be unused.
     #if XNN_ENABLE_AVX512F
       if (hardware_config->arch_flags & xnn_arch_x86_avx512f) {
-        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__avx512f_rational_5_4_div_u32);
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__avx512f_poly_4_u32);
         config->element_tile = 32;
       } else
     #endif
     #if XNN_ENABLE_FMA3
       if (hardware_config->arch_flags & xnn_arch_x86_fma3) {
-        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__fma3_rational_5_4_div_u16);
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__fma3_poly_4_u16);
         config->element_tile = 16;
       } else
     #endif
@@ -2915,18 +2918,21 @@ static void init_f32_sine_config_impl(struct xnn_unary_elementwise_config* confi
     #endif
     #if XNN_ENABLE_SSE2
       if (!consistent_arithmetic && (hardware_config->arch_flags & xnn_arch_x86_sse2)) {
-          config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__sse2_rational_5_4_div_u8);
-          config->element_tile = 8;
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__sse2_poly_4_u16);
+        config->element_tile = 16;
       } else if (consistent_arithmetic && (hardware_config->arch_flags & xnn_arch_x86_sse2)) {
-          config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__sse2fma_rational_5_4_div_u8);
-          config->element_tile = 8;
+        config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__sse2fma_poly_4_u16);
+        config->element_tile = 16;
       } else
     #endif
     {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_rational_5_4_div_u1);
-      config->element_tile = 1;
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_poly_4_u4);
+      config->element_tile = 4;
     }
-  #elif XNN_ARCH_WASMSIMD || XNN_ARCH_WASMRELAXEDSIMD
+  #elif XNN_ARCH_WASMRELAXEDSIMD
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__wasmrelaxedsimd_poly_4_u16);
+    config->element_tile = 16;
+  #elif XNN_ARCH_WASMSIMD
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
     assert(hardware_config != NULL);
     (void) hardware_config;  // May be unused.
@@ -2948,15 +2954,15 @@ static void init_f32_sine_config_impl(struct xnn_unary_elementwise_config* confi
     const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
     assert(hardware_config != NULL);
     if (hardware_config->arch_flags & xnn_arch_riscv_vector) {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__rvv_rational_5_4_div_u8v);
-      config->element_tile = 8 * hardware_config->vlenb / sizeof(float);
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__rvv_poly_4_u4v);
+      config->element_tile = 4 * hardware_config->vlenb / sizeof(float);
     } else {
-      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_rational_5_4_div_u1);
-      config->element_tile = 1;
+      config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_poly_4_u4);
+      config->element_tile = 4;
     }
   #else
-    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_rational_5_4_div_u1);
-    config->element_tile = 1;
+    config->ukernel = XNN_INIT_UNARY_UKERNEL(xnn_f32_vsin_ukernel__scalar_poly_4_u4);
+    config->element_tile = 4;
   #endif
 }
 
