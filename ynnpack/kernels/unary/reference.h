@@ -506,6 +506,12 @@ struct cosine : public trig {
   }
 };
 
+struct tangent : public trig {
+  explicit tangent(const unary_params&) {}
+  float operator()(float x) const override { return std::tan(x); }
+  double operator()(double x) const override { return std::tan(x); }
+};
+
 struct hardswish : public unary_op_info {
   explicit hardswish(const unary_params& = {}) {}
   float operator()(float x) const override {

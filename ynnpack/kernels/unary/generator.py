@@ -73,6 +73,8 @@ def main(argv: Sequence[str]) -> None:
           (square_fp64, (4, 1), consistent),
           (square_root_fp32, (8, 1)),
           (square_root_fp64, (4, 1), consistent),
+          (tangent_fp32, (16, 1)),
+          (tangent_fp64, (8, 1), consistent),
           (tanh_fp32, (16, 1)),
           (tanh_fp64, (8, 1), consistent),
           # go/keep-sorted end
@@ -92,6 +94,7 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp32, (32, 1), consistent),
           (sine_fp32, (8, 1), consistent),
           (square_root_fp32, (8, 1), consistent),
+          (tangent_fp32, (16, 1), consistent),
           (tanh_fp32, (16, 1), consistent),
           # go/keep-sorted end
       ],
@@ -121,6 +124,8 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp64, (16, 1)),
           (sine_fp32, (8, 1)),
           (sine_fp64, (4, 1), consistent),
+          (tangent_fp32, (16, 1)),
+          (tangent_fp64, (8, 1), consistent),
           (tanh_fp32, (16, 1)),
           (tanh_fp64, (8, 1)),
           # go/keep-sorted end
@@ -165,6 +170,8 @@ def main(argv: Sequence[str]) -> None:
           (square_fp64, (8, 1), consistent),
           (square_root_fp32, (16, 1)),
           (square_root_fp64, (8, 1), consistent),
+          (tangent_fp32, (16, 1)),
+          (tangent_fp64, (8, 1), consistent),
           (tanh_fp32, (32, 1)),
           (tanh_fp64, (16, 1), consistent),
           # go/keep-sorted end
@@ -195,6 +202,8 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp64, (8, 1), consistent),
           (sine_fp32, (32, 1)),
           (sine_fp64, (16, 1), consistent),
+          (tangent_fp32, (32, 1)),
+          (tangent_fp64, (16, 1), consistent),
           (tanh_fp32, (32, 1)),
           (tanh_fp64, (16, 1), consistent),
           # go/keep-sorted end
@@ -221,6 +230,8 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp64, (8, 1)),
           (sine_fp32, (32, 1), consistent),
           (sine_fp64, (16, 1)),
+          (tangent_fp32, (32, 1), consistent),
+          (tangent_fp64, (16, 1)),
           (tanh_fp32, (32, 1), consistent),
           (tanh_fp64, (8, 1)),
           # go/keep-sorted end
@@ -245,6 +256,8 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp64, (8, 1)),
           (sine_fp32, (32, 1), consistent),
           (sine_fp64, (16, 1)),
+          (tangent_fp32, (32, 1), consistent),
+          (tangent_fp64, (16, 1)),
           (tanh_fp32, (32, 1), consistent),
           (tanh_fp64, (8, 1)),
           # go/keep-sorted end
@@ -301,6 +314,8 @@ def main(argv: Sequence[str]) -> None:
           (square_fp64, (16, 1), consistent),
           (square_root_fp32, (32, 1), consistent),
           (square_root_fp64, (16, 1)),
+          (tangent_fp32, (32, 1), consistent),
+          (tangent_fp64, (16, 1)),
           (tanh_fp32, (32, 1), consistent),
           (tanh_fp64, (16, 1)),
           # go/keep-sorted end
@@ -334,7 +349,11 @@ def main(argv: Sequence[str]) -> None:
           (sine_fp32, (32, 1)),
           (square_fp32, (8, 1), consistent),
           (square_root_fp32, (8, 1)),
-          (tanh_fp32, (16, 1),),
+          (tangent_fp32, (16, 1)),
+          (
+              tanh_fp32,
+              (16, 1),
+          ),
           # go/keep-sorted end
       ],
       "arm_neonfma": [
@@ -351,6 +370,7 @@ def main(argv: Sequence[str]) -> None:
           (sigmoid_fp32, (8, 1), consistent),
           (sine_fp32, (32, 1), consistent),
           (square_root_fp32, (8, 1), consistent),
+          (tangent_fp32, (32, 1), consistent),
           (tanh_fp32, (16, 1), consistent),
           # go/keep-sorted end
       ],
@@ -374,6 +394,7 @@ def main(argv: Sequence[str]) -> None:
           (sine_fp64, (8, 1), consistent),
           (square_fp64, (4, 1), consistent),
           (square_root_fp64, (4, 1), consistent),
+          (tangent_fp64, (8, 1), consistent),
           (tanh_fp64, (8, 1), consistent),
           # go/keep-sorted end
       ],
@@ -408,6 +429,7 @@ def main(argv: Sequence[str]) -> None:
           (sine_fp32, (8, 1)),
           (square_fp32, (8, 1)),
           (square_root_fp32, (8, 1)),
+          (tangent_fp32, (8, 1)),
           (tanh_fp32, (8, 1)),
           # go/keep-sorted end
       ],

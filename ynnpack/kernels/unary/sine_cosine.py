@@ -56,3 +56,17 @@ def cosine_fp32(a, x, output_offset, output_multiplier):
 @operator_name("cosine")
 def cosine_fp64(a, x, output_offset, output_multiplier):
   return store(multiply_add(cos(load(a)), output_multiplier, output_offset), x)
+
+
+@const_buffer("a", Float(32))
+@buffer("x", Float(32))
+@operator_name("tangent")
+def tangent_fp32(a, x):
+  return store(tan(load(a)), x)
+
+
+@const_buffer("a", Float(64))
+@buffer("x", Float(64))
+@operator_name("tangent")
+def tangent_fp64(a, x):
+  return store(tan(load(a)), x)

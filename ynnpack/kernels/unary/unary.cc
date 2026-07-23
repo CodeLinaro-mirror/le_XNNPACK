@@ -291,6 +291,12 @@ struct cosine_op {
   }
 };
 
+struct tangent_op {
+  explicit tangent_op(const unary_params&) {}
+  float operator()(float x) const { return std::tan(x); }
+  double operator()(double x) const { return std::tan(x); }
+};
+
 struct sigmoid_op {
   explicit sigmoid_op(const unary_params& = {}) {}
   float operator()(float x) const { return 1.0f / (1.0f + std::exp(-x)); }
@@ -389,6 +395,8 @@ unary_kernel_fn get_float_unary_reference_kernel(ynn_unary_operator op,
       return unary_impl<T, T, sine_op>;
     case ynn_unary_cosine:
       return unary_impl<T, T, cosine_op>;
+    case ynn_unary_tangent:
+      return unary_impl<T, T, tangent_op>;
     case ynn_unary_sigmoid:
       return unary_impl<T, T, sigmoid_op>;
     case ynn_unary_hardswish:

@@ -177,6 +177,7 @@ enum ynn_unary_operator {
   ynn_unary_round_to_bf16 = 23,
   ynn_unary_approx_erf = 24,
   ynn_unary_approx_tanh = 25,
+  ynn_unary_tangent = 26,
 
   // Internal use only
   ynn_unary_requantize_to_uint8,
