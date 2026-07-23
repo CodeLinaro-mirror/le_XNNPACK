@@ -501,7 +501,7 @@ def g(t):
     return np.where(sq == 0, 1.0, np.sin(sq) / sq)
 
 
-p_degree, q_degree = 5, 0
+p_degree, q_degree = 4, 0
 t_min, t_max = 1e-20, (np.pi / 2) ** 2
 
 p, q = rational_approximation(
@@ -539,7 +539,7 @@ x_test = np.linspace(-np.pi / 2, np.pi / 2, 5000)
 t_test = x_test**2
 approx = x_test * (poly_eval(p, t_test) / poly_eval(q, t_test))
 
-plot_error(np.sin, x_test, approx, title="Relative Error for sin(x * pi/2)")
+plot_error(np.sin, x_test, approx, title="Relative Error for sin(x * pi/2)", epsilon=2**-24)
 
 
 # %%
@@ -549,7 +549,7 @@ def g(t):
     return np.where(sq == 0, 1.0, np.sin(sq) / sq)
 
 
-p_degree, q_degree = 9, 0
+p_degree, q_degree = 8, 0
 t_min, t_max = 1e-20, (np.pi / 2) ** 2
 
 p, q = rational_approximation(
@@ -587,4 +587,4 @@ x_test = np.linspace(-np.pi / 2, np.pi / 2, 5000)
 t_test = x_test**2
 approx = x_test * (poly_eval(p, t_test) / poly_eval(q, t_test))
 
-plot_error(np.sin, x_test, approx, title="Relative Error for sin(x * pi/2)")
+plot_error(np.sin, x_test, approx, title="Relative Error for sin(x * pi/2)", epsilon=2**-53)
