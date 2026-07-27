@@ -10,8 +10,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
 #include <numeric>
 #include <random>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,8 +28,11 @@
 #include "ynnpack/base/test/util.h"
 #include "ynnpack/base/type.h"
 #include "ynnpack/include/ynnpack.h"
+#include "ynnpack/subgraph/runtime.h"
 #include "ynnpack/subgraph/test/scheduler.h"
 #include "ynnpack/subgraph/test/subgraph_builder.h"
+#include "absl/strings/match.h"
+#include "slinky/runtime/buffer.h"
 
 namespace ynn {
 
@@ -670,4 +675,113 @@ INSTANTIATE_TEST_SUITE_P(
       return to_string(info.param);
     });
 
+namespace {
+
+TEST(DotLoopOrderTest, SplitKNotLessThanK) {
+  const uint32_t a_id = 0;
+  const uint32_t b_id = 1;
+  const uint32_t out_id = 2;
+  SubgraphBuilder builder(3);
+  builder.AddInput(type_of<float>(), TensorShape({300, 100}), a_id)
+      .AddInput(type_of<float>(), TensorShape({100, 400}), b_id)
+      .AddOutput(type_of<float>(), TensorShape({300, 400}), out_id)
+      .AddDot(1, a_id, b_id, YNN_INVALID_VALUE_ID, out_id);
+
+  TestScheduler scheduler(3);
+  Runtime runtime(builder.GetSubgraph(), &scheduler,
+                  YNN_FLAG_ENABLE_SLINKY_TRACE);
+
+  std::vector<std::string> trace_events;
+  std::mutex trace_mutex;  // NOLINT(build/c++11)
+  runtime.get()->eval_config.trace_begin =
+      [&](const char* name) -> slinky::index_t {
+    std::lock_guard<std::mutex> lock(trace_mutex);  // NOLINT(build/c++11)
+    trace_events.push_back(name);
+    return 0;
+  };
+
+  Tensor<float> a({300, 100});
+  Tensor<float> b({100, 400});
+  Tensor<float> out({300, 400});
+  runtime.ReshapeExternalTensor(a.extents(), a.data(), a_id)
+      .ReshapeExternalTensor(b.extents(), b.data(), b_id)
+      .ReshapeRuntime()
+      .SetupExternalTensor(out.data(), out_id)
+      .InvokeRuntime();
+  EXPECT_EQ(runtime.Status(), ynn_status_success);
+
+  EXPECT_FALSE(trace_events.empty());
+  EXPECT_EQ(trace_events.front(), "pipeline");
+  bool found_pack = false;
+  bool found_dot = false;
+  std::string first_loop;
+  for (const std::string& event : trace_events) {
+    if (absl::StrContains(event, "pack_b")) found_pack = true;
+    if (absl::StrContains(event, "dot")) found_dot = true;
+    if (first_loop.empty() &&
+        (absl::StartsWith(event, "loop k") ||
+         absl::StartsWith(event, "loop d")) &&
+        !absl::StrContains(event, "iteration")) {
+      first_loop = event;
+    }
+  }
+  EXPECT_TRUE(found_pack);
+  EXPECT_TRUE(found_dot);
+  EXPECT_FALSE(absl::StrContains(first_loop, "loop k"));
+}
+
+TEST(DotLoopOrderTest, SplitKLessThanK) {
+  const uint32_t a_id = 0;
+  const uint32_t b_id = 1;
+  const uint32_t out_id = 2;
+  SubgraphBuilder builder(3);
+  builder.AddInput(type_of<float>(), TensorShape({300, 8192}), a_id)
+      .AddInput(type_of<float>(), TensorShape({8192, 400}), b_id)
+      .AddOutput(type_of<float>(), TensorShape({300, 400}), out_id)
+      .AddDot(1, a_id, b_id, YNN_INVALID_VALUE_ID, out_id);
+
+  TestScheduler scheduler(3);
+  Runtime runtime(builder.GetSubgraph(), &scheduler,
+                  YNN_FLAG_ENABLE_SLINKY_TRACE);
+
+  std::vector<std::string> trace_events;
+  std::mutex trace_mutex;  // NOLINT(build/c++11)
+  runtime.get()->eval_config.trace_begin =
+      [&](const char* name) -> slinky::index_t {
+    std::lock_guard<std::mutex> lock(trace_mutex);  // NOLINT(build/c++11)
+    trace_events.push_back(name);
+    return 0;
+  };
+
+  Tensor<float> a({300, 8192});
+  Tensor<float> b({8192, 400});
+  Tensor<float> out({300, 400});
+  runtime.ReshapeExternalTensor(a.extents(), a.data(), a_id)
+      .ReshapeExternalTensor(b.extents(), b.data(), b_id)
+      .ReshapeRuntime()
+      .SetupExternalTensor(out.data(), out_id)
+      .InvokeRuntime();
+  EXPECT_EQ(runtime.Status(), ynn_status_success);
+
+  EXPECT_FALSE(trace_events.empty());
+  EXPECT_EQ(trace_events.front(), "pipeline");
+  bool found_pack = false;
+  bool found_dot = false;
+  std::string first_loop;
+  for (const std::string& event : trace_events) {
+    if (absl::StrContains(event, "pack_b")) found_pack = true;
+    if (absl::StrContains(event, "dot")) found_dot = true;
+    if (first_loop.empty() &&
+        (absl::StartsWith(event, "loop k") ||
+         absl::StartsWith(event, "loop d")) &&
+        !absl::StrContains(event, "iteration")) {
+      first_loop = event;
+    }
+  }
+  EXPECT_TRUE(found_pack);
+  EXPECT_TRUE(found_dot);
+  EXPECT_TRUE(absl::StrContains(first_loop, "loop k"));
+}
+
+}  // namespace
 }  // namespace ynn

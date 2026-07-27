@@ -138,7 +138,11 @@ cc_test(
     malloc = ynn_binary_malloc(),
     shard_count = 24,
     tags = ["nowasm"],  # b/525770952
-    deps = TEST_DEPS,
+    deps = TEST_DEPS + [
+        "//ynnpack/subgraph",
+        "@abseil-cpp//absl/strings",
+        "@slinky//slinky/runtime",
+    ],
 )
 
 cc_test(

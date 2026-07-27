@@ -28,6 +28,7 @@
 #include "ynnpack/kernels/dot/schedule.h"
 #include "ynnpack/kernels/ternary/ternary.h"
 #include "ynnpack/subgraph/copy.h"
+#include "ynnpack/subgraph/dot.h"
 #include "ynnpack/subgraph/elementwise.h"
 #include "ynnpack/subgraph/runtime.h"
 #include "ynnpack/subgraph/slinky.h"
@@ -942,10 +943,12 @@ std::tuple<slinky::expr, slinky::expr, slinky::expr> choose_split_factors(
   splits = runtime.globals.get(splits, "dot_splits");
   slinky::expr split_m = splits / 65536;
   slinky::expr split_n = splits % 65536;
+  // Only split k for large values of k.
   // Align `split_k` to be a multiple of possible values of `tile_k`. We cannot
   // use the value of `tile_k` directly since this varies by CPU, so we use 64
   // as a heuristic.
-  slinky::expr split_k = slinky::select(k >= 64, slinky::align_up(k, 64), k);
+  slinky::expr split_k = slinky::select(
+      k >= 8192, 4096, slinky::select(k >= 64, slinky::align_up(k, 64), k));
   split_m = runtime.globals.get(split_m, "split_m");
   split_n = runtime.globals.get(split_n, "split_n");
   split_k = runtime.globals.get(split_k, "split_k");
@@ -1408,8 +1411,26 @@ ynn_status define_dot(ynn_subgraph& subgraph, size_t num_k_dims,
         choose_split_factors(runtime, m, n, k, block_n);
 
     const int rank = output.rank();
+    const bool is_split_k = slinky::prove_true(split_k < k);
     std::vector<int> loop_order;
-    if (rank >= 2 && pack_b && !packed_b.is_static()) {
+    const bool pack_b_outer = rank >= 2 && pack_b && !packed_b.is_static();
+    if (is_split_k) {
+      if (pack_b_outer) {
+        loop_order.push_back(num_k_dims + 1);  // m (innermost)
+        loop_order.push_back(num_k_dims);      // n
+      } else {
+        loop_order.push_back(num_k_dims);      // n (innermost)
+        if (rank >= 2) {
+          loop_order.push_back(num_k_dims + 1);  // m
+        }
+      }
+      for (size_t i = 0; i < num_k_dims; ++i) {
+        loop_order.push_back(i);  // k (outermost reduction loop)
+      }
+      for (size_t i = 2; i < rank; ++i) {
+        loop_order.push_back(num_k_dims + i);  // batch dims (outermost)
+      }
+    } else if (pack_b_outer) {
       loop_order.resize(num_k_dims + 2);
       for (size_t i = 0; i < loop_order.size(); ++i) {
         loop_order[i] = i;
@@ -1426,7 +1447,11 @@ ynn_status define_dot(ynn_subgraph& subgraph, size_t num_k_dims,
 
     // If output is rank >= 2, we want to split n, m, and k. Otherwise, we only
     // split n and k (e.g. fully-connected layers).
-    splits.push_back(split_k);
+    if (is_split_k) {
+      splits.push_back(split_k);
+    } else {
+      splits.push_back({});
+    }
     for (size_t i = 1; i < num_k_dims; ++i) {
       // Do not create loops for the remaining k dims.
       splits.push_back({});
