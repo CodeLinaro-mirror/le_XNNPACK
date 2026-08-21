@@ -295,8 +295,12 @@ std::map<std::pair<slinky::var, int>, int> infer_source_regions(
             }
           }
 
-          if (slinky::is_variable(bound.min, v) &&
-              slinky::is_variable(bound.max, v) &&
+          auto find_v_in_div = [](slinky::expr e, slinky::var v) -> bool {
+            const slinky::div* d = e.as<slinky::div>();
+            if (d && slinky::is_variable(d->a, v)) return true;
+            return slinky::is_variable(e, v);
+          };
+          if (find_v_in_div(bound.min, v) && find_v_in_div(bound.max, v) &&
               !parent_source_regions.empty()) {
             // Check if all parent extents are equivalent.
             bool all_equal = true;
@@ -920,7 +924,7 @@ void ynn_runtime::schedule() {
         for (auto& b : sched->scheduled_buffers) {
           if (b.store_at_min_depth == 0) {
             b.buffer->store_at({&funcs[i], slinky::var()});
-          } else if (b.store_at_min_depth < loop_nest.size()) {
+          } else if (b.store_at_min_depth <= loop_nest.size()) {
             const slinky::loop_id& lid =
                 global_loop_nest[loop_nest[b.store_at_min_depth - 1]].loop_id;
             b.buffer->store_at(lid);
