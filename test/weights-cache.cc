@@ -5,7 +5,9 @@
 
 #include <algorithm>  // For std::rotate.
 #include <cstdint>    // For uintptr_t.
+#include <cstdio>     // For std::sscanf.
 #include <cstring>    // For memcpy.
+#include <fstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -15,6 +17,17 @@
 #include "src/xnnpack/cache.h"
 #include "src/xnnpack/common.h"
 #include "src/xnnpack/memory.h"
+
+#if XNN_PLATFORM_LINUX && XNN_HAS_MMAP
+#include <sys/mman.h>
+#include <sys/prctl.h>
+#ifndef PR_SET_VMA
+#define PR_SET_VMA 0x53564d41
+#endif
+#ifndef PR_SET_VMA_ANON_NAME
+#define PR_SET_VMA_ANON_NAME 0
+#endif
+#endif
 
 static void* cache_end(const struct xnn_internal_weights_cache* cache) {
   return reinterpret_cast<void*>(
@@ -128,6 +141,66 @@ TEST(WEIGHTS_MEMORY, allocate_and_release) {
             xnn_allocate_weights_memory(&b, XNN_DEFAULT_WEIGHTS_BUFFER_SIZE));
   ASSERT_EQ(xnn_status_success, xnn_release_weights_memory(&b));
 }
+
+#if XNN_PLATFORM_LINUX && XNN_HAS_MMAP
+static bool has_vma_name_in_proc_maps(const void* ptr,
+                                      const char* expected_name) {
+  std::ifstream maps("/proc/self/maps");
+  if (!maps.is_open()) {
+    return false;
+  }
+  const uintptr_t target = reinterpret_cast<uintptr_t>(ptr);
+  std::string line;
+  while (std::getline(maps, line)) {
+    uintptr_t start = 0;
+    uintptr_t end = 0;
+    if (std::sscanf(line.c_str(), "%zx-%zx", &start, &end) == 2) {
+      if (target >= start && target < end) {
+        return std::strstr(line.c_str(), expected_name) != nullptr;
+      }
+    }
+  }
+  return false;
+}
+
+static bool anon_vma_naming_supported() {
+  void* probe = mmap(nullptr, 4096, PROT_READ | PROT_WRITE,
+                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  if (probe == MAP_FAILED) {
+    return false;
+  }
+  const bool supported =
+      (prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME,
+             reinterpret_cast<uintptr_t>(probe), 4096,
+             reinterpret_cast<uintptr_t>("xnnpack-probe")) == 0) &&
+      has_vma_name_in_proc_maps(probe, "[anon:xnnpack-probe]");
+  munmap(probe, 4096);
+  return supported;
+}
+
+TEST(WEIGHTS_MEMORY, vma_name) {
+  if (!anon_vma_naming_supported()) {
+    GTEST_SKIP() << "PR_SET_VMA_ANON_NAME is not supported in this environment";
+  }
+  xnn_weights_buffer b;
+  ASSERT_EQ(xnn_status_success,
+            xnn_allocate_weights_memory(&b, XNN_DEFAULT_WEIGHTS_BUFFER_SIZE));
+  EXPECT_TRUE(
+      has_vma_name_in_proc_maps(b.start, "[anon:xnnpack-weights-cache]"));
+
+  b.size = b.capacity;
+  ASSERT_EQ(xnn_status_success,
+            xnn_reserve_weights_memory(&b, XNN_DEFAULT_WEIGHTS_BUFFER_SIZE));
+  EXPECT_TRUE(
+      has_vma_name_in_proc_maps(b.start, "[anon:xnnpack-weights-cache]"));
+
+  ASSERT_EQ(xnn_status_success, xnn_finalize_weights_memory(&b));
+  EXPECT_TRUE(
+      has_vma_name_in_proc_maps(b.start, "[anon:xnnpack-weights-cache]"));
+
+  ASSERT_EQ(xnn_status_success, xnn_release_weights_memory(&b));
+}
+#endif  // XNN_PLATFORM_LINUX && XNN_HAS_MMAP
 
 TEST(WEIGHTS_MEMORY, grow) {
   xnn_weights_buffer b;
@@ -423,8 +496,7 @@ TEST(WEIGHTS_MEMORY, reserve_overflow) {
   xnn_weights_buffer b;
   ASSERT_EQ(xnn_status_success, xnn_allocate_weights_memory(&b, 8));
   const size_t initial_capacity = b.capacity;
-  EXPECT_EQ(xnn_status_out_of_memory,
-            xnn_reserve_weights_memory(&b, SIZE_MAX));
+  EXPECT_EQ(xnn_status_out_of_memory, xnn_reserve_weights_memory(&b, SIZE_MAX));
   EXPECT_EQ(xnn_status_out_of_memory,
             xnn_reserve_weights_memory(&b, SIZE_MAX - b.capacity + 1));
   EXPECT_EQ(initial_capacity, b.capacity);
@@ -461,7 +533,6 @@ TEST(WEIGHTS_CACHE, offset_to_addr_bounds) {
             xnn_internal_weights_cache_offset_to_addr(&cache, SIZE_MAX));
   EXPECT_EQ(nullptr, xnn_internal_weights_cache_offset_to_addr(
                          &cache, cache.cache.weights.capacity + 100));
-  EXPECT_EQ(nullptr,
-            xnn_internal_weights_cache_offset_to_addr(nullptr, 0));
+  EXPECT_EQ(nullptr, xnn_internal_weights_cache_offset_to_addr(nullptr, 0));
   EXPECT_EQ(xnn_status_success, xnn_internal_release_weights_cache(&cache));
 }
