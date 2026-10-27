@@ -948,8 +948,8 @@ class BatchMatMulOperatorTester {
                                    xnnpack::XnnExtraBytes);
     xnnpack::Buffer<float> input_b(batch_size_b * k() * n(),
                                    xnnpack::XnnExtraBytes);
-    xnnpack::Buffer<float> output(batch_size_output * m() * n());
-    xnnpack::Buffer<float> output_ref(batch_size_output * m() * n());
+    xnnpack::Buffer<float> output(batch_size_output * m() * n(), 0.0f);
+    xnnpack::Buffer<float> output_ref(batch_size_output * m() * n(), 0.0f);
 
     for (bool const_weights : {true, false}) {
       for (size_t iteration = 0; iteration < kIterations; iteration++) {
@@ -1090,8 +1090,8 @@ class BatchMatMulOperatorTester {
                                    xnnpack::XnnExtraBytes);
     xnnpack::Buffer<float> input_b(batch_size_b * k() * n(),
                                    xnnpack::XnnExtraBytes);
-    xnnpack::Buffer<float> output(batch_size_output * m() * n());
-    xnnpack::Buffer<float> output_ref(batch_size_output * m() * n());
+    xnnpack::Buffer<float> output(batch_size_output * m() * n(), 0.0f);
+    xnnpack::Buffer<float> output_ref(batch_size_output * m() * n(), 0.0f);
 
     for (bool const_weights : {true, false}) {
       for (size_t iteration = 0; iteration < kIterations; iteration++) {

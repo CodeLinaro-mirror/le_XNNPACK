@@ -2139,7 +2139,7 @@ static void init_f32_qc8w_gemm_config(void) {
     #if XNN_ENABLE_ASSEMBLY && !XNN_PLATFORM_IOS && !XNN_PLATFORM_MAC
       const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
       assert(hardware_config);
-      #if XNN_ENABLE_ARM_SVE2
+      #if XNN_ENABLE_ARM_SVE2 && !XNN_COMPILER_HAS_FEATURE(memory_sanitizer)
         if (hardware_config->arch_flags & xnn_arch_arm_sve2) {
           f32_qc8w_gemm_config.minmax.gemm[XNN_MR_TO_INDEX(1)] = XNN_INIT_HMP_GEMM_UKERNEL(xnn_f32_qc8w_gemm_minmax_ukernel_1x8__sve2_lane_ld128_acc4);
           f32_qc8w_gemm_config.minmax.gemm[XNN_MR_TO_INDEX(6)] = XNN_INIT_HMP_GEMM_UKERNEL(xnn_f32_qc8w_gemm_minmax_ukernel_6x8__sve2_lane_ld128);
@@ -2210,7 +2210,7 @@ static void init_f32_qc8w_gemm_config(void) {
         f32_qc8w_gemm_config.mr = 6;
         f32_qc8w_gemm_config.nr = 8;
       #else  // !XNN_ENABLE_ASSEMBLY
-        #if XNN_ENABLE_ARM_SVE2
+        #if XNN_ENABLE_ARM_SVE2 && !XNN_COMPILER_HAS_FEATURE(memory_sanitizer)
           const struct xnn_hardware_config* hardware_config = xnn_init_hardware_config();
           assert(hardware_config != NULL);
           if (hardware_config->arch_flags & xnn_arch_arm_sve2) {
