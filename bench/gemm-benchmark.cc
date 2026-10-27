@@ -1389,7 +1389,8 @@ void GEMMBenchmark(benchmark::State& state,
   // Select by benchmark variant: SME benchmarks can run on SME2 hardware but
   // must still use the SME packed layout.
 #if XNN_ENABLE_ARM_SME2 && XNN_ENABLE_ARM_SME
-  const bool use_sme2_lhs_packing = (arch_flags & xnn_arch_arm_sme2) != 0;
+  const bool use_sme2_lhs_packing =
+      pack_weights == xnn_pack_kai_f32_weights_and_biases_sme2;
   const auto pack_lh = use_sme2_lhs_packing ? xnn_x32_pack_lh_ukernel__neonsme2
                                             : xnn_x32_pack_lh_ukernel__neonsme;
   const auto packed_lh_size = use_sme2_lhs_packing
