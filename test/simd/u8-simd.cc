@@ -10,6 +10,28 @@
 #include "src/xnnpack/simd/u8-scalar.h"
 #elif defined(XNN_SIMD_SSE2) && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
 #include "src/xnnpack/simd/u8-sse2.h"
+#elif defined(XNN_SIMD_AVX2) && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
+#include "src/xnnpack/simd/u8-avx2.h"
+#define XNN_SIMD_TEST_ARCH_FLAGS xnn_arch_x86_avx2
+#elif defined(XNN_SIMD_AVX512SKX) && (XNN_ARCH_X86 || XNN_ARCH_X86_64)
+// Scope AVX-512 target attributes to the SIMD header and test bodies so the
+// test fixture SetUp() (which checks ISA support) can run on older CPUs.
+#define XNN_SIMD_TARGET_ATTR \
+  "avx512f,avx512cd,avx512bw,avx512dq,avx512vl,fma,f16c"
+#if defined(__clang__)
+#pragma clang attribute push(__attribute__((target(XNN_SIMD_TARGET_ATTR))), \
+                             apply_to = function)
+#elif defined(__GNUC__)
+#pragma GCC push_options
+#pragma GCC target(XNN_SIMD_TARGET_ATTR)
+#endif
+#include "src/xnnpack/simd/u8-avx512skx.h"
+#if defined(__clang__)
+#pragma clang attribute pop
+#elif defined(__GNUC__)
+#pragma GCC pop_options
+#endif
+#define XNN_SIMD_TEST_ARCH_FLAGS xnn_arch_x86_avx512skx
 #elif defined(XNN_SIMD_NEON) && (XNN_ARCH_ARM || XNN_ARCH_ARM64)
 #include "src/xnnpack/simd/u8-neon.h"
 #define XNN_SIMD_TEST_ARCH_FLAGS xnn_arch_arm_neon
@@ -52,6 +74,16 @@ class U8SimdTest : public ::testing::Test {
   std::vector<uint8_t> inputs_;
   std::vector<uint8_t> output_;
 };
+
+#ifdef XNN_SIMD_TARGET_ATTR
+#if defined(__clang__)
+#pragma clang attribute push(__attribute__((target(XNN_SIMD_TARGET_ATTR))), \
+                             apply_to = function)
+#elif defined(__GNUC__)
+#pragma GCC push_options
+#pragma GCC target(XNN_SIMD_TARGET_ATTR)
+#endif
+#endif  // XNN_SIMD_TARGET_ATTR
 
 TEST_F(U8SimdTest, Add) {
   const xnn_simd_u8_t a = xnn_loadu_u8(inputs_.data());
@@ -127,6 +159,14 @@ TEST_F(U8SimdTest, StoreTail) {
     }
   }
 }
+
+#ifdef XNN_SIMD_TARGET_ATTR
+#if defined(__clang__)
+#pragma clang attribute pop
+#elif defined(__GNUC__)
+#pragma GCC pop_options
+#endif
+#endif  // XNN_SIMD_TARGET_ATTR
 
 }  // namespace xnnpack
 

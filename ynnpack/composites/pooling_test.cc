@@ -77,6 +77,8 @@ void VerifyAveragePool2D(bool padding_same, size_t filter_height,
     tolerance = 1e-2f;
   } else if constexpr (std::is_same_v<T, bfloat16>) {
     tolerance = 5e-2f;
+  } else if constexpr (std::is_integral_v<T>) {
+    tolerance = 0.5f;
   }
 
   for (size_t i = 0; i < y_fp32.size(); ++i) {
@@ -102,6 +104,14 @@ void VerifyAveragePool2D(ynn_type type, bool padding_same, size_t filter_height,
     VerifyAveragePool2D<bfloat16>(padding_same, filter_height, filter_width,
                                   stride_height, stride_width, x_fp32, x_shape,
                                   expected_fp32, expected_shape);
+  } else if (type == ynn_type_int8) {
+    VerifyAveragePool2D<int8_t>(padding_same, filter_height, filter_width,
+                                stride_height, stride_width, x_fp32, x_shape,
+                                expected_fp32, expected_shape);
+  } else if (type == ynn_type_uint8) {
+    VerifyAveragePool2D<uint8_t>(padding_same, filter_height, filter_width,
+                                 stride_height, stride_width, x_fp32, x_shape,
+                                 expected_fp32, expected_shape);
   } else {
     FAIL() << "Unsupported type";
   }
@@ -199,7 +209,8 @@ TEST_P(PoolingTest, AveragePool2DSameStride2) {
 
 INSTANTIATE_TEST_SUITE_P(
     Pooling, PoolingTest,
-    ::testing::Values(ynn_type_fp32, ynn_type_fp16, ynn_type_bf16),
+    ::testing::Values(ynn_type_fp32, ynn_type_fp16, ynn_type_bf16,
+                      ynn_type_int8, ynn_type_uint8),
     [](const testing::TestParamInfo<PoolingTest::ParamType>& info) {
       return std::string(to_string(info.param));
     });
