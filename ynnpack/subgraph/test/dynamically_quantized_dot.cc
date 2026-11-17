@@ -5,11 +5,18 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include "ynnpack/base/arch.h"
+#include "ynnpack/base/base.h"
 #include "ynnpack/base/type.h"
 #include "ynnpack/include/ynnpack.h"
+#if defined(YNN_ARCH_X86)
+#include "ynnpack/kernels/dot/cost_model/golden_cove.h"
+#include "ynnpack/kernels/dot/cost_model/redwood_cove.h"
+#endif
 #include "ynnpack/subgraph/dot.h"
 #include "ynnpack/subgraph/subgraph.h"
 #include "ynnpack/subgraph/test/matchers.h"
@@ -176,6 +183,60 @@ INSTANTIATE_TEST_SUITE_P(RhsType, DynamicallyQuantizedDot,
                          [](const testing::TestParamInfo<ynn_type>& info) {
                            return to_string(info.param);
                          });
+
+#if !YNN_COMPILER_HAS_FEATURE(memory_sanitizer) && defined(YNN_ARCH_X86_AMXINT8)
+TEST(PreferUint8Dot, AmxInt8) {
+  const uint64_t arch_flags_amxint8 =
+      arch_flag::sse2 | arch_flag::avx | arch_flag::avx2 | arch_flag::fma3 |
+      arch_flag::avx512 | arch_flag::avx512vnni | arch_flag::amxint8;
+  for (const dot_cost_models* cost_models : {&golden_cove, &redwood_cove}) {
+    EXPECT_TRUE(
+        prefer_uint8_dot(ynn_type_int4, *cost_models, arch_flags_amxint8));
+    EXPECT_TRUE(
+        prefer_uint8_dot(ynn_type_int2, *cost_models, arch_flags_amxint8));
+    EXPECT_FALSE(
+        prefer_uint8_dot(ynn_type_int8, *cost_models, arch_flags_amxint8));
+  }
+}
+#endif  // !YNN_COMPILER_HAS_FEATURE(memory_sanitizer) &&
+        // defined(YNN_ARCH_X86_AMXINT8)
+
+TEST(RequantizeInputAToUint8, Int4StaticBShapeAware) {
+  auto build_dot_input_a_type = [](size_t m) -> ynn_type {
+    const uint32_t a_id = 0;
+    const uint32_t output_id = 1;
+    constexpr size_t k = 64;
+    constexpr size_t n = 32;
+
+    SubgraphBuilder builder(2);
+    builder.AddInput(ynn_type_int8, {m, k}, a_id)
+        .AddOutput(ynn_type_int32, {m, n}, output_id);
+
+    std::vector<uint8_t> b_data(k * n / 2, 0x21);
+    uint32_t b_id = YNN_INVALID_VALUE_ID;
+    const size_t b_dims[2] = {k, n};
+    EXPECT_EQ(ynn_define_tensor(builder.GetSubgraph(), ynn_type_int4, 2, b_dims,
+                                b_data.data(), YNN_VALUE_FLAG_COPY_DATA, &b_id),
+              ynn_status_success);
+    builder.AddDot(1, a_id, b_id, YNN_INVALID_VALUE_ID, output_id);
+
+    ynn_subgraph& subgraph = *builder.GetSubgraph();
+    const ynn_node& dot_node = ProducerOf(output_id, subgraph);
+    return subgraph.value(dot_node.inputs[0]).type;
+  };
+
+  if (prefer_uint8_dot(ynn_type_int4)) {
+    EXPECT_EQ(build_dot_input_a_type(/*m=*/1), ynn_type_uint8);
+#if !YNN_COMPILER_HAS_FEATURE(memory_sanitizer) && defined(YNN_ARCH_X86_AMXINT8)
+    if (get_supported_arch_flags() & arch_flag::amxint8) {
+      EXPECT_EQ(build_dot_input_a_type(/*m=*/64), ynn_type_int8);
+      EXPECT_EQ(build_dot_input_a_type(/*m=*/0), ynn_type_int8);
+    }
+#endif
+  } else {
+    EXPECT_EQ(build_dot_input_a_type(/*m=*/1), ynn_type_int8);
+  }
+}
 
 }  // namespace
 }  // namespace ynn
