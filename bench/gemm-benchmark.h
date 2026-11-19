@@ -230,6 +230,25 @@ void GEMMBenchmark(benchmark::State& state,
                    size_t sr, ConstantOrFunction mr_packed,
                    uint64_t arch_flags = 0);
 
+typedef void (*xnn_x8_pack_lh_ukernel_fn)(size_t m, size_t k, size_t mr,
+                                          size_t kr, size_t sr,
+                                          size_t m_idx_start,
+                                          const int8_t* lhs,
+                                          size_t lhs_stride,
+                                          void* lhs_packed);
+
+void GEMMBenchmark(benchmark::State& state,
+                   xnn_pqs8_qc8w_gemm_minmax_ukernel_fn gemm,
+                   xnn_init_qs8_qc8w_conv_minmax_params_fn init_minmax_params,
+                   xnn_pack_weights_and_biases_fn pack_weights,
+                   xnn_packed_stride_weights_and_biases_fn packed_stride,
+                   xnn_x8_pack_lh_ukernel_fn pack_lh,
+                   xnn_pack_lh_size_fn pack_lh_size,
+                   xnn_pack_lh_offset_fn pack_lh_offset,
+                   ConstantOrFunction mr, ConstantOrFunction nr, size_t kr,
+                   size_t sr, ConstantOrFunction mr_packed,
+                   uint64_t arch_flags = 0);
+
 typedef void (*xnn_x16_pack_lh_ukernel_fn)(size_t m, size_t k, size_t mr,
                                            size_t kr, size_t sr,
                                            size_t m_idx_start,

@@ -2770,7 +2770,7 @@ void xnn_pack_kai_qs2_weights_and_biases_sme2(
 
 #endif  // XNN_ENABLE_ARM_SME2 && XNN_ENABLE_KLEIDIAI
 
-#if XNN_ENABLE_ARM_SME2
+#if XNN_ENABLE_ARM_SME || XNN_ENABLE_ARM_SME2
 // TODO(b/558830577): Workaround for KleidiAI SVE2 compilation issue on
 // Apple Silicon. KleidiAI's
 // kai_rhs_pack_nxk_qsi4cxp8vsx4sf32bi32_qsx4cx_f32_i32_sme is compiled with
@@ -3151,7 +3151,7 @@ void xnn_pack_kai_qs8_qc4w_weights_and_biases_sme2(
 #endif
   }
 }
-#endif  // XNN_ENABLE_ARM_SME2
+#endif  // XNN_ENABLE_ARM_SME || XNN_ENABLE_ARM_SME2
 
 size_t xnn_packed_stride_kai_qs8_qc8w_weights_and_biases_sme(
     const struct xnn_gemm_config* gemm_config, size_t k,
